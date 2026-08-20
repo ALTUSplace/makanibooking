@@ -30,8 +30,10 @@ export default function Search() {
   const rawCity = searchParams.get('city') || 'all';
   const resolvedCity = cityMap[rawCity] || rawCity;
 
+  const naturalQuery = searchParams.get('q') || '';
   const [cityFilter, setCityFilter] = useState(resolvedCity);
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
+  const [searchQuery, setSearchQuery] = useState(naturalQuery);
   const [maxPrice, setMaxPrice] = useState(4000);
   const [excellenceOnly, setExcellenceOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('rating');
@@ -65,6 +67,15 @@ export default function Search() {
       if (cityFilter !== 'all' && item.city !== cityFilter) return false;
       if (typeFilter !== 'all' && item.type !== typeFilter) return false;
       if (item.pricePerUnit > maxPrice) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matches = item.title.toLowerCase().includes(q) ||
+                        item.description.toLowerCase().includes(q) ||
+                        item.city.toLowerCase().includes(q) ||
+                        item.category.toLowerCase().includes(q) ||
+                        item.features.some(f => f.toLowerCase().includes(q));
+        if (!matches) return false;
+      }
       return true;
     }).sort((a, b) => {
       if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
@@ -151,6 +162,17 @@ export default function Search() {
               >
                 إعادة ضبط
               </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300">بحث باللغة الطبيعية (ذكاء اصطناعي)</label>
+              <input
+                type="text"
+                placeholder="ابحث عما ترغب به..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+              />
             </div>
 
             <div className="space-y-2">

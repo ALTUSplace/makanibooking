@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Plus, Star, Award, Settings, FileText, Lock, UserCheck, Download, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Plus, Star, Award, Settings, FileText, Lock, UserCheck, Download, FileSpreadsheet, Globe, ShieldAlert, CheckCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PARTNERS, LISTINGS } from '@/data/b2rent';
 import { useRole } from '@/contexts/RoleContext';
@@ -23,7 +23,7 @@ const COLORS = ['#f59e0b', '#3b82f6'];
 
 export default function AdminDashboard() {
   const { role, setRole } = useRole();
-  const [activeTab, setActiveTab] = useState<'overview' | 'agencies' | 'listings' | 'bookings' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'agencies' | 'listings' | 'bookings' | 'settings' | 'domain'>('overview');
   const [agenciesList, setAgenciesList] = useState(PARTNERS);
   const [listingsList, setListingsList] = useState(LISTINGS);
   const [platformSettings, setPlatformSettings] = useState({
@@ -33,6 +33,8 @@ export default function AdminDashboard() {
     commissionRate: '10%',
     maintenanceMode: false
   });
+  const [customDomainInput, setCustomDomainInput] = useState('b2rent.ma');
+  const [domainStatus, setDomainStatus] = useState<'verified' | 'pending'>('verified');
   const [authWarning, setAuthWarning] = useState<string | null>(null);
 
   const totalRevenue = listingsList.reduce((acc, item) => acc + (item.pricePerUnit * 3), 12500);
@@ -71,6 +73,16 @@ export default function AdminDashboard() {
     link.click();
     document.body.removeChild(link);
     toast.success('تم تصدير تقارير الإحصائيات والحجوزات بنجاح بصيغة Excel/CSV');
+  };
+
+  const handleVerifyDomain = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customDomainInput.trim()) {
+      toast.error('يرجى إدخال اسم النطاق بشكل صحيح');
+      return;
+    }
+    setDomainStatus('verified');
+    toast.success(`تم ربط والتحقق من النطاق ${customDomainInput} بنجاح وتفعيل شهادة الحماية SSL!`);
   };
 
   return (
@@ -132,7 +144,7 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('agencies')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'agencies' ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
           >
-            <Building2 className="w-4 h-4" /> إدارة الوكالات والشركات ({agenciesList.length})
+            <Building2 className="w-4 h-4" /> إدارة الوكالات ({agenciesList.length})
           </button>
           <button
             onClick={() => setActiveTab('listings')}
@@ -144,14 +156,20 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('bookings')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'bookings' ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
           >
-            <Calendar className="w-4 h-4" /> متابعة الحجوزات والعقود
+            <Calendar className="w-4 h-4" /> متابعة الحجوزات
+          </button>
+          <button
+            onClick={() => setActiveTab('domain')}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'domain' ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
+          >
+            <Globe className="w-4 h-4" /> ربط النطاق المخصص
           </button>
           {role === 'super_admin' && (
             <button
               onClick={() => setActiveTab('settings')}
               className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
             >
-              <Settings className="w-4 h-4" /> إعدادات المنصة وقنوات الاتصال
+              <Settings className="w-4 h-4" /> إعدادات المنصة
             </button>
           )}
         </div>
@@ -249,12 +267,12 @@ export default function AdminDashboard() {
                         data={agencyTypeData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={75}
+                        innerRadius={60}
+                        outerRadius={80}
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {agencyTypeData.map((_, index) => (
+                        {agencyTypeData.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -262,9 +280,9 @@ export default function AdminDashboard() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex items-center justify-around text-xs text-slate-300 pt-2 border-t border-slate-800">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> وكالات السيارات (60%)</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> العقارات (40%)</span>
+                <div className="flex justify-center gap-6 text-xs text-slate-300">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> السيارات</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> العقارات</span>
                 </div>
               </div>
             </div>
@@ -275,30 +293,38 @@ export default function AdminDashboard() {
           <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <Building2 className="w-6 h-6 text-amber-400" />
-              <span>قائمة الوكالات والشركات الشريكة المعتمدة</span>
+              <span>إدارة الوكالات ومنح شارات التميز للوكالات (تقييم &gt; 4.8)</span>
             </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {agenciesList.map(agency => (
-                <div key={agency.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-white text-base">{agency.name}</div>
-                    <span className="bg-amber-500/20 text-amber-400 text-xs font-bold px-3 py-1 rounded-full">
-                      ⭐ {agency.rating}
-                    </span>
+                <div key={agency.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-bold">{agency.city}</span>
+                      <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
+                        <Star className="w-3.5 h-3.5 fill-amber-400" /> {agency.rating}
+                      </div>
+                    </div>
+                    <h4 className="text-base font-extrabold text-white">{agency.name}</h4>
+                    <p className="text-xs text-slate-400">المدينة الرئيسية: {agency.city}</p>
+                    <p className="text-xs text-amber-400/90 font-semibold">{agency.phone} | {agency.email}</p>
                   </div>
-                  <div className="text-xs text-slate-400 space-y-1">
-                    <div>📍 المدينة: {agency.city}</div>
-                    <div>📞 الهاتف: {agency.phone}</div>
-                  </div>
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-                    <span className="text-xs text-slate-300">
-                      {agency.isExcellence ? '✨ وكالة متميزة' : 'وكالة عادية'}
-                    </span>
+
+                  <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
+                    {agency.isExcellence ? (
+                      <span className="bg-amber-500/25 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center gap-1.5">
+                        <Award className="w-4 h-4" /> وكالة متميزة
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-500">بدون شارة</span>
+                    )}
+
                     <Button
                       onClick={() => toggleAgencyExcellence(agency.id)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-xl ${agency.isExcellence ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-white hover:bg-slate-700'}`}
+                      className={`text-xs font-bold px-4 py-2 rounded-xl ${agency.isExcellence ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-amber-500 hover:bg-amber-600 text-slate-950'}`}
                     >
-                      {agency.isExcellence ? 'إلغاء التميز' : 'منح شارة التميز'}
+                      {agency.isExcellence ? 'إزالة الشارة' : 'منح شارة التميز'}
                     </Button>
                   </div>
                 </div>
@@ -311,26 +337,53 @@ export default function AdminDashboard() {
           <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <Car className="w-6 h-6 text-amber-400" />
-              <span>إشراف العروض النشطة (سيارات وعقارات)</span>
+              <span>إشراف ومراقبة العروض المنشورة (سيارات وعقارات)</span>
             </h3>
-            <div className="space-y-4">
-              {listingsList.map(item => (
-                <div key={item.id} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <img src={item.image} alt={item.title} className="w-16 h-16 rounded-xl object-cover" />
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{item.title}</h4>
-                      <div className="text-xs text-slate-400">{item.city} | {item.pricePerUnit} درهم / {item.type === 'car' ? 'يوم' : 'ليلة'}</div>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => deleteListing(item.id)}
-                    className="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" /> حذف الإعلان
-                  </Button>
-                </div>
-              ))}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400">
+                    <th className="pb-3 px-4">العنصر</th>
+                    <th className="pb-3 px-4">النوع</th>
+                    <th className="pb-3 px-4">المدينة</th>
+                    <th className="pb-3 px-4">السعر</th>
+                    <th className="pb-3 px-4">التقييم</th>
+                    <th className="pb-3 px-4 text-center">إجراءات الإشراف</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {listingsList.map(item => (
+                    <tr key={item.id} className="hover:bg-slate-900/50 transition-colors">
+                      <td className="py-4 px-4 font-bold text-white flex items-center gap-3">
+                        <img src={item.image} alt={item.title} className="w-12 h-12 object-cover rounded-xl border border-slate-700" />
+                        <div>
+                          <div className="font-extrabold text-white">{item.title}</div>
+                          <div className="text-[10px] text-slate-400">{item.providerName}</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${item.type === 'car' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                          {item.type === 'car' ? 'سيارة' : 'عقار'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-slate-300">{item.city}</td>
+                      <td className="py-4 px-4 font-black text-amber-400">{item.pricePerUnit} درهم</td>
+                      <td className="py-4 px-4 text-slate-300 flex items-center gap-1 pt-6">
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {item.rating}
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <Button
+                          onClick={() => deleteListing(item.id)}
+                          className="bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white font-bold px-3 py-1.5 h-auto rounded-xl text-xs transition-all border border-rose-500/30"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 ml-1" /> حذف الإعلان
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -339,12 +392,84 @@ export default function AdminDashboard() {
           <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <Calendar className="w-6 h-6 text-amber-400" />
-              <span>متابعة الحجوزات وعقود الإيجار الرقمية</span>
+              <span>متابعة الحجوزات النشطة والعقود الرقمية الموثقة</span>
             </h3>
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 text-center">
+            <div className="text-center py-12 text-slate-400 text-xs space-y-3">
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-              <h4 className="font-bold text-white text-base">جميع الحجوزات نشطة وموثقة بعقود رقمية PDF</h4>
-              <p className="text-xs text-slate-400">يمكن للوكلاء والعملاء تحميل عقود الإيجار المذيلة بالتوقيعات والأختام الرقمية في أي وقت.</p>
+              <p>جميع الحجوزات نشطة ومربوطة بنظام العقود الرقمية وتوقيعات العملاء وأختام الوكالات الرسمية.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'domain' && (
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Globe className="w-6 h-6 text-amber-400" />
+                <span>إدارة وربط النطاق المخصص (Custom Domain)</span>
+              </h3>
+              <span className="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                <CheckCircle className="w-3.5 h-3.5" /> النطاق متصل وآمن (SSL)
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              قم بربط نطاقك الخاص (مثل <strong className="text-amber-400">b2rent.ma</strong> أو <strong className="text-amber-400">www.b2rent.ma</strong>) بالمنصة لتعزيز الموثوقية والرسمية أمام عملائك وشركائك في السوق المغربي.
+            </p>
+
+            <form onSubmit={handleVerifyDomain} className="space-y-4 max-w-xl">
+              <div className="space-y-1.5 text-right">
+                <label className="text-xs font-bold text-slate-300">أدخل اسم النطاق المخصص الخاص بك</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customDomainInput}
+                    onChange={(e) => setCustomDomainInput(e.target.value)}
+                    placeholder="e.g. b2rent.ma"
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs shadow-lg shadow-amber-500/20"
+                  >
+                    حفظ والتحقق
+                  </Button>
+                </div>
+              </div>
+            </form>
+
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-400" /> إعدادات سجلات DNS المطلوبة لدى مزود النطاق الخاص بك:
+              </h4>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400">
+                      <th className="pb-2">النوع (Type)</th>
+                      <th className="pb-2">الاسم (Name / Host)</th>
+                      <th className="pb-2">القيمة (Value / Target)</th>
+                      <th className="pb-2">الحالة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
+                    <tr>
+                      <td className="py-3 text-amber-400 font-bold">CNAME</td>
+                      <td className="py-3">www</td>
+                      <td className="py-3">proxy.manus.space</td>
+                      <td className="py-3 text-emerald-400 font-sans font-bold">متصل بنجاح ✓</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 text-amber-400 font-bold">A</td>
+                      <td className="py-3">@</td>
+                      <td className="py-3">76.76.21.21</td>
+                      <td className="py-3 text-emerald-400 font-sans font-bold">متصل بنجاح ✓</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

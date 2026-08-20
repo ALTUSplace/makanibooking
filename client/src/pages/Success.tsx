@@ -139,14 +139,12 @@ export default function Success() {
         y += 7;
       });
 
-      // مساحة التوقيع والختم الرقمي الرسمي
       doc.setFont("helvetica", "bold");
       doc.text("Agency Stamp & Signature", 30, 175);
       doc.text("Customer Signature", 140, 175);
 
-      // رسم ختم رسمي افتراضي للوكالة في حال اختياره
       if (includeOfficialStamp) {
-        doc.setDrawColor(217, 119, 6); // برونزي ذهبي
+        doc.setDrawColor(217, 119, 6);
         doc.setFillColor(254, 243, 199);
         doc.roundedRect(25, 180, 45, 25, 3, 3, 'FD');
         doc.setFont("helvetica", "bold");
@@ -167,10 +165,10 @@ export default function Success() {
       }
 
       doc.save(`B2-Rent-Contract-${bookingRef}.pdf`);
-      toast.success('تم تحميل عقد الإيجار الرقمي المذيل بالتوقيع والختم الرقمي بنجاح!');
+      toast.success('تم تحميل عقد الإيجار الرقمي بنجاح!');
     } catch (error) {
-      console.error(error);
-      toast.error('حدث خطأ أثناء توليد ملف PDF');
+      console.error("PDF generation error:", error);
+      toast.error('حدث خطأ أثناء توليد ملف PDF. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -209,7 +207,6 @@ export default function Success() {
             </div>
           </div>
 
-          {/* خيار إدراج الختم الرقمي */}
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <Stamp className="w-5 h-5 text-amber-400" />
@@ -226,7 +223,6 @@ export default function Success() {
             />
           </div>
 
-          {/* لوحة التوقيع الإلكتروني التفاعلي */}
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 text-right">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -274,9 +270,10 @@ export default function Success() {
           <div className="space-y-4 pt-2">
             <Button
               onClick={handleDownloadPDF}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+              type="button"
+              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-5 h-5" />
               <span>تحميل عقد الإيجار الرقمي المذيل بالختم والتوقيع (PDF)</span>
             </Button>
 
@@ -292,6 +289,7 @@ export default function Success() {
 
             <Button
               onClick={() => setLocation('/')}
+              type="button"
               variant="outline"
               className="w-full border-slate-700 text-slate-200 hover:bg-slate-800 py-3 rounded-xl flex items-center justify-center gap-2 text-xs"
             >

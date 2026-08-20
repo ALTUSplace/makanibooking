@@ -4,7 +4,7 @@ import { LISTINGS, ListingItem } from '@/data/b2rent';
 import { Button } from '@/components/ui/button';
 import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, MapPin, Scale, X, Eye, Home, Map } from 'lucide-react';
 import { toast } from 'sonner';
-import { MapView } from '@/components/Map';
+import { MapSearchView } from '@/components/MapSearchView';
 
 const CITIES = [
   { id: 'all', name: 'جميع المدن' },
@@ -129,18 +129,18 @@ export default function Search() {
           </Button>
         </div>
 
-        {/* الخريطة التفاعلية */}
+        {/* الخريطة التفاعلية المتقدمة مع دبابيس الأسعار */}
         {showMap && (
           <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in-50">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-amber-500" /> مواقع العروض على خريطة المغرب
+                <MapPin className="w-5 h-5 text-amber-500" /> خريطة الأسعار التفاعلية (Search as I move the map)
               </h3>
-              <span className="text-xs text-slate-400">انقر على الخريطة لاستكشاف المواقع</span>
+              <span className="text-xs text-slate-400">انقر على الدبابيس لعرض تفاصيل الإعلان السريعة</span>
             </div>
-            <div className="rounded-2xl overflow-hidden border border-slate-800">
-              <MapView initialCenter={{ lat: 31.7917, lng: -7.0926 }} initialZoom={6} />
-            </div>
+            <MapSearchView listings={filteredListings as any} onSelectListing={(item) => {
+              toast.info(`تم اختيار: ${item.title}`);
+            }} />
           </div>
         )}
 

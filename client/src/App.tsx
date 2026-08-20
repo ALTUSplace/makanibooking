@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
+import { PageTransition } from "./components/PageTransition";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -27,23 +28,25 @@ function Router() {
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <Navbar />
       <main className="flex-1">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/search" component={Search} />
-          <Route path="/car/:id" component={CarDetails} />
-          <Route path="/booking" component={Booking} />
-          <Route path="/success" component={Success} />
-          <Route path="/dashboard" component={Dashboard} />
-          <Route path="/add-car" component={AddCar} />
-          <Route path="/my-bookings" component={MyBookings} />
-          <Route path="/favorites" component={Favorites} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/help" component={Help} />
-          <Route path="/about" component={About} />
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/404" component={NotFound} />
-          <Route component={NotFound} />
-        </Switch>
+        <PageTransition>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/search" component={Search} />
+            <Route path="/car/:id" component={CarDetails} />
+            <Route path="/booking" component={Booking} />
+            <Route path="/success" component={Success} />
+            <Route path="/dashboard" component={Dashboard} />
+            <Route path="/add-car" component={AddCar} />
+            <Route path="/my-bookings" component={MyBookings} />
+            <Route path="/favorites" component={Favorites} />
+            <Route path="/profile" component={Profile} />
+            <Route path="/help" component={Help} />
+            <Route path="/about" component={About} />
+            <Route path="/admin" component={AdminDashboard} />
+            <Route path="/404" component={NotFound} />
+            <Route component={NotFound} />
+          </Switch>
+        </PageTransition>
       </main>
       <Footer />
     </div>

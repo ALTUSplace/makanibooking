@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Lock, Smartphone, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Lock, Smartphone, CheckCircle2, Key, Copy, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TwoFactorAuthModalProps {
@@ -10,9 +10,16 @@ interface TwoFactorAuthModalProps {
 }
 
 export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuthModalProps) {
-  const [step, setStep] = useState<'verify' | 'success'>('verify');
+  const [step, setStep] = useState<'verify' | 'recovery' | 'success'>('verify');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recoveryCodes] = useState([
+    'B2R-8841-992X',
+    'B2R-3312-771K',
+    'B2R-5590-442M',
+    'B2R-1123-883P',
+    'B2R-9945-221S',
+  ]);
 
   if (!isOpen) return null;
 
@@ -26,15 +33,36 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setStep('success');
-      toast.success('تم التحقق وتفعيل المصادقة الثنائية (2FA) بنجاح!');
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-        setStep('verify');
-        setCode('');
-      }, 1500);
+      setStep('recovery');
+      toast.success('تم التحقق بنجاح! يرجى حفظ رموز الاسترداد الاحتياطية.');
     }, 1200);
+  };
+
+  const handleCopyCodes = () => {
+    navigator.clipboard.writeText(recoveryCodes.join('\n'));
+    toast.success('تم نسخ رموز الاسترداد الاحتياطية إلى الحافظة بنجاح!');
+  };
+
+  const handleDownloadCodes = () => {
+    const element = document.createElement('a');
+    const file = new Blob([`B2-Rent 2FA Recovery Codes:\n\n` + recoveryCodes.join('\n')], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = 'b2-rent-recovery-codes.txt';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success('تم تحميل ملف رموز الاسترداد بنجاح!');
+  };
+
+  const handleFinish = () => {
+    setStep('success');
+    toast.success('تم تفعيل المصادقة الثنائية (2FA) ورموز الاسترداد بنجاح تام!');
+    setTimeout(() => {
+      onSuccess();
+      onClose();
+      setStep('verify');
+      setCode('');
+    }, 1500);
   };
 
   return (
@@ -49,7 +77,7 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
             </div>
             <div>
               <h3 className="text-base font-extrabold text-white">المصادقة الثنائية الأمنية (2FA)</h3>
-              <p className="text-[10px] text-slate-400">حماية متقدمة لمديري الوكالات والمشرف العام</p>
+              <p className="text-[10px] text-slate-400">حماية متقدمة ورموز استرداد للطوارئ</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white text-sm font-bold">✕</button>
@@ -60,8 +88,57 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
             <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30 animate-bounce">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h4 className="text-lg font-bold text-white">تم تأمين الحساب بنجاح!</h4>
-            <p className="text-xs text-slate-400">تم تفعيل بروتوكول الحماية الثنائية لحسابك الإداري.</p>
+            <h4 className="text-lg font-bold text-white">تم تأمين الحساب وحفظ الرموز!</h4>
+            <p className="text-xs text-slate-400">أصبح حسابك الإداري محمياً بأعلى معايير الأمان.</p>
+          </div>
+        ) : step === 'recovery' ? (
+          <div className="space-y-4">
+            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex items-start gap-3">
+              <Key className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1 text-slate-300">
+                <p className="font-bold text-white">احتفظ برمز الاسترداد (Recovery Codes):</p>
+                <p className="text-[11px] text-slate-400">يمكنك استخدام هذه الرموز لمرة واحدة في حال فقدان الوصول لهاتفك.</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+              <div className="grid grid-cols-1 gap-2 font-mono text-center text-xs text-amber-400">
+                {recoveryCodes.map((rc, idx) => (
+                  <div key={idx} className="bg-slate-950 py-2 px-3 rounded-xl border border-slate-800 tracking-wider">
+                    {rc}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                onClick={handleCopyCodes}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
+              >
+                <Copy className="w-3.5 h-3.5 text-amber-400" />
+                <span>نسخ الرموز</span>
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDownloadCodes}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
+              >
+                <Download className="w-3.5 h-3.5 text-amber-400" />
+                <span>تحميل كملف</span>
+              </Button>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 flex justify-end">
+              <Button
+                type="button"
+                onClick={handleFinish}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold py-3 rounded-xl text-xs shadow-lg shadow-amber-500/20"
+              >
+                لقد قمت بحفظ الرموز - متابعة
+              </Button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleVerify} className="space-y-4">
@@ -112,7 +189,7 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>تأكيد وتفعيل 2FA</span>
+                    <span>الخطوة التالية: رموز الاسترداد</span>
                   </>
                 )}
               </Button>

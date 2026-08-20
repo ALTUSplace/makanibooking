@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Car, Building2, Plus, DollarSign, CheckCircle2, XCircle, Clock, Upload, Trash2, Edit, TrendingUp, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
+import { AdvancedMediaUpload } from '@/components/AdvancedMediaUpload';
 
 const monthlyPartnerData = [
   { name: 'يناير', الأرباح: 8400, الحجوزات: 6 },
@@ -158,8 +159,12 @@ export default function PartnerDashboard() {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">رابط الصورة (Image URL)</label>
-                <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://images.unsplash.com/..." className="w-full p-3 rounded-xl bg-background border border-border text-sm" />
+                <label className="block text-sm font-medium mb-2">رفع صور الأسطول (مع ضغط تلقائي وعلامة مائية)</label>
+                <AdvancedMediaUpload onImagesUploaded={(urls) => {
+                  if (urls.length > 0) {
+                    setImageUrl(urls[0]);
+                  }
+                }} />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1">وصف تفصيلي</label>

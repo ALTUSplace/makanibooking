@@ -9,5 +9,5 @@
 - [x] Dynamic Pricing Engine (weekend surge + long stay discounts)
 - [ ] Map-Based Search with dynamic price pins
 - [ ] AI Recommendation System & Cross-Selling bundle checkout
-- [ ] Advanced Media Upload with compression & watermark simulation
+- [x] Advanced Media Upload with compression & watermark simulation
 - [ ] Enhanced SEO & Response optimization

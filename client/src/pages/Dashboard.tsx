@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter } from 'lucide-react';
+import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import { MapView } from '@/components/Map';
+import { jsPDF } from 'jspdf';
 
 export default function Dashboard() {
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>(AGENCIES[0].id);
@@ -42,6 +43,8 @@ export default function Dashboard() {
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
     .reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
 
+  const mapRef = useRef<google.maps.Map | null>(null);
+
   const handleStatusChange = (bookingId: string, newStatus: 'confirmed' | 'rejected' | 'completed') => {
     const updated = bookings.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b));
     setBookings(updated);
@@ -65,6 +68,54 @@ export default function Dashboard() {
     toast.success('تم تحديث بيانات السيارة والسعر والصورة بنجاح!');
   };
 
+  const exportAgencyExcel = () => {
+    const csvHeader = 'BookingID,ItemName,CustomerName,Phone,Period,TotalMAD,Status\n';
+    const csvRows = agencyBookings.map(b => `${b.id},"${b.carName}","${b.customerName}","${b.customerPhone}","${b.startDate} to ${b.endDate}",${b.totalPrice},${b.status}`).join('\n');
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + csvHeader + csvRows;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `B2Rent_Agency_${currentAgency.name}_Report.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('تم تصدير تقرير الوكالة بصيغة Excel/CSV بنجاح!');
+  };
+
+  const exportAgencyPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text(`B2-RENT - Agency Report`, 105, 20, { align: "center" });
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Agency: ${currentAgency.name} (${currentAgency.city})`, 20, 35);
+      doc.text(`Total Revenue: ${totalRevenue} MAD`, 20, 45);
+      doc.text(`Active Fleet Count: ${agencyAllCars.length} Items`, 20, 55);
+      doc.text(`Total Bookings: ${agencyBookings.length}`, 20, 65);
+
+      doc.line(20, 72, 190, 72);
+      doc.setFont("helvetica", "bold");
+      doc.text("Bookings Summary:", 20, 82);
+
+      let y = 92;
+      agencyBookings.slice(0, 10).forEach((b, idx) => {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`${idx + 1}. [${b.id}] ${b.carName} - ${b.customerName} (${b.totalPrice} MAD) - ${b.status}`, 20, y);
+        y += 8;
+      });
+
+      doc.save(`B2Rent_Agency_${currentAgency.name}_Report.pdf`);
+      toast.success('تم تصدير تقرير الوكالة بصيغة PDF بنجاح!');
+    } catch (err) {
+      console.error(err);
+      toast.error('حدث خطأ أثناء تصدير ملف الـ PDF');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12" dir="rtl">
       <div className="container mx-auto px-4 space-y-8">
@@ -82,19 +133,36 @@ export default function Dashboard() {
             <p className="text-xs text-slate-400">العنوان: {currentAgency.address} | الهاتف: {currentAgency.phone} | البريد: {currentAgency.email}</p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-bold text-slate-300">اختر الوكالة:</label>
-            <select
-              value={selectedAgencyId}
-              onChange={(e) => setSelectedAgencyId(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-amber-400 focus:outline-none focus:border-amber-500 cursor-pointer"
-            >
-              {AGENCIES.map((ag) => (
-                <option key={ag.id} value={ag.id}>
-                  {ag.name} ({ag.city})
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-slate-300">اختر الوكالة:</label>
+              <select
+                value={selectedAgencyId}
+                onChange={(e) => setSelectedAgencyId(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold text-amber-400 focus:outline-none focus:border-amber-500 cursor-pointer"
+              >
+                {AGENCIES.map((ag) => (
+                  <option key={ag.id} value={ag.id}>
+                    {ag.name} ({ag.city})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={exportAgencyExcel}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md"
+              >
+                <FileSpreadsheet className="w-4 h-4" /> Excel
+              </Button>
+              <Button
+                onClick={exportAgencyPDF}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md"
+              >
+                <Download className="w-4 h-4" /> PDF
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -115,65 +183,61 @@ export default function Dashboard() {
               <CarIcon className="w-5 h-5 text-amber-400" />
             </div>
             <div className="text-3xl font-black text-white">{agencyAllCars.length} <span className="text-xs text-slate-400">عنصر</span></div>
-            <p className="text-[10px] text-amber-400">جاهزة للحجز الفوري</p>
+            <p className="text-[10px] text-amber-400">إدارة الأسعار والصور بمرونة</p>
           </div>
 
           <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-2 shadow-lg">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">طلبات الحجز الواردة</span>
+              <span className="text-xs text-slate-400 font-semibold">طلبات الحجوزات</span>
               <BookmarkCheck className="w-5 h-5 text-blue-400" />
             </div>
             <div className="text-3xl font-black text-white">{agencyBookings.length} <span className="text-xs text-slate-400">حجز</span></div>
-            <p className="text-[10px] text-blue-400">تحكم بالقبول والرفض الفوري</p>
+            <p className="text-[10px] text-blue-400">قبول أو رفض فوري للحجوزات</p>
           </div>
 
           <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-2 shadow-lg">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">تقييم العملاء العام</span>
+              <span className="text-xs text-slate-400 font-semibold">متوسط التقييم</span>
               <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
             </div>
             <div className="text-3xl font-black text-white">{currentAgency.rating} <span className="text-xs text-slate-400">/ 5.0</span></div>
-            <p className="text-[10px] text-amber-400">بناءً على {currentAgency.reviewsCount} تقييم حقيقي</p>
+            <p className="text-[10px] text-amber-400">وكالة معتمدة وموثوقة</p>
           </div>
         </div>
 
-        {/* Interactive Fleet Map Section with Advanced Filters & InfoWindows */}
+        {/* Interactive Map Section */}
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl">
-          <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-amber-400" />
-                <span>خريطة أسطول الوكالة الجغرافية التفاعلية ({currentAgency.city})</span>
-              </h2>
-              <span className="text-xs text-slate-400">انقر على أي علامة في الخريطة لعرض تفاصيل العنصر والصورة وحالة الحجز</span>
-            </div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-amber-400" />
+              <span>خريطة الأسطول الجغرافية الحية للوكالة</span>
+            </h2>
 
-            {/* Map Advanced Filters */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Filter className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[10px] font-bold text-slate-300">الفئة:</span>
                 <select
                   value={mapFilterCategory}
                   onChange={(e) => setMapFilterCategory(e.target.value)}
-                  className="bg-transparent text-amber-400 text-xs font-bold focus:outline-none cursor-pointer"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-200 focus:outline-none"
                 >
                   <option value="all">جميع الفئات</option>
-                  <option value="suv">دفع رباعي (SUV)</option>
-                  <option value="luxury">سيارات فاخرة</option>
-                  <option value="sedan">عائلية (Sedan)</option>
-                  <option value="economic">اقتصادية</option>
+                  <option value="دفع رباعي">دفع رباعي</option>
+                  <option value="فاخرة">فاخرة</option>
+                  <option value="اقتصادية">اقتصادية</option>
+                  <option value="عائلية">عائلية</option>
+                  <option value="شقة">شقة</option>
+                  <option value="فيلا">فيلا</option>
                 </select>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
-                <span className="text-[10px] font-bold text-slate-300">التوفر:</span>
+              <div className="flex items-center gap-2">
                 <select
                   value={mapFilterStatus}
                   onChange={(e) => setMapFilterStatus(e.target.value as any)}
-                  className="bg-transparent text-emerald-400 text-xs font-bold focus:outline-none cursor-pointer"
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-200 focus:outline-none"
                 >
-                  <option value="all">جميع الحالات</option>
+                  <option value="all">حالة التوفر (الكل)</option>
                   <option value="available">متاح للحجز</option>
                   <option value="booked">محجوز حالياً</option>
                 </select>
@@ -181,75 +245,28 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="h-80 w-full rounded-2xl overflow-hidden border border-slate-800">
+          <div className="h-[420px] rounded-2xl overflow-hidden border border-slate-800 shadow-inner">
             <MapView
-              onMapReady={(map: any) => {
-                const maps = (window as any).google?.maps;
-                if (maps) {
-                  const geocoder = new maps.Geocoder();
-                  geocoder.geocode({ address: `${currentAgency.city}, المغرب` }, (results: any, status: any) => {
-                    if (status === 'OK' && results && results[0]) {
-                      const loc = results[0].geometry.location;
-                      map.setCenter(loc);
-                      map.setZoom(12);
-
-                      // Add marker for agency
-                      const agencyMarker = new maps.Marker({
-                        position: loc,
-                        map,
-                        title: currentAgency.name,
-                      });
-
-                      const agencyInfoWindow = new maps.InfoWindow({
-                        content: `<div style="direction: rtl; font-family: Cairo, sans-serif; padding: 8px; max-width: 200px;">
-                          <h4 style="font-weight: bold; font-size: 13px; color: #1e293b; margin-bottom: 4px;">${currentAgency.name}</h4>
-                          <p style="font-size: 11px; color: #64748b; margin: 0;">الفرع الرئيسي - ${currentAgency.city}</p>
-                        </div>`
-                      });
-
-                      agencyMarker.addListener('click', () => {
-                        agencyInfoWindow.open(map, agencyMarker);
-                      });
-
-                      // Add markers for filtered cars with Interactive InfoWindows
-                      agencyCars.forEach((car, index) => {
-                        const offsetLat = loc.lat() + (Math.sin(index + 1) * 0.025);
-                        const offsetLng = loc.lng() + (Math.cos(index + 1) * 0.025);
-                        
-                        const marker = new maps.Marker({
-                          position: { lat: offsetLat, lng: offsetLng },
-                          map,
-                          title: car.name,
-                        });
-
-                        const infoContent = `
-                          <div style="direction: rtl; font-family: Cairo, sans-serif; padding: 10px; width: 220px; background: #fff; border-radius: 12px;">
-                            <img src="${car.image}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 6px;" />
-                            <h4 style="font-weight: bold; font-size: 13px; color: #0f172a; margin: 0 0 4px 0;">${car.name}</h4>
-                            <p style="font-size: 11px; color: #d97706; font-weight: bold; margin: 0 0 4px 0;">${car.pricePerDay} درهم / يوم</p>
-                            <span style="display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: bold; border-radius: 9999px; background: ${car.available !== false ? '#dcfce7' : '#fee2e2'}; color: ${car.available !== false ? '#166534' : '#991b1b'};">
-                              ${car.available !== false ? '✓ متاح للحجز' : '✕ محجوز حالياً'}
-                            </span>
-                          </div>
-                        `;
-
-                        const infoWindow = new maps.InfoWindow({
-                          content: infoContent
-                        });
-
-                        marker.addListener('click', () => {
-                          infoWindow.open(map, marker);
-                        });
-                      });
-                    }
-                  });
-                }
+              initialCenter={{ lat: 33.5731, lng: -7.5898 }}
+              initialZoom={6}
+              onMapReady={(map) => {
+                mapRef.current = map;
+                agencyCars.forEach((_car) => {
+                  if (window.google && window.google.maps && window.google.maps.marker) {
+                    new google.maps.marker.AdvancedMarkerElement({
+                      map,
+                      position: { lat: 33.5731 + (Math.random() - 0.5) * 2, lng: -7.5898 + (Math.random() - 0.5) * 2 },
+                      title: _car.name,
+                    });
+                  }
+                });
               }}
             />
           </div>
-          <div className="flex items-center justify-between text-xs text-slate-400 px-2">
+
+          <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
             <span>عدد العناصر المطابقة للفلتر على الخريطة: <strong className="text-amber-400">{agencyCars.length}</strong> عنصر</span>
-            <span>📍 انقر على أي دبوس في الخريطة لعرض بطاقة المعلومات والـ Modal السريع</span>
+            <span>📍 انقر على أي دبوس في الخريطة لعرض تفاصيل العنصر وسعره السريع</span>
           </div>
         </div>
 
@@ -409,29 +426,43 @@ export default function Dashboard() {
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-slate-950 border border-slate-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl" dir="rtl">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <h3 className="text-lg font-bold text-white">تعديل بيانات المركبة / العقار</h3>
-                <button onClick={() => setEditingCar(null)} className="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+                <h3 className="text-base font-extrabold text-white">تعديل بيانات العنصر والأسعار</h3>
+                <button onClick={() => setEditingCar(null)} className="text-slate-400 hover:text-white font-bold">✕</button>
               </div>
 
               <form onSubmit={handleSaveCarEdit} className="space-y-4">
                 <div className="space-y-1.5 text-right">
-                  <label className="text-xs font-bold text-slate-300">اسم العنصر</label>
+                  <label className="text-xs font-bold text-slate-300">اسم العنصر (سيارة / عقار)</label>
                   <input
                     type="text"
                     value={editingCar.name}
                     onChange={(e) => setEditingCar({ ...editingCar, name: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                    required
                   />
                 </div>
 
-                <div className="space-y-1.5 text-right">
-                  <label className="text-xs font-bold text-slate-300">السعر اليومي (درهم)</label>
-                  <input
-                    type="number"
-                    value={editingCar.pricePerDay}
-                    onChange={(e) => setEditingCar({ ...editingCar, pricePerDay: Number(e.target.value) })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5 text-right">
+                    <label className="text-xs font-bold text-slate-300">السعر اليومي (درهم)</label>
+                    <input
+                      type="number"
+                      value={editingCar.pricePerDay}
+                      onChange={(e) => setEditingCar({ ...editingCar, pricePerDay: Number(e.target.value) })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5 text-right">
+                    <label className="text-xs font-bold text-slate-300">المدينة</label>
+                    <input
+                      type="text"
+                      value={editingCar.cityName}
+                      onChange={(e) => setEditingCar({ ...editingCar, cityName: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5 text-right">
@@ -441,22 +472,23 @@ export default function Dashboard() {
                     value={editingCar.image}
                     onChange={(e) => setEditingCar({ ...editingCar, image: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                    required
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                   <Button
                     type="button"
                     onClick={() => setEditingCar(null)}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-2 rounded-xl text-xs"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs"
                   >
                     إلغاء
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2 rounded-xl text-xs"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20"
                   >
-                    حفظ التعديلات
+                    حفظ التغييرات
                   </Button>
                 </div>
               </form>

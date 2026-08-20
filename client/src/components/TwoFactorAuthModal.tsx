@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Lock, Smartphone, CheckCircle2, Key, Copy, Download } from 'lucide-react';
+import { ShieldCheck, Lock, Smartphone, CheckCircle2, Key, Copy, Download, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TwoFactorAuthModalProps {
@@ -13,6 +13,7 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
   const [step, setStep] = useState<'verify' | 'recovery' | 'success'>('verify');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [recoveryCodes] = useState([
     'B2R-8841-992X',
     'B2R-3312-771K',
@@ -40,7 +41,9 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
 
   const handleCopyCodes = () => {
     navigator.clipboard.writeText(recoveryCodes.join('\n'));
+    setCopied(true);
     toast.success('تم نسخ رموز الاسترداد الاحتياطية إلى الحافظة بنجاح!');
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const handleDownloadCodes = () => {
@@ -104,8 +107,10 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
               <div className="grid grid-cols-1 gap-2 font-mono text-center text-xs text-amber-400">
                 {recoveryCodes.map((rc, idx) => (
-                  <div key={idx} className="bg-slate-950 py-2 px-3 rounded-xl border border-slate-800 tracking-wider">
-                    {rc}
+                  <div key={idx} className="bg-slate-950 py-2 px-3 rounded-xl border border-slate-800 tracking-wider flex items-center justify-between">
+                    <span className="text-slate-500 text-[10px]">#{idx + 1}</span>
+                    <span className="text-amber-400 font-bold">{rc}</span>
+                    <span className="w-4" />
                   </div>
                 ))}
               </div>
@@ -115,10 +120,23 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
               <Button
                 type="button"
                 onClick={handleCopyCodes}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
+                className={`flex-1 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all ${
+                  copied
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                }`}
               >
-                <Copy className="w-3.5 h-3.5 text-amber-400" />
-                <span>نسخ الرموز</span>
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 text-slate-950" />
+                    <span>تم النسخ بنجاح! ✓</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-amber-400" />
+                    <span>نسخ الرموز</span>
+                  </>
+                )}
               </Button>
               <Button
                 type="button"

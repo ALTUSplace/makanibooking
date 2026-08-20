@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, FileText, Headphones, Car, Building2, CheckCircle2, Clock, XCircle, Download, Send } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 
 export default function RenterDashboard() {
@@ -107,7 +108,18 @@ export default function RenterDashboard() {
                       <h4 className="font-bold">فاتورة وعقد حجز #{booking.id}</h4>
                       <p className="text-sm text-muted-foreground">تاريخ الإصدار: {new Date(booking.createdAt).toLocaleDateString('ar-MA')} | القيمة: {booking.totalPrice} د.م</p>
                     </div>
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => toast.success('جاري تحميل الفاتورة بصيغة PDF...')}>
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                      const doc = new jsPDF();
+                      doc.setFont("helvetica", "bold");
+                      doc.text("B2-Rent Platform - Booking Invoice", 20, 20);
+                      doc.setFont("helvetica", "normal");
+                      doc.text(`Booking ID: #${booking.id}`, 20, 30);
+                      doc.text(`Date: ${new Date(booking.createdAt).toLocaleDateString()}`, 20, 40);
+                      doc.text(`Total Price: ${booking.totalPrice} MAD`, 20, 50);
+                      doc.text(`Status: ${booking.status}`, 20, 60);
+                      doc.save(`invoice-${booking.id}.pdf`);
+                      toast.success('تم تحميل الفاتورة بصيغة PDF بنجاح');
+                    }}>
                       <Download className="w-4 h-4" /> تحميل الفاتورة PDF
                     </Button>
                   </div>

@@ -11,6 +11,6 @@
 - [x] Add local payment gateway options (PayTabs, CMI Morocco, Bank Transfer, Cash on Delivery) in checkout flow
 - [x] Add AI Smart Vehicle & Real Estate Recommendations feature based on browsing history and preferences
 - [x] Optimize codebase performance, lazy loading, and add comprehensive SEO Meta Tags & Open Graph tags
-- [ ] Build dedicated Renter Dashboard for tracking bookings, invoices, and support contact
+- [x] Build dedicated Renter Dashboard for tracking bookings, invoices, and support contact
 - [ ] Build dedicated Partner (Owner) Portal for fleet/property CRUD, availability status, and booking requests management
 - [ ] Implement Smart Real-time Notification System for instant partner alerts on new booking requests

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3 } from 'lucide-react';
+import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { MapView } from '@/components/Map';
 
 export default function Dashboard() {
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>(AGENCIES[0].id);
@@ -120,6 +121,42 @@ export default function Dashboard() {
             </div>
             <div className="text-3xl font-black text-white">{currentAgency.rating} <span className="text-xs text-slate-400">/ 5.0</span></div>
             <p className="text-[10px] text-amber-400">بناءً على {currentAgency.reviewsCount} تقييم حقيقي</p>
+          </div>
+        </div>
+
+        {/* Interactive Fleet Map Section */}
+        <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-amber-400" />
+              <span>خريطة أسطول الوكالة الجغرافية التفاعلية ({currentAgency.city})</span>
+            </h2>
+            <span className="text-xs text-slate-400">استعراض مواقع المركبات والعقارات التابعة للوكالة على الخريطة الحية</span>
+          </div>
+
+          <div className="h-80 w-full rounded-2xl overflow-hidden border border-slate-800">
+            <MapView
+              onMapReady={(map: any) => {
+                const maps = (window as any).google?.maps;
+                if (maps) {
+                  const geocoder = new maps.Geocoder();
+                  geocoder.geocode({ address: `${currentAgency.city}, المغرب` }, (results: any, status: any) => {
+                    if (status === 'OK' && results && results[0]) {
+                      const loc = results[0].geometry.location;
+                      map.setCenter(loc);
+                      map.setZoom(12);
+
+                      // Add marker for agency
+                      new maps.Marker({
+                        position: loc,
+                        map,
+                        title: currentAgency.name,
+                      });
+                    }
+                  });
+                }
+              }}
+            />
           </div>
         </div>
 
@@ -260,13 +297,13 @@ export default function Dashboard() {
                     <p className="text-xs text-slate-400">{car.cityName} | {car.transmission || 'عقار'} | {car.fuel || 'مفروش'}</p>
                   </div>
                 </div>
-                <div className="p-4 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-xs text-emerald-400 font-semibold">نشط في المنصة</span>
+
+                <div className="p-4 pt-0 flex items-center justify-between gap-2 border-t border-slate-800/80 mt-2">
                   <Button
                     onClick={() => setEditingCar(car)}
-                    className="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1"
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5"
                   >
-                    <Edit3 className="w-3.5 h-3.5" /> تعديل السعر والصورة
+                    <Edit3 className="w-3.5 h-3.5" /> تعديل السعر / التفاصيل
                   </Button>
                 </div>
               </div>
@@ -276,71 +313,55 @@ export default function Dashboard() {
 
         {/* Edit Car Modal */}
         {editingCar && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 max-w-lg w-full p-8 rounded-3xl space-y-6 shadow-2xl">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-950 border border-slate-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl" dir="rtl">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <h3 className="text-lg font-bold text-white">تعديل بيانات العنصر والسعر والصورة</h3>
+                <h3 className="text-lg font-bold text-white">تعديل بيانات المركبة / العقار</h3>
                 <button onClick={() => setEditingCar(null)} className="text-slate-400 hover:text-white text-sm font-bold">✕</button>
               </div>
 
-              <form onSubmit={handleSaveCarEdit} className="space-y-4 text-xs">
-                <div className="space-y-1">
-                  <label className="text-slate-300 font-semibold">عنوان السيارة أو العقار</label>
+              <form onSubmit={handleSaveCarEdit} className="space-y-4">
+                <div className="space-y-1.5 text-right">
+                  <label className="text-xs font-bold text-slate-300">اسم العنصر</label>
                   <input
                     type="text"
                     value={editingCar.name}
                     onChange={(e) => setEditingCar({ ...editingCar, name: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
-                    required
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-slate-300 font-semibold">السعر (درهم / يوم أو ليلة)</label>
-                    <input
-                      type="number"
-                      value={editingCar.pricePerDay}
-                      onChange={(e) => setEditingCar({ ...editingCar, pricePerDay: Number(e.target.value) })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-slate-300 font-semibold">المدينة المغربية</label>
-                    <input
-                      type="text"
-                      value={editingCar.cityName}
-                      onChange={(e) => setEditingCar({ ...editingCar, cityName: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
-                      required
-                    />
-                  </div>
+                <div className="space-y-1.5 text-right">
+                  <label className="text-xs font-bold text-slate-300">السعر اليومي (درهم)</label>
+                  <input
+                    type="number"
+                    value={editingCar.pricePerDay}
+                    onChange={(e) => setEditingCar({ ...editingCar, pricePerDay: Number(e.target.value) })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-slate-300 font-semibold">رابط الصورة الحقيقية (URL)</label>
+                <div className="space-y-1.5 text-right">
+                  <label className="text-xs font-bold text-slate-300">رابط الصورة (URL)</label>
                   <input
-                    type="url"
+                    type="text"
                     value={editingCar.image}
                     onChange={(e) => setEditingCar({ ...editingCar, image: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
-                    required
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <div className="flex justify-end gap-3 pt-4">
                   <Button
                     type="button"
-                    variant="outline"
                     onClick={() => setEditingCar(null)}
-                    className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-2 rounded-xl text-xs"
                   >
                     إلغاء
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2 rounded-xl text-xs"
                   >
                     حفظ التعديلات
                   </Button>

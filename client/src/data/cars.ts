@@ -18,6 +18,7 @@ export interface Agency {
   address: string;
   verified: boolean;
   carCount: number;
+  email?: string;
 }
 
 export interface Car {
@@ -69,7 +70,8 @@ export const AGENCIES: Agency[] = [
     whatsapp: '212661234567',
     address: 'شارع محمد السادس، مراكش',
     verified: true,
-    carCount: 12
+    carCount: 12,
+    email: 'b2rentt@gmail.com'
   },
   {
     id: 'agency-2',
@@ -81,7 +83,8 @@ export const AGENCIES: Agency[] = [
     whatsapp: '212622334455',
     address: 'المعاريف، الدار البيضاء',
     verified: true,
-    carCount: 18
+    carCount: 18,
+    email: 'b2rentt@gmail.com'
   },
   {
     id: 'agency-3',
@@ -93,7 +96,8 @@ export const AGENCIES: Agency[] = [
     whatsapp: '212655443322',
     address: 'شارع الحسن الثاني، أغادير',
     verified: true,
-    carCount: 9
+    carCount: 9,
+    email: 'b2rentt@gmail.com'
   },
   {
     id: 'agency-4',
@@ -105,7 +109,8 @@ export const AGENCIES: Agency[] = [
     whatsapp: '212677889900',
     address: 'طريق المطار، طنجة',
     verified: true,
-    carCount: 14
+    carCount: 14,
+    email: 'b2rentt@gmail.com'
   }
 ];
 
@@ -289,7 +294,7 @@ export interface Booking {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
-  status: 'confirmed' | 'pending' | 'completed';
+  status: 'confirmed' | 'pending' | 'completed' | 'rejected';
   createdAt: string;
 }
 

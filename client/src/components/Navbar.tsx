@@ -1,15 +1,30 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, CheckCircle2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
+import { toast } from 'sonner';
 
 export default function Navbar() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: '1', title: 'تأكيد الحجز', desc: 'تم تأكيد حجز السيارة B2R-8841 بنجاح.', time: 'منذ 10 دقائق', unread: true },
+    { id: '2', title: 'رسالة الدعم الفني', desc: 'تم الرد على استفسارك من طرف فريق b2rentt@gmail.com', time: 'منذ ساعة', unread: true },
+    { id: '3', title: 'طلب حجز جديد', desc: 'استلمت وكالتك طلب حجز جديد بانتظار الاعتماد.', time: 'منذ 3 ساعات', unread: false },
+  ]);
+
   const { theme, toggleTheme } = useTheme();
   const { role } = useRole();
+
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    toast.success('تم تحديد جميع الإشعارات كمقروءة');
+  };
 
   const navLinks = [
     { href: '/', label: 'الرئيسية' },
@@ -22,7 +37,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border text-foreground shadow-lg transition-colors duration-300">
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border text-foreground shadow-lg transition-colors duration-300" dir="rtl">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         
         {/* الشعار وحده في العنوان */}
@@ -66,6 +81,54 @@ export default function Navbar() {
                 <UserCheck className="w-3.5 h-3.5 text-amber-400" />
                 <span>مدير الوكالة</span>
               </>
+            )}
+          </div>
+
+          {/* نظام الإشعارات المنبثقة (Notification Bell) */}
+          <div className="relative">
+            <button
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className="relative p-2.5 rounded-xl bg-muted/80 hover:bg-muted text-foreground transition-colors border border-border flex items-center justify-center shadow-sm"
+              title="الإشعارات والتنبيهات"
+            >
+              <Bell className="w-4 h-4 text-amber-500" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {notificationsOpen && (
+              <div className="absolute left-0 mt-3 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 space-y-4 animate-in fade-in-50">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Bell className="w-4 h-4 text-amber-400" /> الإشعارات والتحديثات
+                  </h4>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllAsRead} className="text-[10px] text-amber-400 hover:underline">
+                      تحديد الكل كمقروء
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`p-3 rounded-xl border text-xs space-y-1 transition-colors ${
+                        n.unread ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-900 border-slate-800/80 text-slate-400'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold text-white">
+                        <span>{n.title}</span>
+                        <span className="text-[10px] text-slate-400">{n.time}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300">{n.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 

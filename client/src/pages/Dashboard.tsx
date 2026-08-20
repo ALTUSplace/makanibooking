@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, Clock } from 'lucide-react';
+import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Dashboard() {
@@ -15,30 +15,44 @@ export default function Dashboard() {
     return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
   });
 
+  // Edit car state
+  const [editingCar, setEditingCar] = useState<Car | null>(null);
+
   const currentAgency = AGENCIES.find((a) => a.id === selectedAgencyId) || AGENCIES[0];
 
   const agencyCars = cars.filter((c) => c.agencyId === selectedAgencyId);
   const agencyCarIds = agencyCars.map((c) => c.id);
   const agencyBookings = bookings.filter((b) => agencyCarIds.includes(b.carId));
 
-  const totalRevenue = agencyBookings.reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
+  const totalRevenue = agencyBookings
+    .filter(b => b.status === 'confirmed' || b.status === 'completed')
+    .reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
 
-  const handleStatusChange = (bookingId: string, newStatus: 'confirmed' | 'completed') => {
+  const handleStatusChange = (bookingId: string, newStatus: 'confirmed' | 'rejected' | 'completed') => {
     const updated = bookings.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b));
     setBookings(updated);
     localStorage.setItem('b2_rent_bookings', JSON.stringify(updated));
-    toast.success('تم تحديث حالة الحجز بنجاح وإشعار العميل');
+    if (newStatus === 'confirmed') {
+      toast.success('تم قبول وتأكيد الحجز بنجاح! تم إشعار العميل.');
+    } else if (newStatus === 'rejected') {
+      toast.error('تم رفض طلب الحجز وإشعار العميل.');
+    } else {
+      toast.info('تم تحديث حالة الحجز إلى مكتمل.');
+    }
   };
 
-  const handleToggleCarAvailability = (carId: string) => {
-    const updated = cars.map((c) => (c.id === carId ? { ...c, available: !c.available } : c));
+  const handleSaveCarEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCar) return;
+    const updated = cars.map((c) => (c.id === editingCar.id ? editingCar : c));
     setCars(updated);
     localStorage.setItem('b2_rent_cars', JSON.stringify(updated));
-    toast.success('تم تحديث حالة توفر السيارة في أسطول الوكالة');
+    setEditingCar(null);
+    toast.success('تم تحديث بيانات السيارة والسعر والصورة بنجاح!');
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 py-12">
+    <div className="min-h-screen bg-slate-900 text-slate-100 py-12" dir="rtl">
       <div className="container mx-auto px-4 space-y-8">
         
         {/* Agency Selector Bar */}
@@ -51,7 +65,7 @@ export default function Dashboard() {
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-white">{currentAgency.name}</h1>
-            <p className="text-xs text-slate-400">العنوان: {currentAgency.address} | الهاتف: {currentAgency.phone}</p>
+            <p className="text-xs text-slate-400">العنوان: {currentAgency.address} | الهاتف: {currentAgency.phone} | البريد: {currentAgency.email}</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -83,10 +97,10 @@ export default function Dashboard() {
 
           <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-2 shadow-lg">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-semibold">سيارات الأسطول النشطة</span>
+              <span className="text-xs text-slate-400 font-semibold">سيارات وعقارات الأسطول</span>
               <CarIcon className="w-5 h-5 text-amber-400" />
             </div>
-            <div className="text-3xl font-black text-white">{agencyCars.length} <span className="text-xs text-slate-400">سيارة</span></div>
+            <div className="text-3xl font-black text-white">{agencyCars.length} <span className="text-xs text-slate-400">عنصر</span></div>
             <p className="text-[10px] text-amber-400">جاهزة للحجز الفوري</p>
           </div>
 
@@ -96,7 +110,7 @@ export default function Dashboard() {
               <BookmarkCheck className="w-5 h-5 text-blue-400" />
             </div>
             <div className="text-3xl font-black text-white">{agencyBookings.length} <span className="text-xs text-slate-400">حجز</span></div>
-            <p className="text-[10px] text-blue-400">عبر المنصة والواتساب الآلي</p>
+            <p className="text-[10px] text-blue-400">تحكم بالقبول والرفض الفوري</p>
           </div>
 
           <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-2 shadow-lg">
@@ -109,14 +123,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Bookings Table Section */}
+        {/* Bookings Table Section with Accept/Reject */}
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <BookmarkCheck className="w-5 h-5 text-amber-400" />
-              <span>إدارة حجوزات هذه الوكالة</span>
+              <span>إدارة وقبول/رفض حجوزات الوكالة</span>
             </h2>
-            <span className="text-xs text-slate-400">يتم إرسال إشعارات الحجز تلقائياً لواتساب الوكالة</span>
+            <span className="text-xs text-slate-400">يتم إرسال إشعارات فورية للزبون عند القبول أو الرفض</span>
           </div>
 
           {agencyBookings.length === 0 ? (
@@ -129,12 +143,12 @@ export default function Dashboard() {
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400">
                     <th className="pb-3 px-4">رقم الحجز</th>
-                    <th className="pb-3 px-4">السيارة المحجوزة</th>
+                    <th className="pb-3 px-4">العنصر المحجوز</th>
                     <th className="pb-3 px-4">المستأجر</th>
                     <th className="pb-3 px-4">الفترة</th>
-                    <th className="pb-3 px-4">المبلغ الإجمالي</th>
+                    <th className="pb-3 px-4">المبلغ</th>
                     <th className="pb-3 px-4">الحالة</th>
-                    <th className="pb-3 px-4 text-center">إجراءات التحكم</th>
+                    <th className="pb-3 px-4 text-center">إجراءات القبول والرفض</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -157,34 +171,52 @@ export default function Dashboard() {
                       <td className="py-4 px-4">
                         {b.status === 'confirmed' ? (
                           <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1 w-fit">
-                            <CheckCircle className="w-3 h-3" /> مؤكد
+                            <CheckCircle className="w-3 h-3" /> مؤكد ومقبول
+                          </span>
+                        ) : b.status === 'rejected' ? (
+                          <span className="bg-rose-500/20 text-rose-400 px-3 py-1 rounded-full text-[10px] font-bold border border-rose-500/30 flex items-center gap-1 w-fit">
+                            <XCircle className="w-3 h-3" /> مرفوض
                           </span>
                         ) : b.status === 'completed' ? (
                           <span className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-[10px] font-bold border border-blue-500/30 w-fit">
-                            منتهي
+                            مكتمل
                           </span>
                         ) : (
                           <span className="bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-[10px] font-bold border border-amber-500/30 flex items-center gap-1 w-fit">
-                            <Clock className="w-3 h-3" /> قيد المراجعة
+                            <Clock className="w-3 h-3" /> قيد الانتظار
                           </span>
                         )}
                       </td>
                       <td className="py-4 px-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           {b.status === 'pending' && (
+                            <>
+                              <Button
+                                onClick={() => handleStatusChange(b.id, 'confirmed')}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 h-auto rounded-xl"
+                              >
+                                قبول الحجز
+                              </Button>
+                              <Button
+                                onClick={() => handleStatusChange(b.id, 'rejected')}
+                                className="bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold px-3 py-1.5 h-auto rounded-xl"
+                              >
+                                رفض
+                              </Button>
+                            </>
+                          )}
+                          {b.status === 'confirmed' && (
                             <Button
-                              onClick={() => handleStatusChange(b.id, 'confirmed')}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 h-auto rounded-xl"
+                              onClick={() => handleStatusChange(b.id, 'completed')}
+                              className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-3 py-1.5 h-auto rounded-xl"
                             >
-                              تأكيد الحجز
+                              إنهاء الإيجار
                             </Button>
                           )}
                           <a
-                            href={`https://wa.me/${currentAgency.whatsapp}?text=${encodeURIComponent(`مرحباً، بخصوص الحجز رقم ${b.id} للسيارة ${b.carName} للمستأجر ${b.customerName}`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-emerald-700 hover:bg-emerald-600 text-white p-2 rounded-xl"
-                            title="تواصل مع العميل عبر واتساب"
+                            href={`tel:${b.customerPhone}`}
+                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-xl"
+                            title="اتصال بالعميل"
                           >
                             <Phone className="w-3.5 h-3.5" />
                           </a>
@@ -198,18 +230,18 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Agency Cars Fleet */}
+        {/* Agency Fleet & Property Management (Images, Pricing, Info) */}
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <CarIcon className="w-5 h-5 text-amber-400" />
-              <span>أسطول سيارات الوكالة</span>
+              <span>إدارة الأسطول والأسعار والصور (تحديث فوري)</span>
             </h2>
             <Button
               onClick={() => window.location.href = '/add-car'}
               className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20"
             >
-              <Plus className="w-4 h-4" /> إضافة سيارة جديدة للوكالة
+              <Plus className="w-4 h-4" /> إضافة عنصر جديد للأسطول
             </Button>
           </div>
 
@@ -225,23 +257,98 @@ export default function Dashboard() {
                   </div>
                   <div className="p-4 space-y-2">
                     <h3 className="text-sm font-bold text-white">{car.name}</h3>
-                    <p className="text-xs text-slate-400">{car.cityName} | {car.transmission} | {car.fuel}</p>
+                    <p className="text-xs text-slate-400">{car.cityName} | {car.transmission || 'عقار'} | {car.fuel || 'مفروش'}</p>
                   </div>
                 </div>
                 <div className="p-4 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-xs text-emerald-400 font-semibold">متاحة للحجز التلقائي</span>
+                  <span className="text-xs text-emerald-400 font-semibold">نشط في المنصة</span>
                   <Button
-                    onClick={() => handleToggleCarAvailability(car.id)}
-                    variant="outline"
-                    className="border-slate-700 text-xs text-slate-300 hover:bg-slate-800 cursor-pointer"
+                    onClick={() => setEditingCar(car)}
+                    className="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1"
                   >
-                    تعديل الحالة
+                    <Edit3 className="w-3.5 h-3.5" /> تعديل السعر والصورة
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Edit Car Modal */}
+        {editingCar && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 max-w-lg w-full p-8 rounded-3xl space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <h3 className="text-lg font-bold text-white">تعديل بيانات العنصر والسعر والصورة</h3>
+                <button onClick={() => setEditingCar(null)} className="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+              </div>
+
+              <form onSubmit={handleSaveCarEdit} className="space-y-4 text-xs">
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-semibold">عنوان السيارة أو العقار</label>
+                  <input
+                    type="text"
+                    value={editingCar.name}
+                    onChange={(e) => setEditingCar({ ...editingCar, name: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-slate-300 font-semibold">السعر (درهم / يوم أو ليلة)</label>
+                    <input
+                      type="number"
+                      value={editingCar.pricePerDay}
+                      onChange={(e) => setEditingCar({ ...editingCar, pricePerDay: Number(e.target.value) })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-slate-300 font-semibold">المدينة المغربية</label>
+                    <input
+                      type="text"
+                      value={editingCar.cityName}
+                      onChange={(e) => setEditingCar({ ...editingCar, cityName: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-semibold">رابط الصورة الحقيقية (URL)</label>
+                  <input
+                    type="url"
+                    value={editingCar.image}
+                    onChange={(e) => setEditingCar({ ...editingCar, image: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditingCar(null)}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                  >
+                    إلغاء
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6"
+                  >
+                    حفظ التعديلات
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

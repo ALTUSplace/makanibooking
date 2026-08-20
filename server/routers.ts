@@ -168,7 +168,7 @@ export const appRouter = router({
         const commissionFee = Math.round(input.totalPrice * 0.10); // 10% platform commission
         const netProfit = input.totalPrice - commissionFee;
 
-        await db.insert(bookings).values({
+        const [inserted] = await db.insert(bookings).values({
           renterId: ctx.user.id,
           listingId: input.listingId,
           startDate: start,
@@ -176,10 +176,10 @@ export const appRouter = router({
           totalPrice: input.totalPrice,
           commissionFee,
           netProfit,
-          status: "Pending",
+          status: "Confirmed", // Automatically confirmed upon mock payment gateway success
         });
 
-        return { success: true };
+        return { success: true, bookingId: inserted.insertId };
       }),
 
     updateStatus: protectedProcedure

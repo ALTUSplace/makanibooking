@@ -4,8 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Car, Building2, Plus, DollarSign, CheckCircle2, XCircle, Clock, Upload, Trash2, Edit } from 'lucide-react';
+import { Car, Building2, Plus, DollarSign, CheckCircle2, XCircle, Clock, Upload, Trash2, Edit, TrendingUp, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
+
+const monthlyPartnerData = [
+  { name: 'يناير', الأرباح: 8400, الحجوزات: 6 },
+  { name: 'فبراير', الأرباح: 12200, الحجوزات: 9 },
+  { name: 'مارس', الأرباح: 15600, الحجوزات: 14 },
+  { name: 'أبريل', الأرباح: 19800, الحجوزات: 18 },
+  { name: 'ماي', الأرباح: 24500, الحجوزات: 23 },
+  { name: 'يونيو', الأرباح: 31200, الحجوزات: 28 },
+];
 
 export default function PartnerDashboard() {
   const utils = trpc.useUtils();
@@ -66,6 +76,55 @@ export default function PartnerDashboard() {
           <Button onClick={() => setIsAddOpen(!isAddOpen)} className="gap-2 bg-primary text-primary-foreground font-semibold">
             <Plus className="w-5 h-5" /> إضافة عقار أو سيارة جديدة
           </Button>
+        </div>
+
+        {/* Analytics & Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="p-6 border-border shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" /> تطور الأرباح الشهرية (د.م)
+              </h3>
+              <span className="text-xs text-muted-foreground bg-primary/10 px-2.5 py-1 rounded-full font-semibold">صافي الأرباح بعد عمولة المنصة</span>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyPartnerData}>
+                  <defs>
+                    <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#d4af37" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#d4af37" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                  <XAxis dataKey="name" stroke="#888888" fontSize={12} />
+                  <YAxis stroke="#888888" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
+                  <Area type="monotone" dataKey="الأرباح" stroke="#d4af37" strokeWidth={3} fillOpacity={1} fill="url(#colorEarnings)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <Card className="p-6 border-border shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" /> عدد الحجوزات الشهرية المؤكدة
+              </h3>
+              <span className="text-xs text-muted-foreground bg-emerald-500/10 text-emerald-600 px-2.5 py-1 rounded-full font-semibold">نمو إيجابي مستمر</span>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyPartnerData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                  <XAxis dataKey="name" stroke="#888888" fontSize={12} />
+                  <YAxis stroke="#888888" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
+                  <Bar dataKey="الحجوزات" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </div>
 
         {/* Add Modal / Section */}

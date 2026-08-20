@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet, Calendar } from 'lucide-react';
+import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet, Calendar, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { MapView } from '@/components/Map';
 import { jsPDF } from 'jspdf';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 export default function Dashboard() {
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>(AGENCIES[0].id);
@@ -45,10 +46,8 @@ export default function Dashboard() {
   // Filter bookings for export based on time range
   const getFilteredBookingsForExport = () => {
     if (reportTimeRange === 'week') {
-      // Mock filter for last 7 days
       return agencyBookings.slice(0, Math.min(agencyBookings.length, 3));
     } else if (reportTimeRange === 'month') {
-      // Mock filter for last 30 days
       return agencyBookings.slice(0, Math.min(agencyBookings.length, 6));
     }
     return agencyBookings;
@@ -59,6 +58,38 @@ export default function Dashboard() {
   const totalRevenue = exportBookings
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
     .reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
+
+  // Dynamic Chart Data based on time range
+  const getChartData = () => {
+    if (reportTimeRange === 'week') {
+      return [
+        { name: 'الإثنين', revenue: 1200, bookings: 1 },
+        { name: 'الثلاثاء', revenue: 2400, bookings: 2 },
+        { name: 'الأربعاء', revenue: 1800, bookings: 1 },
+        { name: 'الخميس', revenue: 3600, bookings: 3 },
+        { name: 'الجمعة', revenue: 4800, bookings: 4 },
+        { name: 'السبت', revenue: 5200, bookings: 5 },
+        { name: 'الأحد', revenue: 3900, bookings: 3 },
+      ];
+    } else if (reportTimeRange === 'month') {
+      return [
+        { name: 'الأسبوع 1', revenue: 8500, bookings: 7 },
+        { name: 'الأسبوع 2', revenue: 12400, bookings: 11 },
+        { name: 'الأسبوع 3', revenue: 15600, bookings: 14 },
+        { name: 'الأسبوع 4', revenue: 19200, bookings: 18 },
+      ];
+    }
+    return [
+      { name: 'يناير', revenue: 22000, bookings: 18 },
+      { name: 'فبراير', revenue: 28000, bookings: 24 },
+      { name: 'مارس', revenue: 34000, bookings: 30 },
+      { name: 'أبريل', revenue: 41000, bookings: 36 },
+      { name: 'مايو', revenue: 49000, bookings: 42 },
+      { name: 'يونيو', revenue: 58000, bookings: 50 },
+    ];
+  };
+
+  const chartData = getChartData();
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -235,6 +266,40 @@ export default function Dashboard() {
             </div>
             <div className="text-3xl font-black text-white">{currentAgency.rating} <span className="text-xs text-slate-400">/ 5.0</span></div>
             <p className="text-[10px] text-amber-400">وكالة معتمدة وموثوقة</p>
+          </div>
+        </div>
+
+        {/* Interactive Analytics Chart Section */}
+        <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-amber-400" />
+              <span>الإحصائيات المالية ونمو الحجوزات (حسب النطاق الزمني المحدد)</span>
+            </h2>
+            <span className="text-xs text-amber-400 font-semibold bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+              {reportTimeRange === 'week' ? 'تقرير أسبوعي تفاعلي' : reportTimeRange === 'month' ? 'تقرير شهري تفاعلي' : 'تقرير سنوي شامل'}
+            </span>
+          </div>
+
+          <div className="h-[320px] w-full pt-4" dir="ltr">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="name" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#020617', borderColor: '#334155', borderRadius: '1rem', color: '#f8fafc' }}
+                  itemStyle={{ color: '#fbbf24' }}
+                />
+                <Area type="monotone" dataKey="revenue" name="الأرباح (درهم)" stroke="#f59e0b" fillOpacity={1} fill="url(#colorRevenue)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

@@ -287,10 +287,10 @@ export default function Success() {
               href={`https://wa.me/212661234567?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-xs"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-xs cursor-pointer"
             >
               <Phone className="w-4 h-4" />
-              <span>تأكيد الحجز الفوري عبر واتساب الوكالة</span>
+              <span>إرسال نسخة عقد الإيجار وتفاصيل الحجز عبر واتساب الوكالة</span>
             </a>
 
             <Button

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
+import { toast } from 'sonner';
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -11,11 +12,56 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [recentViewed, setRecentViewed] = useState<ListingItem[]>([]);
 
+  // حالة البحث الذكي بالذكاء الاصطناعي
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isAiSearching, setIsAiSearching] = useState(false);
+  const [aiResults, setAiResults] = useState<ListingItem[] | null>(null);
+
   useEffect(() => {
-    // محاكاة أو قراءة السيارات/العقارات المشوهدة مؤخراً من التخزين المحلي
     const mockRecent = LISTINGS.slice(0, 3);
     setRecentViewed(mockRecent);
   }, []);
+
+  // دالة محاكاة معالجة البحث الذكي باللغة الطبيعية عبر الذكاء الاصطناعي
+  const handleAiSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) {
+      toast.error('يرجى كتابة وصف أو طلب باللغة الطبيعية أولاً');
+      return;
+    }
+
+    setIsAiSearching(true);
+    setAiResults(null);
+
+    setTimeout(() => {
+      setIsAiSearching(false);
+      const queryLower = aiPrompt.toLowerCase();
+      
+      // مطابقة ذكية للمحتوى بناءً على الكلمات المفتاحية الواردة في الطلب
+      const matched = LISTINGS.filter(item => {
+        if (queryLower.includes('أغادير') && item.city !== 'أغادير') return false;
+        if (queryLower.includes('مراكش') && item.city !== 'مراكش') return false;
+        if (queryLower.includes('الدار البيضاء') && item.city !== 'الدار البيضاء') return false;
+        if (queryLower.includes('طنجة') && item.city !== 'طنجة') return false;
+        
+        if ((queryLower.includes('سيارة') || queryLower.includes('داسيا') || queryLower.includes('رينو')) && item.type !== 'car') return false;
+        if ((queryLower.includes('شقة') || queryLower.includes('فيلا') || queryLower.includes('عقار')) && item.type !== 'property') return false;
+
+        return (
+          item.title.toLowerCase().includes(queryLower) ||
+          item.description.toLowerCase().includes(queryLower) ||
+          item.category.toLowerCase().includes(queryLower) ||
+          item.city.toLowerCase().includes(queryLower) ||
+          item.features.some(f => queryLower.includes(f.toLowerCase()))
+        );
+      });
+
+      // إذا لم يتم العثور على مطابقة دقيقة، نعرض اقترحات مميزة قريبة
+      const finalResults = matched.length > 0 ? matched : LISTINGS.slice(0, 2);
+      setAiResults(finalResults);
+      toast.success('تم تحليل طلبك بنجاح وعرض النتائج المطابقة عبر الذكاء الاصطناعي!');
+    }, 800);
+  };
 
   // الإكمال التلقائي لاقتراحات البحث مع الصور المصغرة والأسعار
   const suggestions = searchQuery.trim()
@@ -33,7 +79,6 @@ export default function Home() {
     return true;
   });
 
-  // العروض الأعلى تقييماً (Top Rated Showcase)
   const topRatedListings = [...LISTINGS].sort((a, b) => b.rating - a.rating).slice(0, 4);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -45,7 +90,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground flex flex-col" dir="rtl">
       
       {/* القسم الرئيسي البانر */}
-      <section className="relative py-24 px-4 overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-border">
+      <section className="relative py-20 px-4 overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-border">
         <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
         
         <div className="container mx-auto max-w-5xl text-center space-y-8 relative z-10">
@@ -62,8 +107,73 @@ export default function Home() {
             B2-Rent منصة وسيطة ذكية تربطك بأرقى شركات كراء السيارات والوكالات العقارية المستقلة عبر المدن المغربية، مع عقود رقمية وتوقيع إلكتروني فوري.
           </p>
 
-          {/* محرك البحث الوسيط مع الإكمال التلقائي المحسن بالصور والأسعار */}
-          <div className="relative max-w-4xl mx-auto">
+          {/* محرك البحث الذكي بالذكاء الاصطناعي (AI Natural Language Search) */}
+          <div className="max-w-3xl mx-auto bg-slate-950/90 backdrop-blur-xl border border-amber-500/30 p-6 rounded-3xl shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div className="text-right">
+                  <h3 className="text-sm font-black text-white">مساعد البحث الذكي بالذكاء الاصطناعي</h3>
+                  <p className="text-[11px] text-slate-400">اكتب ما تبحث عنه بلغتك الطبيعية وسيقوم الذكاء الاصطناعي بإيجاد أفضل العروض</p>
+                </div>
+              </div>
+              <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-full animate-pulse">جديد ✨</span>
+            </div>
+
+            <form onSubmit={handleAiSearch} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="مثال: أريد سيارة دفع رباعي في أغادير أو شقة فخمة بمراكش مع مسبح..."
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                className="flex-1 bg-slate-900 border border-slate-700 text-white rounded-2xl px-4 py-3 text-xs focus:outline-none focus:border-amber-500"
+              />
+              <Button
+                type="submit"
+                disabled={isAiSearching}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-6 py-3 rounded-2xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 shrink-0"
+              >
+                {isAiSearching ? (
+                  <span className="animate-spin">⏳</span>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>بحث ذكي</span>
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {/* نتائج البحث الذكي المنبثقة */}
+            {aiResults && (
+              <div className="pt-4 border-t border-slate-800 space-y-3 animate-in fade-in-50 text-right">
+                <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
+                  <span>نتائج التحليل الذكي للطلب ({aiResults.length} عرض مطابق):</span>
+                  <button onClick={() => setAiResults(null)} className="text-amber-400 hover:underline">إغلاق النتائج</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {aiResults.map(item => (
+                    <div key={item.id} className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-3 hover:border-amber-500 transition-all">
+                      <img src={item.image} alt={item.title} className="w-14 h-14 rounded-xl object-cover" />
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-[10px] text-amber-400 font-bold">{item.city} - {item.providerName}</div>
+                        <h4 className="text-xs font-bold text-white truncate">{item.title}</h4>
+                        <div className="text-xs font-extrabold text-slate-300">{item.pricePerUnit} {item.unitLabel}</div>
+                      </div>
+                      <Link href={`/car/${item.id}`}>
+                        <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 text-[11px] font-bold px-3 py-1.5 rounded-xl">عرض</Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* محرك البحث الكلاسيكي التقليدي مع الإكمال التلقائي المحسن بالصور والأسعار */}
+          <div className="relative max-w-4xl mx-auto pt-2">
             <form onSubmit={handleSearchSubmit} className="bg-slate-900/95 backdrop-blur-xl border border-border p-4 rounded-3xl shadow-2xl grid grid-cols-1 md:grid-cols-4 gap-3">
               
               <div className="flex flex-col text-right">
@@ -98,7 +208,7 @@ export default function Home() {
                 <label className="text-[11px] font-bold text-slate-400 mb-1 px-1">بحث متقدم بالإكمال التلقائي</label>
                 <input
                   type="text"
-                  placeholder="مثال: داسيا، شقة جليز، فيلا..."
+                  placeholder="ابحث باسم السيارة، العقار أو المدينة..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
@@ -226,46 +336,37 @@ export default function Home() {
         </section>
       )}
 
-      {/* قسم شرفاء الوكالات وشركات الوساطة */}
-      <section className="py-16 bg-slate-900/50 border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
-            <div>
-              <span className="text-amber-500 text-xs font-extrabold uppercase tracking-widest">شبكة معتمدة</span>
-              <h2 className="text-2xl font-extrabold text-white">أبرز الوكالات والشركات الشريكة</h2>
-            </div>
-            <Link href="/search" className="text-amber-400 hover:text-amber-300 text-xs font-bold flex items-center gap-1">
-              عرض كافة الشركاء <ArrowRight className="w-4 h-4" />
-            </Link>
+      {/* 3. الوكالات والمزودون المستقلون */}
+      <section className="py-16 bg-slate-950 border-b border-border">
+        <div className="container mx-auto px-4 space-y-10">
+          <div className="text-center space-y-2 max-w-xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-black text-white">الوكالات والشركات المعتمدة في المنصة</h2>
+            <p className="text-xs text-slate-400">كل وكالة مستقلة بذاتها لإدارة أسطولها، تسعيرها، ومعالجة حجوزات الزبائن بكل شفافية وموثوقية</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {PARTNERS.map(partner => (
-              <div key={partner.id} className="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-4 hover:border-amber-500/50 transition-all group">
-                <div className="flex items-center gap-4">
-                  <img src={partner.logo} alt={partner.name} className="w-12 h-12 rounded-xl object-cover border border-slate-800" />
-                  <div>
-                    <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{partner.name}</h3>
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <MapPin className="w-3 h-3 text-amber-500" /> {partner.city}
-                      <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-amber-300 font-semibold">
-                        {partner.type === 'car_rental' ? 'سيارات' : 'عقارات'}
-                      </span>
-                    </div>
+              <div key={partner.id} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center space-y-4 relative overflow-hidden group hover:border-amber-500 transition-all">
+                {partner.isExcellence && (
+                  <div className="absolute top-3 left-3 bg-amber-500/20 border border-amber-500/40 text-amber-400 px-2.5 py-1 rounded-xl text-[10px] font-extrabold flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5" /> وكالة متميزة
+                  </div>
+                )}
+                <img src={partner.logo} alt={partner.name} className="w-20 h-20 rounded-2xl object-cover mx-auto border-2 border-amber-500/30 group-hover:scale-105 transition-transform" />
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white">{partner.name}</h3>
+                  <div className="text-xs text-slate-400 flex items-center justify-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-amber-500" /> {partner.city}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-900 text-xs">
-                  <div className="flex items-center gap-1 text-amber-400 font-bold">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    <span>{partner.rating}</span>
-                    <span className="text-slate-500">({partner.reviewsCount} تقييم)</span>
-                  </div>
-                  {partner.isExcellence && (
-                    <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2 py-0.5 rounded text-[10px] font-bold">
-                      وكالة متميزة ⭐
-                    </span>
-                  )}
+                <div className="flex items-center justify-center gap-2 text-xs pt-2 border-t border-slate-800 text-slate-300">
+                  <span className="flex items-center gap-1 text-amber-400 font-bold"><Star className="w-3.5 h-3.5 fill-amber-400" /> {partner.rating}</span>
+                  <span>({partner.reviewsCount} تقييم)</span>
+                </div>
+
+                <div className="text-[11px] text-emerald-400 font-bold bg-emerald-500/10 py-1.5 rounded-xl border border-emerald-500/20">
+                  ✓ موثق ومعتمد رسمياً
                 </div>
               </div>
             ))}
@@ -273,73 +374,38 @@ export default function Home() {
         </div>
       </section>
 
-      {/* قسم العروض المتاحة (سيارات وعقارات) */}
-      <section className="py-20 container mx-auto px-4 flex-grow">
-        <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-4">
-          <div>
-            <span className="text-amber-500 text-xs font-extrabold uppercase tracking-widest">تحديثات فورية</span>
-            <h2 className="text-3xl font-black text-white">العروض المتاحة حالياً للكراء</h2>
-          </div>
-
-          <div className="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-xs">
-            <button
-              onClick={() => setSelectedTab('all')}
-              className={`px-4 py-2 rounded-lg font-bold transition-all ${selectedTab === 'all' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              الكل
-            </button>
-            <button
-              onClick={() => setSelectedTab('car')}
-              className={`px-4 py-2 rounded-lg font-bold transition-all ${selectedTab === 'car' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              السيارات
-            </button>
-            <button
-              onClick={() => setSelectedTab('property')}
-              className={`px-4 py-2 rounded-lg font-bold transition-all ${selectedTab === 'property' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              العقارات
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filteredListings.map(item => (
-            <div key={item.id} className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500/50 transition-all flex flex-col group">
-              <div className="relative h-48 overflow-hidden bg-slate-900">
-                <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-slate-800">
-                  {item.category}
-                </div>
-                <div className="absolute bottom-3 left-3 bg-slate-950/90 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-extrabold border border-slate-800">
-                  {item.pricePerUnit} {item.unitLabel}
-                </div>
-              </div>
-
-              <div className="p-6 space-y-4 flex-grow flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-amber-500" /> {item.city}</span>
-                    <span className="text-amber-400 font-bold">{item.providerName}</span>
-                  </div>
-                  <h3 className="text-base font-bold text-white group-hover:text-amber-400 transition-colors">{item.title}</h3>
-                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{item.description}</p>
-                </div>
-
-                <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    <span>{item.rating}</span>
-                  </div>
-                  <Link href={`/car/${item.id}`}>
-                    <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow">
-                      عرض التفاصيل والحجز
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+      {/* قسم الميزات والضمانات */}
+      <section className="py-20 bg-slate-900">
+        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-4 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-          ))}
+            <h3 className="text-lg font-bold text-white">وكالات مستقلة ومعتمدة</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              نضمن لك التعامل مباشرة مع أرقى وكالات كراء السيارات والشركات العقارية المرخصة رسمياً في المغرب لضمان أقصى درجات الثقة والموثوقية.
+            </p>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-4 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-white">عقود رقمية وتوقيع إلكتروني</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              احصل على عقد الإيجار الرسمي بصيغة PDF فور إتمام الحجز، مع إمكانية الرسم بخط اليد لتوقيع العقد وإدراج الختم الرقمي للوكالة تلقائياً.
+            </p>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-4 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <Star className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-white">تقييمات حقيقية وموثوقة</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              نظام مراجعات وتقييمات لا يتم تفعيله إلا بعد انتهاء فترة الحجز الفعلية، لضمان بناء مجتمع شفاف وموثوق للمستخدمين والوكالات.
+            </p>
+          </div>
         </div>
       </section>
 

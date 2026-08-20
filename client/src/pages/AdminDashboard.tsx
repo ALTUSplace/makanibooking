@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Plus, Star, Award, Settings, FileText } from 'lucide-react';
+import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Plus, Star, Award, Settings, FileText, Lock, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PARTNERS, LISTINGS } from '@/data/b2rent';
 
 export default function AdminDashboard() {
+  const [role, setRole] = useState<'super_admin' | 'agency_manager'>('super_admin');
   const [activeTab, setActiveTab] = useState<'overview' | 'agencies' | 'listings' | 'bookings' | 'settings'>('overview');
   const [agenciesList, setAgenciesList] = useState(PARTNERS);
   const [listingsList, setListingsList] = useState(LISTINGS);
@@ -14,14 +15,25 @@ export default function AdminDashboard() {
     commissionRate: '10%',
     maintenanceMode: false
   });
+  const [authWarning, setAuthWarning] = useState<string | null>(null);
 
   const totalRevenue = listingsList.reduce((acc, item) => acc + (item.pricePerUnit * 3), 12500);
 
   const toggleAgencyExcellence = (id: string) => {
+    if (role !== 'super_admin') {
+      setAuthWarning('عذراً، منح شارات التميز مخصص حصرياً للمشرف العام (Super Admin).');
+      setTimeout(() => setAuthWarning(null), 4000);
+      return;
+    }
     setAgenciesList(agenciesList.map(ag => ag.id === id ? { ...ag, isExcellence: !ag.isExcellence } : ag));
   };
 
   const deleteListing = (id: string) => {
+    if (role !== 'super_admin') {
+      setAuthWarning('عذراً، حذف الإعلانات من لوحة الإدارة الشاملة مخصص للمشرف العام فقط.');
+      setTimeout(() => setAuthWarning(null), 4000);
+      return;
+    }
     setListingsList(listingsList.filter(item => item.id !== id));
   };
 
@@ -29,25 +41,43 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background text-foreground py-8 px-4">
       <div className="container mx-auto max-w-7xl space-y-8">
         
-        {/* رأس لوحة الإدارة */}
+        {/* رأس لوحة الإدارة مع محدد الصلاحيات */}
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400">
               <LayoutDashboard className="w-8 h-8" />
             </div>
             <div>
-              <span className="text-amber-500 text-xs font-extrabold uppercase tracking-widest">لوحة التحكم الإدارية المركزية</span>
-              <h1 className="text-2xl md:text-3xl font-black text-white">إدارة منصة B2-Rent الشاملة</h1>
+              <span className="text-amber-500 text-xs font-extrabold uppercase tracking-widest">نظام الصلاحيات المتقدم (RBAC)</span>
+              <h1 className="text-2xl md:text-3xl font-black text-white">لوحة الإدارة المركزية</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-slate-300 font-bold">النظام يعمل بكفاءة أوتوماتيكية</span>
-            </div>
+          {/* محدد الصلاحيات بين المشرف العام ومدير الوكالة */}
+          <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 p-2 rounded-2xl">
+            <span className="text-xs text-slate-400 px-2 font-bold">صلاحيات الحساب:</span>
+            <button
+              onClick={() => setRole('super_admin')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${role === 'super_admin' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`}
+            >
+              <ShieldCheck className="w-4 h-4" /> المشرف العام (Super Admin)
+            </button>
+            <button
+              onClick={() => setRole('agency_manager')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${role === 'agency_manager' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`}
+            >
+              <UserCheck className="w-4 h-4" /> مدير الوكالة (Agency Manager)
+            </button>
           </div>
         </div>
+
+        {/* تنبيه الصلاحيات إن وجد */}
+        {authWarning && (
+          <div className="bg-red-500/15 border border-red-500/30 p-4 rounded-2xl flex items-center gap-3 text-red-400 text-xs font-bold animate-in fade-in-50">
+            <Lock className="w-5 h-5 flex-shrink-0" />
+            <span>{authWarning}</span>
+          </div>
+        )}
 
         {/* أزرار التنقل بين أقسام الإدارة */}
         <div className="flex flex-wrap gap-2 bg-slate-950 border border-slate-800 p-2 rounded-2xl">
@@ -67,7 +97,7 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('listings')}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'listings' ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
           >
-            <Car className="w-4 h-4" /> إشراف العروض (سيارات وعقارات) ({listingsList.length})
+            <Car className="w-4 h-4" /> إشراف العروض ({listingsList.length})
           </button>
           <button
             onClick={() => setActiveTab('bookings')}
@@ -75,12 +105,14 @@ export default function AdminDashboard() {
           >
             <Calendar className="w-4 h-4" /> متابعة الحجوزات والعقود
           </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
-          >
-            <Settings className="w-4 h-4" /> إعدادات المنصة والاتصال
-          </button>
+          {role === 'super_admin' && (
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'settings' ? 'bg-amber-500 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-900'}`}
+            >
+              <Settings className="w-4 h-4" /> إعدادات المنصة وقنوات الاتصال
+            </button>
+          )}
         </div>
 
         {/* محتوى الأقسام */}
@@ -93,7 +125,7 @@ export default function AdminDashboard() {
                   <div className="w-12 h-12 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400">
                     <Building2 className="w-6 h-6" />
                   </div>
-                  <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full">+2 هذا الشهر</span>
+                  <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full">معتمد</span>
                 </div>
                 <div>
                   <div className="text-slate-400 text-xs">الوكالات والشركات الشريكة</div>
@@ -132,7 +164,7 @@ export default function AdminDashboard() {
                   <div className="w-12 h-12 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400">
                     <DollarSign className="w-6 h-6" />
                   </div>
-                  <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full">عمولة المنصة</span>
+                  <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full">العمولة</span>
                 </div>
                 <div>
                   <div className="text-slate-400 text-xs">إجمالي حجم المعاملات المقدر</div>
@@ -180,11 +212,15 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between border-b border-slate-900 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white">إدارة الوكالات والشركات المستقلة</h3>
-                <p className="text-xs text-slate-400">إشراف كامل على المزودين المعتمدين ومنح شارات التميز</p>
+                <p className="text-xs text-slate-400">
+                  {role === 'super_admin' ? 'صلاحيات كاملة للمشرف العام لمنح شارات التميز وإدارة الشبكة' : 'صلاحية مدير الوكالة: استعراض الوكالات الشريكة'}
+                </p>
               </div>
-              <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs gap-1.5">
-                <Plus className="w-4 h-4" /> إضافة وكالة جديدة
-              </Button>
+              {role === 'super_admin' && (
+                <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs gap-1.5">
+                  <Plus className="w-4 h-4" /> إضافة وكالة جديدة
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -201,6 +237,7 @@ export default function AdminDashboard() {
                     <button
                       onClick={() => toggleAgencyExcellence(agency.id)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${agency.isExcellence ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                      title={role !== 'super_admin' ? 'مخصص للمشرف العام فقط' : ''}
                     >
                       <Award className="w-3.5 h-3.5" /> {agency.isExcellence ? 'متميز ⭐' : 'منح التميز'}
                     </button>
@@ -249,7 +286,7 @@ export default function AdminDashboard() {
                     <button
                       onClick={() => deleteListing(item.id)}
                       className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors"
-                      title="حذف الإعلان"
+                      title={role !== 'super_admin' ? 'حذف الإعلانات مخصص للمشرف العام فقط' : 'حذف الإعلان'}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -299,11 +336,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === 'settings' && (
+        {activeTab === 'settings' && role === 'super_admin' && (
           <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50 duration-300 max-w-2xl mx-auto">
             <div className="border-b border-slate-900 pb-4">
               <h3 className="text-lg font-bold text-white">إعدادات المنصة وقنوات الاتصال</h3>
-              <p className="text-xs text-slate-400">التحكم في بيانات الدعم الفني والبريد الإلكتروني المعتمد</p>
+              <p className="text-xs text-slate-400">التحكم في بيانات الدعم الفني والبريد الإلكتروني المعتمد (حصرية للمشرف العام)</p>
             </div>
 
             <div className="space-y-4">

@@ -76,15 +76,9 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-3 group">
                 <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all duration-300 shadow">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <a href="tel:0754382654" className="text-slate-300 group-hover:text-amber-400 transition-colors font-bold">0754382654</a>
-              </li>
-              <li className="flex items-center gap-3 group">
-                <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all duration-300 shadow">
                   <Mail className="w-4 h-4" />
                 </div>
-                <a href="mailto:b2rentt@gmail.com" className="text-slate-300 group-hover:text-amber-400 transition-colors">b2rentt@gmail.com</a>
+                <a href="mailto:b2rentt@gmail.com" className="text-slate-300 group-hover:text-amber-400 transition-colors font-bold">b2rentt@gmail.com</a>
               </li>
               <li className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-500 shrink-0 mt-0.5 shadow">

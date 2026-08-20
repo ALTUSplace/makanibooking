@@ -28,7 +28,6 @@ export default function AdminDashboard() {
   const [listingsList, setListingsList] = useState(LISTINGS);
   const [platformSettings, setPlatformSettings] = useState({
     siteName: 'B2-Rent',
-    phone: '0754382654',
     email: 'b2rentt@gmail.com',
     commissionRate: '10%',
     maintenanceMode: false
@@ -481,15 +480,7 @@ export default function AdminDashboard() {
               <span>إعدادات المنصة وقنوات الاتصال الرسمية</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs text-slate-300">رقم الدعم الرسمي</label>
-                <input
-                  type="text"
-                  value={platformSettings.phone}
-                  onChange={(e) => setPlatformSettings({ ...platformSettings, phone: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
-                />
-              </div>
+
               <div className="space-y-2">
                 <label className="text-xs text-slate-300">البريد الإلكتروني المعتمد</label>
                 <input

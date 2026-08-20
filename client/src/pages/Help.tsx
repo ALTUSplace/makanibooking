@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HelpCircle, ChevronDown, Phone, Mail, Send, CheckCircle2 } from 'lucide-react';
+import { HelpCircle, ChevronDown, Mail, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Help() {
@@ -22,7 +22,7 @@ export default function Help() {
     },
     {
       q: 'كيف يمكنني التواصل مع فريق الدعم الفني مباشرة؟',
-      a: 'يمكنك الاتصال عبر الهاتف الرسمي 0754382654 أو إرسال استفسارك عبر نموذج الدعم أدناه وسيتم الرد خلال دقائق عبر b2rentt@gmail.com.',
+      a: 'يمكنك إرسال استفسارك عبر البريد الإلكتروني الرسمي b2rentt@gmail.com أو استخدام نموذج الدعم أدناه وسيتم الرد عليك في أسرع وقت.',
     },
   ];
 
@@ -33,7 +33,7 @@ export default function Help() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-12 px-4">
+    <div className="min-h-screen bg-background text-foreground py-12 px-4" dir="rtl">
       <div className="container mx-auto max-w-4xl space-y-12">
         
         <div className="text-center space-y-3">
@@ -154,26 +154,14 @@ export default function Help() {
           )}
         </div>
 
-        {/* معلومات الاتصال المباشر */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-          <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
-              <Phone className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-xs text-slate-400">رقم الهاتف الرسمي للدعم</div>
-              <a href="tel:0754382654" className="text-base font-bold text-white hover:text-amber-400">0754382654</a>
-            </div>
+        {/* البريد الإلكتروني الرسمي للدعم */}
+        <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex items-center justify-center gap-4">
+          <div className="w-12 h-12 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
+            <Mail className="w-5 h-5" />
           </div>
-
-          <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
-              <Mail className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-xs text-slate-400">البريد الإلكتروني المعتمد</div>
-              <a href="mailto:b2rentt@gmail.com" className="text-base font-bold text-white hover:text-amber-400">b2rentt@gmail.com</a>
-            </div>
+          <div>
+            <div className="text-xs text-slate-400 text-center">البريد الإلكتروني الرسمي المعتمد للدعم الفني</div>
+            <a href="mailto:b2rentt@gmail.com" className="text-lg font-bold text-white hover:text-amber-400">b2rentt@gmail.com</a>
           </div>
         </div>
 

@@ -8,6 +8,7 @@ import { RoleProvider } from "./contexts/RoleContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import BottomNavigationBar from "./components/BottomNavigationBar";
 import { PageTransition } from "./components/PageTransition";
 import { lazy, Suspense } from "react";
 
@@ -104,6 +105,7 @@ function App() {
                   </PageTransition>
                 </main>
                 <Footer />
+                <BottomNavigationBar />
               </div>
             </TooltipProvider>
           </LanguageProvider>

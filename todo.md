@@ -6,7 +6,7 @@
 - [x] Implement Three-Way Dashboard (Renter, Partner/Owner, Admin approval & monitoring portal)
 - [x] Develop Interactive Availability Calendar & Pricing Calculator with 15% Bundled Package discount
 - [x] Build Secure Checkout page with multi-payment support, WhatsApp/LiveChat integration, and SEO metadata
-- [ ] Dynamic Pricing Engine (weekend surge + long stay discounts)
+- [x] Dynamic Pricing Engine (weekend surge + long stay discounts)
 - [ ] Map-Based Search with dynamic price pins
 - [ ] AI Recommendation System & Cross-Selling bundle checkout
 - [ ] Advanced Media Upload with compression & watermark simulation

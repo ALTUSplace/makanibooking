@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { MOCK_CARS, CITIES, CAR_CATEGORIES, Car } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award } from 'lucide-react';
+import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, Fuel, CheckCircle2, Sparkles } from 'lucide-react';
 
 export default function Search() {
   const [, setLocation] = useLocation();
@@ -183,26 +183,42 @@ export default function Search() {
                   return (
                     <div
                       key={car.id}
-                      className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500/40 transition-all duration-300 flex flex-col group"
+                      className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col group relative transform hover:-translate-y-1.5"
                     >
-                      <div className="relative h-52 overflow-hidden">
+                      <div className="relative h-56 overflow-hidden">
                         <img
                           src={car.image}
                           alt={car.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                         />
-                        <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                        
+                        <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30 shadow-lg">
                           {car.cityName}
                         </div>
-                        <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold">
+                        <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold shadow-lg">
                           <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                           <span>{car.rating}</span>
                         </div>
                         {isExcellence && (
-                          <div className="absolute bottom-3 right-3 bg-amber-500 text-slate-950 font-bold px-2.5 py-1 rounded-xl text-[10px] flex items-center gap-1 shadow-md">
-                            <Award className="w-3 h-3" /> متميزة
+                          <div className="absolute bottom-4 right-4 bg-amber-500 text-slate-950 font-bold px-3 py-1 rounded-xl text-[11px] flex items-center gap-1.5 shadow-lg">
+                            <Award className="w-3.5 h-3.5" /> وكالة متميزة
                           </div>
                         )}
+
+                        {/* Hover Overlay Features Preview */}
+                        <div className="absolute inset-x-0 bottom-0 p-4 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex flex-col gap-2">
+                          <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5" /> أبرز مميزات هذه السيارة:
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {car.features.slice(0, 3).map((feat, idx) => (
+                              <span key={idx} className="bg-slate-900 text-slate-300 text-[10px] px-2 py-0.5 rounded-md border border-slate-800 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-amber-400" /> {feat}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
@@ -238,7 +254,7 @@ export default function Search() {
                           </div>
                           <Button
                             onClick={() => setLocation(`/car/${car.id}`)}
-                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-amber-500/20"
+                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform"
                           >
                             التفاصيل والحجز
                           </Button>

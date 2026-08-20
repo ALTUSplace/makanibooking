@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Plus, Star, Award, Settings, FileText, Lock, UserCheck, Bell } from 'lucide-react';
+import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Plus, Star, Award, Settings, FileText, Lock, UserCheck, Download, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PARTNERS, LISTINGS } from '@/data/b2rent';
 import { useRole } from '@/contexts/RoleContext';
@@ -59,11 +59,24 @@ export default function AdminDashboard() {
     toast.success('تم حذف الإعلان بنجاح');
   };
 
+  const exportReportsCSV = () => {
+    const csvHeader = 'ID,Title,Type,City,PricePerUnit,Rating\n';
+    const csvRows = listingsList.map(item => `${item.id},"${item.title}",${item.type},${item.city},${item.pricePerUnit},${item.rating}`).join('\n');
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + csvHeader + csvRows;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `B2_Rent_Platform_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('تم تصدير تقارير الإحصائيات والحجوزات بنجاح بصيغة Excel/CSV');
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground py-8 px-4" dir="rtl">
       <div className="container mx-auto max-w-7xl space-y-8">
         
-        {/* رأس لوحة الإدارة مع محدد الصلاحيات */}
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400">
@@ -75,25 +88,32 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* محدد الصلاحيات بين المشرف العام ومدير الوكالة */}
-          <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 p-2 rounded-2xl">
-            <span className="text-xs text-slate-400 px-2 font-bold">صلاحيات الحساب:</span>
-            <button
-              onClick={() => { setRole('super_admin'); toast.info('تم التبديل إلى دور المشرف العام (Super Admin)'); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${role === 'super_admin' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`}
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={exportReportsCSV}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-lg"
             >
-              <ShieldCheck className="w-4 h-4" /> المشرف العام
-            </button>
-            <button
-              onClick={() => { setRole('agency_manager'); toast.info('تم التبديل إلى دور مدير الوكالة (Agency Manager)'); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${role === 'agency_manager' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`}
-            >
-              <UserCheck className="w-4 h-4" /> مدير الوكالة
-            </button>
+              <FileSpreadsheet className="w-4 h-4" /> تصدير التقارير (Excel/CSV)
+            </Button>
+
+            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-2 rounded-2xl">
+              <span className="text-xs text-slate-400 px-2 font-bold hidden sm:inline">الصلاحية:</span>
+              <button
+                onClick={() => { setRole('super_admin'); toast.info('تم التبديل إلى دور المشرف العام (Super Admin)'); }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${role === 'super_admin' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" /> المشرف العام
+              </button>
+              <button
+                onClick={() => { setRole('agency_manager'); toast.info('تم التبديل إلى دور مدير الوكالة (Agency Manager)'); }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${role === 'agency_manager' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'}`}
+              >
+                <UserCheck className="w-3.5 h-3.5" /> مدير الوكالة
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* تنبيه الصلاحيات إن وجد */}
         {authWarning && (
           <div className="bg-red-500/15 border border-red-500/30 p-4 rounded-2xl flex items-center gap-3 text-red-400 text-xs font-bold animate-in fade-in-50">
             <Lock className="w-5 h-5 flex-shrink-0" />
@@ -101,7 +121,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* أزرار التنقل بين أقسام الإدارة */}
         <div className="flex flex-wrap gap-2 bg-slate-950 border border-slate-800 p-2 rounded-2xl">
           <button
             onClick={() => setActiveTab('overview')}
@@ -137,10 +156,8 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* محتوى الأقسام */}
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-in fade-in-50 duration-300">
-            {/* بطاقات الإحصائيات */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-3 shadow-xl">
                 <div className="flex items-center justify-between">
@@ -195,9 +212,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* قسم الرسوم البيانية التفاعلية (Recharts) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* رسم بياني لتطور الحجوزات */}
               <div className="lg:col-span-2 bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -219,7 +234,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* رسم بياني لتوزيع الوكالات */}
               <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 flex flex-col justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
@@ -254,123 +268,37 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-
-            {/* نشاط المنصة الأخير */}
-            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-amber-400" />
-                <span>أحدث العمليات والحجوزات المسجلة في المنصة</span>
-              </h3>
-
-              <div className="space-y-3">
-                {[
-                  { id: 'b1', client: 'عمر التازي', service: 'داسيا داستر - أغادير', date: 'منذ 15 دقيقة', amount: '1,350 درهم', status: 'مؤكد ومعتمد' },
-                  { id: 'b2', client: 'يوسف المنصوري', service: 'شقة مفروشة - مراكش', date: 'منذ ساعة', amount: '2,850 درهم', status: 'مؤكد ومعتمد' },
-                  { id: 'b3', client: 'سارة الإدريسي', service: 'رينو كليو 5 - الدار البيضاء', date: 'منذ 3 ساعات', amount: '960 درهم', status: 'مؤكد ومعتمد' },
-                ].map(b => (
-                  <div key={b.id} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center font-bold">
-                        {b.client[0]}
-                      </div>
-                      <div>
-                        <div className="font-bold text-white text-sm">{b.client}</div>
-                        <div className="text-slate-400">{b.service} • {b.date}</div>
-                      </div>
-                    </div>
-                    <div className="text-left space-y-1">
-                      <div className="font-extrabold text-amber-400">{b.amount}</div>
-                      <span className="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-bold">{b.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
         {activeTab === 'agencies' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50 duration-300">
-            <div className="flex items-center justify-between border-b border-slate-900 pb-4">
-              <div>
-                <h3 className="text-lg font-bold text-white">إدارة الوكالات والشركات المستقلة</h3>
-                <p className="text-xs text-slate-400">
-                  {role === 'super_admin' ? 'صلاحيات كاملة للمشرف العام لمنح شارات التميز وإدارة الشبكة' : 'صلاحية مدير الوكالة: استعراض الوكالات الشريكة'}
-                </p>
-              </div>
-              {role === 'super_admin' && (
-                <Button onClick={() => toast.success('تم فتح نافذة إضافة وكالة شريكة جديدة')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs gap-1.5">
-                  <Plus className="w-4 h-4" /> إضافة وكالة جديدة
-                </Button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Building2 className="w-6 h-6 text-amber-400" />
+              <span>قائمة الوكالات والشركات الشريكة المعتمدة</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {agenciesList.map(agency => (
                 <div key={agency.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img src={agency.logo} alt={agency.name} className="w-12 h-12 rounded-xl object-cover border border-slate-800" />
-                      <div>
-                        <h4 className="text-sm font-bold text-white">{agency.name}</h4>
-                        <div className="text-xs text-slate-400">{agency.city} • {agency.type === 'car_rental' ? 'وكالة كراء سيارات' : 'وكالة عقارية'}</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => toggleAgencyExcellence(agency.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${agency.isExcellence ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-                      title={role !== 'super_admin' ? 'مخصص للمشرف العام فقط' : ''}
-                    >
-                      <Award className="w-3.5 h-3.5" /> {agency.isExcellence ? 'متميز ⭐' : 'منح التميز'}
-                    </button>
+                    <div className="font-bold text-white text-base">{agency.name}</div>
+                    <span className="bg-amber-500/20 text-amber-400 text-xs font-bold px-3 py-1 rounded-full">
+                      ⭐ {agency.rating}
+                    </span>
                   </div>
-
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-300">
-                    <div>اتصال: <span className="text-white font-bold">{agency.phone}</span></div>
-                    <div className="flex items-center gap-1 text-amber-400 font-bold">
-                      <Star className="w-3.5 h-3.5 fill-amber-400" /> {agency.rating} ({agency.reviewsCount} تقييم)
-                    </div>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <div>📍 المدينة: {agency.city}</div>
+                    <div>📞 الهاتف: {agency.phone}</div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'listings' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50 duration-300">
-            <div className="flex items-center justify-between border-b border-slate-900 pb-4">
-              <div>
-                <h3 className="text-lg font-bold text-white">إشراف ومراقبة عروض السيارات والعقارات</h3>
-                <p className="text-xs text-slate-400">إدارة الإعلانات والأسعار والتحكم بالمنصة</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {listingsList.map(item => (
-                <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between">
-                  <div>
-                    <div className="relative h-44">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                      <div className="absolute top-3 right-3 bg-slate-950/80 text-amber-400 font-bold px-2.5 py-1 rounded-xl text-xs">
-                        {item.pricePerUnit} {item.unitLabel}
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-1">
-                      <div className="text-[10px] text-amber-400 font-bold">{item.providerName}</div>
-                      <h4 className="text-sm font-bold text-white">{item.title}</h4>
-                      <p className="text-xs text-slate-400">{item.city} • {item.category}</p>
-                    </div>
-                  </div>
-                  <div className="p-4 border-t border-slate-800 flex items-center justify-between">
-                    <span className="text-xs text-emerald-400 font-semibold">معتمد ونشط</span>
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+                    <span className="text-xs text-slate-300">
+                      {agency.isExcellence ? '✨ وكالة متميزة' : 'وكالة عادية'}
+                    </span>
                     <Button
-                      onClick={() => deleteListing(item.id)}
-                      variant="outline"
-                      className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs px-3 py-1.5 h-auto rounded-xl"
-                      title={role !== 'super_admin' ? 'مخصص للمشرف العام فقط' : ''}
+                      onClick={() => toggleAgencyExcellence(agency.id)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-xl ${agency.isExcellence ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-white hover:bg-slate-700'}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" /> حذف
+                      {agency.isExcellence ? 'إلغاء التميز' : 'منح شارة التميز'}
                     </Button>
                   </div>
                 </div>
@@ -379,99 +307,80 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === 'bookings' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50 duration-300">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-900 pb-4">
-              <Calendar className="w-5 h-5 text-amber-400" />
-              <span>سجل الحجوزات وعقود الإيجار الرقمية</span>
+        {activeTab === 'listings' && (
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Car className="w-6 h-6 text-amber-400" />
+              <span>إشراف العروض النشطة (سيارات وعقارات)</span>
             </h3>
+            <div className="space-y-4">
+              {listingsList.map(item => (
+                <div key={item.id} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <img src={item.image} alt={item.title} className="w-16 h-16 rounded-xl object-cover" />
+                    <div>
+                      <h4 className="font-bold text-white text-sm">{item.title}</h4>
+                      <div className="text-xs text-slate-400">{item.city} | {item.pricePerUnit} درهم / {item.type === 'car' ? 'يوم' : 'ليلة'}</div>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => deleteListing(item.id)}
+                    className="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" /> حذف الإعلان
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="pb-3 px-4">رقم المرجع</th>
-                    <th className="pb-3 px-4">الخدمة / العنصر</th>
-                    <th className="pb-3 px-4">المزود</th>
-                    <th className="pb-3 px-4">العميل</th>
-                    <th className="pb-3 px-4">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                  <tr>
-                    <td className="py-4 px-4 font-bold text-amber-400">B2R-9901</td>
-                    <td className="py-4 px-4 font-semibold text-white">داسيا داستر 2024</td>
-                    <td className="py-4 px-4">أغادير كار برستيج</td>
-                    <td className="py-4 px-4">عمر التازي (0754382654)</td>
-                    <td className="py-4 px-4"><span className="bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-bold">مؤكد وعقد موثق</span></td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 px-4 font-bold text-amber-400">B2R-9902</td>
-                    <td className="py-4 px-4 font-semibold text-white">شقة عصرية في جليز</td>
-                    <td className="py-4 px-4">مراكش القصر العقاري</td>
-                    <td className="py-4 px-4">يوسف المنصوري (0754382654)</td>
-                    <td className="py-4 px-4"><span className="bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-bold">مؤكد وعقد موثق</span></td>
-                  </tr>
-                </tbody>
-              </table>
+        {activeTab === 'bookings' && (
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-amber-400" />
+              <span>متابعة الحجوزات وعقود الإيجار الرقمية</span>
+            </h3>
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 text-center">
+              <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+              <h4 className="font-bold text-white text-base">جميع الحجوزات نشطة وموثقة بعقود رقمية PDF</h4>
+              <p className="text-xs text-slate-400">يمكن للوكلاء والعملاء تحميل عقود الإيجار المذيلة بالتوقيعات والأختام الرقمية في أي وقت.</p>
             </div>
           </div>
         )}
 
         {activeTab === 'settings' && role === 'super_admin' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50 duration-300">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-900 pb-4">
-              <Settings className="w-5 h-5 text-amber-400" />
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Settings className="w-6 h-6 text-amber-400" />
               <span>إعدادات المنصة وقنوات الاتصال الرسمية</span>
             </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-slate-300 font-semibold">اسم المنصة الرسمي</label>
-                <input
-                  type="text"
-                  value={platformSettings.siteName}
-                  onChange={(e) => setPlatformSettings({ ...platformSettings, siteName: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-slate-300 font-semibold">رقم الدعم الرسمي المعتمد</label>
+                <label className="text-xs text-slate-300">رقم الدعم الرسمي</label>
                 <input
                   type="text"
                   value={platformSettings.phone}
                   onChange={(e) => setPlatformSettings({ ...platformSettings, phone: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
                 />
               </div>
-
               <div className="space-y-2">
-                <label className="text-slate-300 font-semibold">البريد الإلكتروني للدعم (b2rentt@gmail.com)</label>
+                <label className="text-xs text-slate-300">البريد الإلكتروني المعتمد</label>
                 <input
                   type="email"
                   value={platformSettings.email}
                   onChange={(e) => setPlatformSettings({ ...platformSettings, email: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-slate-300 font-semibold">نسبة عمولة الوساطة</label>
-                <input
-                  type="text"
-                  value={platformSettings.commissionRate}
-                  onChange={(e) => setPlatformSettings({ ...platformSettings, commissionRate: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white"
                 />
               </div>
             </div>
-
-            <div className="pt-4 border-t border-slate-900 flex justify-end">
-              <Button onClick={() => toast.success('تم حفظ إعدادات المنصة بنجاح')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-8">
-                حفظ التغييرات
-              </Button>
-            </div>
+            <Button
+              onClick={() => toast.success('تم حفظ إعدادات المنصة بنجاح')}
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-6 py-3 rounded-xl"
+            >
+              حفظ التغييرات
+            </Button>
           </div>
         )}
 

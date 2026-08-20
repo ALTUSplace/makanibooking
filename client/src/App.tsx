@@ -15,6 +15,7 @@ import Success from "./pages/Success";
 import Dashboard from "./pages/Dashboard";
 import AddCar from "./pages/AddCar";
 import MyBookings from "./pages/MyBookings";
+import Favorites from "./pages/Favorites";
 import Help from "./pages/Help";
 import About from "./pages/About";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -33,6 +34,7 @@ function Router() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/add-car" component={AddCar} />
           <Route path="/my-bookings" component={MyBookings} />
+          <Route path="/favorites" component={Favorites} />
           <Route path="/help" component={Help} />
           <Route path="/about" component={About} />
           <Route path="/admin" component={AdminDashboard} />

@@ -1,23 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles } from 'lucide-react';
-import { PARTNERS, LISTINGS } from '@/data/b2rent';
+import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock } from 'lucide-react';
+import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [selectedTab, setSelectedTab] = useState<'all' | 'car' | 'property'>('all');
   const [selectedCity, setSelectedCity] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [recentViewed, setRecentViewed] = useState<ListingItem[]>([]);
+
+  useEffect(() => {
+    // محاكاة أو قراءة السيارات/العقارات المشوهدة مؤخراً من التخزين المحلي
+    const mockRecent = LISTINGS.slice(0, 3);
+    setRecentViewed(mockRecent);
+  }, []);
+
+  // الإكمال التلقائي لاقتراحات البحث مع الصور المصغرة والأسعار
+  const suggestions = searchQuery.trim()
+    ? LISTINGS.filter(item => 
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        item.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 5)
+    : [];
 
   const filteredListings = LISTINGS.filter(item => {
     if (selectedTab !== 'all' && item.type !== selectedTab) return false;
     if (selectedCity !== 'all' && item.city !== selectedCity) return false;
-    if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) && !item.city.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) && !item.city.toLowerCase().includes(searchQuery.toLowerCase()) && !item.category.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
-  // العروض الأعلى تقييماً (Top Rated Showcase) بناءً على نظام التقييمات الجديد
+  // العروض الأعلى تقييماً (Top Rated Showcase)
   const topRatedListings = [...LISTINGS].sort((a, b) => b.rating - a.rating).slice(0, 4);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -46,62 +62,89 @@ export default function Home() {
             B2-Rent منصة وسيطة ذكية تربطك بأرقى شركات كراء السيارات والوكالات العقارية المستقلة عبر المدن المغربية، مع عقود رقمية وتوقيع إلكتروني فوري.
           </p>
 
-          {/* محرك البحث الوسيط */}
-          <form onSubmit={handleSearchSubmit} className="bg-slate-900/90 backdrop-blur-xl border border-border p-4 rounded-3xl shadow-2xl max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-3">
-            
-            <div className="flex flex-col text-right">
-              <label className="text-[11px] font-bold text-slate-400 mb-1 px-1">نوع الخدمة</label>
-              <select
-                value={selectedTab}
-                onChange={(e) => setSelectedTab(e.target.value as 'all' | 'car' | 'property')}
-                className="bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-amber-500"
-              >
-                <option value="all">الكل (سيارات وعقارات)</option>
-                <option value="car">كراء السيارات</option>
-                <option value="property">العقارات والشقاق المفروشة</option>
-              </select>
-            </div>
+          {/* محرك البحث الوسيط مع الإكمال التلقائي المحسن بالصور والأسعار */}
+          <div className="relative max-w-4xl mx-auto">
+            <form onSubmit={handleSearchSubmit} className="bg-slate-900/95 backdrop-blur-xl border border-border p-4 rounded-3xl shadow-2xl grid grid-cols-1 md:grid-cols-4 gap-3">
+              
+              <div className="flex flex-col text-right">
+                <label className="text-[11px] font-bold text-slate-400 mb-1 px-1">نوع الخدمة</label>
+                <select
+                  value={selectedTab}
+                  onChange={(e) => setSelectedTab(e.target.value as 'all' | 'car' | 'property')}
+                  className="bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-amber-500"
+                >
+                  <option value="all">الكل (سيارات وعقارات)</option>
+                  <option value="car">كراء السيارات</option>
+                  <option value="property">العقارات والشقاق المفروشة</option>
+                </select>
+              </div>
 
-            <div className="flex flex-col text-right">
-              <label className="text-[11px] font-bold text-slate-400 mb-1 px-1">المدينة المغربية</label>
-              <select
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-amber-500"
-              >
-                <option value="all">جميع المدن المغربية</option>
-                <option value="أغادير">أغادير</option>
-                <option value="مراكش">مراكش</option>
-                <option value="الدار البيضاء">الدار البيضاء</option>
-                <option value="طنجة">طنجة</option>
-              </select>
-            </div>
+              <div className="flex flex-col text-right">
+                <label className="text-[11px] font-bold text-slate-400 mb-1 px-1">المدينة المغربية</label>
+                <select
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs font-semibold focus:outline-none focus:border-amber-500"
+                >
+                  <option value="all">جميع المدن المغربية</option>
+                  <option value="أغادير">أغادير</option>
+                  <option value="مراكش">مراكش</option>
+                  <option value="الدار البيضاء">الدار البيضاء</option>
+                  <option value="طنجة">طنجة</option>
+                </select>
+              </div>
 
-            <div className="flex flex-col text-right">
-              <label className="text-[11px] font-bold text-slate-400 mb-1 px-1">بحث بالاسم أو الميزات</label>
-              <input
-                type="text"
-                placeholder="مثال: داسيا، شقة جليز..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-              />
-            </div>
+              <div className="flex flex-col text-right relative">
+                <label className="text-[11px] font-bold text-slate-400 mb-1 px-1">بحث متقدم بالإكمال التلقائي</label>
+                <input
+                  type="text"
+                  placeholder="مثال: داسيا، شقة جليز، فيلا..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                />
 
-            <div className="flex items-end">
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
-              >
-                <Search className="w-4 h-4" />
-                <span>ابحث الآن</span>
-              </button>
-            </div>
-          </form>
+                {/* قائمة الإكمال التلقائي المقترحة مع الصور المصغرة والأسعار */}
+                {suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-900 text-right">
+                    {suggestions.map(sug => (
+                      <div
+                        key={sug.id}
+                        onClick={() => {
+                          setSearchQuery(sug.title);
+                          setLocation(`/car/${sug.id}`);
+                        }}
+                        className="p-3 hover:bg-slate-900 cursor-pointer flex items-center justify-between text-xs transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img src={sug.image} alt={sug.title} className="w-10 h-10 rounded-xl object-cover border border-slate-800" />
+                          <div>
+                            <div className="font-bold text-white">{sug.title}</div>
+                            <div className="text-[10px] text-slate-400">{sug.city} - {sug.category}</div>
+                          </div>
+                        </div>
+                        <span className="text-amber-400 font-extrabold bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">{sug.pricePerUnit} {sug.unitLabel}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>ابحث الآن</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </section>
 
-      {/* 1. القسم الديناميكي: السيارات والعقارات الأعلى تقييماً */}
+      {/* 1. قسم السيارات والعقارات الأعلى تقييماً */}
       <section className="py-16 bg-slate-950 border-b border-border">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
@@ -155,6 +198,33 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 2. قسم شوهد مؤخراً (Recently Viewed) لمساعدة المستخدمين على العودة بسهولة */}
+      {recentViewed.length > 0 && (
+        <section className="py-12 bg-slate-900/40 border-b border-border">
+          <div className="container mx-auto px-4 space-y-6">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-400" />
+              <h3 className="text-lg font-extrabold text-white">شوهدت مؤخراً</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {recentViewed.map(item => (
+                <Link key={item.id} href={`/car/${item.id}`}>
+                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center gap-4 hover:border-amber-500/50 transition-all cursor-pointer group">
+                    <img src={item.image} alt={item.title} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                    <div className="space-y-1 min-w-0">
+                      <div className="text-[10px] text-amber-400 font-bold">{item.city}</div>
+                      <h4 className="text-xs font-bold text-white truncate group-hover:text-amber-400 transition-colors">{item.title}</h4>
+                      <div className="text-xs font-black text-slate-300">{item.pricePerUnit} {item.unitLabel}</div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* قسم شرفاء الوكالات وشركات الوساطة */}
       <section className="py-16 bg-slate-900/50 border-b border-border">
@@ -250,70 +320,26 @@ export default function Home() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-amber-500" /> {item.city}</span>
-                    <span className="text-amber-400 font-bold">بواسطة: {item.providerName}</span>
+                    <span className="text-amber-400 font-bold">{item.providerName}</span>
                   </div>
                   <h3 className="text-base font-bold text-white group-hover:text-amber-400 transition-colors">{item.title}</h3>
                   <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{item.description}</p>
                 </div>
 
-                <div className="pt-4 border-t border-slate-900 flex items-center justify-between">
+                <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
                     <Star className="w-3.5 h-3.5 fill-current" />
                     <span>{item.rating}</span>
-                    <span className="text-slate-500 font-normal">({item.reviewsCount})</span>
                   </div>
                   <Link href={`/car/${item.id}`}>
-                    <Button className="bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-colors border border-amber-500/30">
-                      احجز الآن
+                    <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow">
+                      عرض التفاصيل والحجز
                     </Button>
                   </Link>
                 </div>
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ميزات منصة الوسيط B2-Rent */}
-      <section className="py-20 bg-slate-950 border-t border-border">
-        <div className="container mx-auto px-4 max-w-6xl text-center space-y-12">
-          <div className="space-y-3 max-w-2xl mx-auto">
-            <span className="text-amber-500 text-xs font-extrabold uppercase tracking-widest">لماذا B2-Rent؟</span>
-            <h2 className="text-3xl font-black text-white">منصة الوساطة الأكثر أماناً في المغرب</h2>
-            <p className="text-slate-400 text-xs md:text-sm">نحن نضمن حقوق الطرفين ( المزود والزبون ) عبر عقود رقمية معتمدة وتوثيق دقيق.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-right">
-            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl space-y-4">
-              <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-center text-amber-400">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white">موثوقية الشركات والوكالات</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                جميع شركات كراء السيارات والعقارات المنضمة للمنصة تخضع لتحقق صارم وتتوفر على تراخيص قانونية سارية المفعول.
-              </p>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl space-y-4">
-              <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-center text-amber-400">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white">عقود رقمية وتوقيع إلكتروني</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                إصدار فوري لعقد الإيجار الرسمي بصيغة PDF مع إمكانية التوقيع الإلكتروني وإدراج الختم الرسمي للشركة الوسيطة والمزود.
-              </p>
-            </div>
-
-            <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl space-y-4">
-              <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-center text-amber-400">
-                <Building2 className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white">إدارة مستقلة للمزودين</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                كل وكالة أو شركة تتوفر على لوحة تحكم مستقلة لإدارة أسطولها، تعديل أسعارها، وقبول أو رفض الحجوزات بكل سهولة.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 

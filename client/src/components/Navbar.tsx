@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CMIPaymentModal } from './CMIPaymentModal';
 import { WhatsAppNotificationModal } from './WhatsAppNotificationModal';
+import { TwoFactorAuthModal } from './TwoFactorAuthModal';
 import { toast } from 'sonner';
 
 export default function Navbar() {
@@ -15,11 +16,12 @@ export default function Navbar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [cmiModalOpen, setCmiModalOpen] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [twoFaModalOpen, setTwoFaModalOpen] = useState(false);
   
   const [notifications, setNotifications] = useState([
-    { id: '1', title: 'تأكيد الحجز CMI', desc: 'تم سداد مبلغ الحجز بنجاح عبر بوابة CMI المغربية.', time: 'منذ دقيقتين', unread: true },
-    { id: '2', title: 'إشعار واتساب آلي', desc: 'تم إرسال تفاصيل العقد ورقم الحجز إلى الواتساب.', time: 'منذ 15 دقيقة', unread: true },
-    { id: '3', title: 'طلب حجز عقار جديد', desc: 'استلمت وكالتك طلباً جديداً بانتظار الاعتماد.', time: 'منذ ساعة', unread: false },
+    { id: '1', title: 'الأمان وحماية 2FA', desc: 'تم تفعيل المصادقة الثنائية لحسابك الإداري بنجاح.', time: 'منذ دقيقتين', unread: true },
+    { id: '2', title: 'تأكيد الحجز CMI', desc: 'تم سداد مبلغ الحجز بنجاح عبر بوابة CMI المغربية.', time: 'منذ ساعة', unread: true },
+    { id: '3', title: 'إشعار واتساب آلي', desc: 'تم إرسال تفاصيل العقد ورقم الحجز إلى الواتساب.', time: 'منذ 3 ساعات', unread: false },
   ]);
 
   const { theme, toggleTheme } = useTheme();
@@ -78,7 +80,7 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-2.5">
             
-            {/* اختيار اللغة (العربية، الفرنسية، الإنجليزية) */}
+            {/* اختيار اللغة */}
             <div className="flex items-center bg-muted/80 border border-border rounded-xl p-1 text-xs font-bold">
               <Globe className="w-3.5 h-3.5 text-amber-500 mx-1.5" />
               {(['ar', 'fr', 'en'] as const).map((lang) => (
@@ -86,7 +88,7 @@ export default function Navbar() {
                   key={lang}
                   onClick={() => {
                     setLanguage(lang);
-                    toast.success(lang === 'ar' ? 'تم التبديل إلى اللغة العربية' : lang === 'fr' ? 'Passé au Français' : 'Switched to English');
+                    toast.success(lang === 'ar' ? 'تم التبديل إلى العربية' : lang === 'fr' ? 'Passé au Français' : 'Switched to English');
                   }}
                   className={`px-2 py-1 rounded-lg uppercase transition-all ${
                     language === lang
@@ -104,6 +106,15 @@ export default function Navbar() {
               {role === 'super_admin' ? <ShieldCheck className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
               <span>{role === 'super_admin' ? 'مشرف عام' : 'مدير وكالة'}</span>
             </div>
+
+            {/* زر تفعيل المصادقة الثنائية 2FA */}
+            <button
+              onClick={() => setTwoFaModalOpen(true)}
+              className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 transition-colors border border-amber-500/30 flex items-center justify-center shadow-sm"
+              title="إدارة الأمان والمصادقة الثنائية (2FA)"
+            >
+              <Shield className="w-4 h-4" />
+            </button>
 
             {/* زر محاكاة دفع CMI */}
             <button
@@ -219,6 +230,12 @@ export default function Navbar() {
           customerPhone: '0661234567',
           totalPrice: 1500,
         }}
+      />
+
+      <TwoFactorAuthModal
+        isOpen={twoFaModalOpen}
+        onClose={() => setTwoFaModalOpen(false)}
+        onSuccess={() => setTwoFaModalOpen(false)}
       />
     </>
   );

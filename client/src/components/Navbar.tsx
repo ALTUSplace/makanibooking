@@ -21,17 +21,11 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border text-foreground shadow-lg transition-colors duration-300">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md shadow-amber-900/30 group-hover:scale-105 transition-transform bg-slate-950 border border-amber-500/40 flex items-center justify-center p-1">
-            <img src="/manus-storage/35942_9a6ce071.png" alt="B2-Rent Logo" className="w-full h-full object-contain" />
-          </div>
-          <div>
-            <div className="text-2xl font-black tracking-wider flex items-center gap-1.5">
-              <span>B2</span>
-              <span className="text-amber-500">-</span>
-              <span>RENT</span>
-            </div>
-            <p className="text-[11px] text-amber-500/90 font-semibold tracking-wide">الرفاهية والموثوقية في المغرب</p>
+        
+        {/* الشعار وحده في العنوان بدون نصوص مكررة */}
+        <Link href="/" className="flex items-center group">
+          <div className="h-14 w-36 overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
+            <img src="/manus-storage/35942_9a6ce071.png" alt="B2-Rent Logo" className="h-full w-full object-contain" />
           </div>
         </Link>
 

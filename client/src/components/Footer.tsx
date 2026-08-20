@@ -3,7 +3,7 @@ import { Phone, Mail, MapPin, ShieldCheck } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-950 text-slate-300 pt-16 pb-12 border-t border-slate-800">
+    <footer className="bg-slate-950 text-slate-300 pt-16 pb-12 border-t border-slate-800" dir="rtl">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           <div className="space-y-4">
@@ -45,11 +45,11 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold text-lg mb-4 border-l-2 border-amber-500 pl-3">المدن الرئيسية</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link href="/search?city=agadir" className="hover:text-amber-400 transition-colors">تأجير السيارات في أغادير</Link></li>
-              <li><Link href="/search?city=marrakech" className="hover:text-amber-400 transition-colors">تأجير السيارات في مراكش</Link></li>
-              <li><Link href="/search?city=casablanca" className="hover:text-amber-400 transition-colors">تأجير السيارات في الدار البيضاء</Link></li>
-              <li><Link href="/search?city=tangier" className="hover:text-amber-400 transition-colors">تأجير السيارات في طنجة</Link></li>
-              <li><Link href="/search?city=rabat" className="hover:text-amber-400 transition-colors">تأجير السيارات في الرباط</Link></li>
+              <li><Link href="/search?city=أغادير" className="hover:text-amber-400 transition-colors">تأجير السيارات في أغادير</Link></li>
+              <li><Link href="/search?city=مراكش" className="hover:text-amber-400 transition-colors">تأجير السيارات في مراكش</Link></li>
+              <li><Link href="/search?city=الدار البيضاء" className="hover:text-amber-400 transition-colors">تأجير السيارات في الدار البيضاء</Link></li>
+              <li><Link href="/search?city=طنجة" className="hover:text-amber-400 transition-colors">تأجير السيارات في طنجة</Link></li>
+              <li><Link href="/search?city=الرباط" className="hover:text-amber-400 transition-colors">تأجير السيارات في الرباط</Link></li>
             </ul>
           </div>
 

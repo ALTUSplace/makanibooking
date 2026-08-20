@@ -1,60 +1,72 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { MOCK_CARS, CITIES, CAR_CATEGORIES, Car } from '@/data/cars';
+import { LISTINGS, ListingItem } from '@/data/b2rent';
 import { Button } from '@/components/ui/button';
-import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, Fuel, CheckCircle2, Sparkles, Scale, X } from 'lucide-react';
+import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, MapPin, Scale, X, Eye, Home, Map } from 'lucide-react';
 import { toast } from 'sonner';
+import { MapView } from '@/components/Map';
+
+const CITIES = [
+  { id: 'all', name: 'جميع المدن' },
+  { id: 'مراكش', name: 'مراكش' },
+  { id: 'أغادير', name: 'أغادير' },
+  { id: 'الدار البيضاء', name: 'الدار البيضاء' },
+  { id: 'طنجة', name: 'طنجة' },
+];
 
 export default function Search() {
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
 
   const [cityFilter, setCityFilter] = useState(searchParams.get('city') || 'all');
-  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
-  const [transmissionFilter, setTransmissionFilter] = useState('all');
-  const [maxPrice, setMaxPrice] = useState(2500);
+  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
+  const [maxPrice, setMaxPrice] = useState(4000);
   const [excellenceOnly, setExcellenceOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('rating');
 
+  // ميزة العرض السريع (Quick View Modal)
+  const [quickViewItem, setQuickViewItem] = useState<ListingItem | null>(null);
+
+  // عرض الخريطة التفاعلية
+  const [showMap, setShowMap] = useState(false);
+
   // ميزة المقارنة (Side-by-Side Comparison)
-  const [compareList, setCompareList] = useState<Car[]>([]);
+  const [compareList, setCompareList] = useState<ListingItem[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
 
-  const toggleCompare = (car: Car) => {
-    if (compareList.find(c => c.id === car.id)) {
-      setCompareList(compareList.filter(c => c.id !== car.id));
-      toast.info('تمت إزالة السيارة من قائمة المقارنة');
+  const toggleCompare = (item: ListingItem) => {
+    if (compareList.find(c => c.id === item.id)) {
+      setCompareList(compareList.filter(c => c.id !== item.id));
+      toast.info('تمت إزالة العنصر من قائمة المقارنة');
     } else {
       if (compareList.length >= 2) {
-        toast.error('يمكنك مقارنة سيارتين كحد أقصى في نفس الوقت');
+        toast.error('يمكنك مقارنة عنصرين كحد أقصى في نفس الوقت');
         return;
       }
-      setCompareList([...compareList, car]);
-      toast.success('تمت إضافة السيارة إلى قائمة المقارنة');
+      setCompareList([...compareList, item]);
+      toast.success('تمت إضافة العنصر إلى قائمة المقارنة');
     }
   };
 
-  const filteredCars = useMemo(() => {
-    return MOCK_CARS.filter((car) => {
-      if (cityFilter !== 'all' && car.city !== cityFilter) return false;
-      if (categoryFilter !== 'all' && car.category !== categoryFilter) return false;
-      if (transmissionFilter !== 'all' && car.transmission !== transmissionFilter) return false;
-      if (car.pricePerDay > maxPrice) return false;
-      if (excellenceOnly && car.agency.rating < 4.8) return false;
+  const filteredListings = useMemo(() => {
+    return LISTINGS.filter((item) => {
+      if (cityFilter !== 'all' && item.city !== cityFilter) return false;
+      if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+      if (item.pricePerUnit > maxPrice) return false;
       return true;
     }).sort((a, b) => {
-      if (sortBy === 'price-asc') return a.pricePerDay - b.pricePerDay;
-      if (sortBy === 'price-desc') return b.pricePerDay - a.pricePerDay;
+      if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
+      if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
       if (sortBy === 'rating') return b.rating - a.rating;
       return 0;
     });
-  }, [cityFilter, categoryFilter, transmissionFilter, maxPrice, excellenceOnly, sortBy]);
+  }, [cityFilter, typeFilter, maxPrice, sortBy]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12" dir="rtl">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 space-y-8">
         
-        {/* شريط عائم للمقارنة إذا تم اختيار سيارات */}
+        {/* شريط عائم للمقارنة */}
         {compareList.length > 0 && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-950/95 backdrop-blur-xl border border-amber-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in-50">
             <div className="flex items-center gap-2">
@@ -64,7 +76,7 @@ export default function Search() {
             <div className="flex items-center gap-2">
               {compareList.map(c => (
                 <span key={c.id} className="bg-slate-900 border border-slate-700 text-xs px-3 py-1 rounded-xl text-slate-200 flex items-center gap-2">
-                  {c.name}
+                  {c.title}
                   <button onClick={() => toggleCompare(c)} className="text-red-400 hover:text-red-300"><X className="w-3.5 h-3.5" /></button>
                 </span>
               ))}
@@ -80,26 +92,47 @@ export default function Search() {
           </div>
         )}
 
-        <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-3xl font-extrabold text-white">أسطول سيارات وعقارات B2-Rent</h1>
-            <p className="text-slate-400 text-sm">استعرض مئات العروض المتاحة فوراً في مختلف المدن المغربية مع ميزة المقارنة المتقدمة</p>
+            <h1 className="text-3xl font-extrabold text-white">دليل السيارات والعقارات المتاحة</h1>
+            <p className="text-slate-400 text-sm">استعرض أفضل العروض المعتمدة في المغرب مع خيارات المقارنة الفورية والعرض السريع والخريطة التفاعلية</p>
           </div>
+
+          <Button
+            onClick={() => setShowMap(!showMap)}
+            className="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 border border-amber-500/30 shadow-lg"
+          >
+            <Map className="w-4 h-4" /> {showMap ? 'إخفاء الخريطة التفاعلية' : 'عرض الخريطة التفاعلية'}
+          </Button>
         </div>
+
+        {/* الخريطة التفاعلية */}
+        {showMap && (
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-amber-500" /> مواقع العروض على خريطة المغرب
+              </h3>
+              <span className="text-xs text-slate-400">انقر على الخريطة لاستكشاف المواقع</span>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-slate-800">
+              <MapView initialCenter={{ lat: 31.7917, lng: -7.0926 }} initialZoom={6} />
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1 bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-6 h-fit sticky top-28 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Filter className="w-5 h-5 text-amber-400" />
-                <span>تصفية النتائج</span>
+                <span>تصفية متقدمة</span>
               </h2>
               <button
                 onClick={() => {
                   setCityFilter('all');
-                  setCategoryFilter('all');
-                  setTransmissionFilter('all');
-                  setMaxPrice(2500);
+                  setTypeFilter('all');
+                  setMaxPrice(4000);
                   setExcellenceOnly(false);
                 }}
                 className="text-xs text-amber-400 hover:underline"
@@ -108,23 +141,17 @@ export default function Search() {
               </button>
             </div>
 
-            {/* Excellence Filter Toggle */}
-            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-amber-400" />
-                  <div>
-                    <div className="text-xs font-bold text-white">الوكالات المتميزة فقط</div>
-                    <div className="text-[10px] text-slate-400">تقييم 4.8 فأكثر ⭐</div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={excellenceOnly}
-                  onChange={(e) => setExcellenceOnly(e.target.checked)}
-                  className="accent-amber-500 rounded w-4 h-4"
-                />
-              </label>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300">القطاع</label>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+              >
+                <option value="all">الكل (سيارات وعقارات)</option>
+                <option value="car">السيارات فقط</option>
+                <option value="property">العقارات فقط</option>
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -143,43 +170,15 @@ export default function Search() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">فئة السيارة</label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-              >
-                {CAR_CATEGORIES.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">ناقل الحركة</label>
-              <select
-                value={transmissionFilter}
-                onChange={(e) => setTransmissionFilter(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
-              >
-                <option value="all">الكل (أوتوماتيك وعادي)</option>
-                <option value="أوتوماتيك">أوتوماتيك</option>
-                <option value="عادي">عادي</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-300">السعر الأقصى اليومي</span>
+                <span className="font-semibold text-slate-300">السعر الأقصى</span>
                 <span className="text-amber-400 font-bold">{maxPrice} درهم</span>
               </div>
               <input
                 type="range"
                 min="200"
-                max="3000"
-                step="50"
+                max="5000"
+                step="100"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-amber-500 bg-slate-800 cursor-pointer"
@@ -190,7 +189,7 @@ export default function Search() {
           <div className="lg:col-span-3 space-y-6">
             <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-slate-300">
-                تم العثور على <span className="text-amber-400 font-bold">{filteredCars.length}</span> سيارة متاحة
+                تم العثور على <span className="text-amber-400 font-bold">{filteredListings.length}</span> عرض متاح
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <ArrowUpDown className="w-4 h-4 text-amber-400" />
@@ -207,112 +206,144 @@ export default function Search() {
               </div>
             </div>
 
-            {filteredCars.length === 0 ? (
-              <div className="bg-slate-950 border border-slate-800 rounded-3xl p-16 text-center space-y-4">
-                <CarIcon className="w-16 h-16 text-slate-600 mx-auto" />
-                <h3 className="text-xl font-bold text-white">لم يتم العثور على سيارات تطابق بحثك</h3>
-                <Button
-                  onClick={() => {
-                    setCityFilter('all');
-                    setCategoryFilter('all');
-                    setTransmissionFilter('all');
-                    setMaxPrice(2500);
-                    setExcellenceOnly(false);
-                  }}
-                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
-                >
-                  إعادة ضبط الفلاتر
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredCars.map((car: Car) => {
-                  const isExcellence = car.agency.rating >= 4.8;
-                  const isCompared = compareList.some(c => c.id === car.id);
-                  return (
-                    <div
-                      key={car.id}
-                      className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col group relative transform hover:-translate-y-1.5"
-                    >
-                      <div className="relative h-56 overflow-hidden">
-                        <img
-                          src={car.image}
-                          alt={car.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-                        
-                        <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30 shadow-lg">
-                          {car.cityName}
-                        </div>
-                        <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold shadow-lg">
-                          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                          <span>{car.rating}</span>
-                        </div>
-                        {isExcellence && (
-                          <div className="absolute bottom-4 right-4 bg-amber-500 text-slate-950 font-bold px-3 py-1 rounded-xl text-[11px] flex items-center gap-1.5 shadow-lg">
-                            <Award className="w-3.5 h-3.5" /> وكالة متميزة
-                          </div>
-                        )}
-
-                        {/* زر المقارنة السريع */}
-                        <button
-                          onClick={() => toggleCompare(car)}
-                          className={`absolute bottom-4 left-4 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg ${isCompared ? 'bg-amber-500 text-slate-950' : 'bg-slate-950/80 text-white hover:bg-slate-900 border border-slate-700'}`}
-                        >
-                          <Scale className="w-3.5 h-3.5" /> {isCompared ? 'مضاف للمقارنة' : 'مقارنة'}
-                        </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredListings.map((item) => {
+                const isCompared = compareList.some(c => c.id === item.id);
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col group relative"
+                  >
+                    <div className="relative h-56 overflow-hidden">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
+                      
+                      <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
+                        {item.city}
                       </div>
 
-                      <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                        <div className="space-y-2">
-                          <div className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                            <span>{car.agency.name}</span>
-                            {isExcellence && <Award className="w-3.5 h-3.5 text-amber-400" />}
-                          </div>
-                          <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                            {car.name}
-                          </h3>
-                        </div>
+                      <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold">
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        <span>{item.rating}</span>
+                      </div>
 
-                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-800 text-xs text-slate-300">
-                          <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
-                            <CarIcon className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{car.transmission}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
-                            <Users className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{car.seats} مقاعد</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
-                            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{car.fuel}</span>
-                          </div>
-                        </div>
+                      {/* زر المقارنة */}
+                      <button
+                        onClick={() => toggleCompare(item)}
+                        className={`absolute bottom-4 left-4 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg ${isCompared ? 'bg-amber-500 text-slate-950' : 'bg-slate-950/80 text-white hover:bg-slate-900 border border-slate-700'}`}
+                      >
+                        <Scale className="w-3.5 h-3.5" /> {isCompared ? 'مضاف للمقارنة' : 'مقارنة'}
+                      </button>
 
-                        <div className="flex items-center justify-between pt-2">
-                          <div>
-                            <span className="text-2xl font-extrabold text-white">{car.pricePerDay}</span>
-                            <span className="text-xs text-slate-400 mr-1">درهم / يوم</span>
-                          </div>
-                          <Button
-                            onClick={() => setLocation(`/car/${car.id}`)}
-                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform"
-                          >
-                            التفاصيل والحجز
-                          </Button>
+                      {/* زر العرض السريع (Quick View) */}
+                      <button
+                        onClick={() => setQuickViewItem(item)}
+                        className="absolute bottom-4 right-4 bg-slate-950/90 hover:bg-slate-900 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> عرض سريع
+                      </button>
+                    </div>
+
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2">
+                        <div className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                          <span>{item.providerName}</span>
+                          <span className="text-[10px] bg-slate-900 px-2 py-0.5 rounded text-amber-400">
+                            {item.type === 'car' ? 'سيارة' : 'عقار'}
+                          </span>
                         </div>
+                        <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                          {item.title}
+                        </h3>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                        <div>
+                          <span className="text-2xl font-extrabold text-white">{item.pricePerUnit}</span>
+                          <span className="text-xs text-slate-400 mr-1">{item.unitLabel}</span>
+                        </div>
+                        <Button
+                          onClick={() => setLocation(`/car/${item.id}`)}
+                          className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20"
+                        >
+                          التفاصيل والحجز
+                        </Button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* نافذة المقارنة المنبثقة (Side-by-Side Modal) */}
+      {/* نافذة العرض السريع المنبثقة (Quick View Modal) */}
+      {quickViewItem && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl max-w-2xl w-full p-8 space-y-6 shadow-2xl relative animate-in zoom-in-95">
+            <button
+              onClick={() => setQuickViewItem(null)}
+              className="absolute top-6 left-6 text-slate-400 hover:text-white bg-slate-900 p-2 rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="relative h-64 rounded-2xl overflow-hidden">
+              <img src={quickViewItem.image} alt={quickViewItem.title} className="w-full h-full object-cover" />
+              <div className="absolute top-4 right-4 bg-amber-500 text-slate-950 px-3 py-1 rounded-xl text-xs font-bold">
+                {quickViewItem.city}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-amber-400 font-bold">{quickViewItem.providerName}</span>
+                  <h2 className="text-xl font-black text-white">{quickViewItem.title}</h2>
+                </div>
+                <div className="text-left">
+                  <div className="text-2xl font-black text-amber-400">{quickViewItem.pricePerUnit} {quickViewItem.unitLabel}</div>
+                  <div className="text-xs text-slate-400 flex items-center gap-1 justify-end">
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {quickViewItem.rating} ({quickViewItem.reviewsCount} تقييم)
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">{quickViewItem.description}</p>
+
+              <div className="flex flex-wrap gap-2">
+                {quickViewItem.features.map((f, i) => (
+                  <span key={i} className="text-[11px] bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1 rounded-xl">
+                    ✓ {f}
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                <Button
+                  onClick={() => setQuickViewItem(null)}
+                  className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs"
+                >
+                  إغلاق
+                </Button>
+                <Button
+                  onClick={() => setLocation(`/car/${quickViewItem.id}`)}
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20"
+                >
+                  الانتقال لصفحة الحجز الكاملة
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة المقارنة المنبثقة */}
       {showCompareModal && compareList.length === 2 && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl max-w-4xl w-full space-y-6 shadow-2xl relative animate-in zoom-in-95">
@@ -330,42 +361,37 @@ export default function Search() {
             <div className="grid grid-cols-2 gap-6">
               {compareList.map(c => (
                 <div key={c.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                  <img src={c.image} alt={c.name} className="w-full h-40 object-cover rounded-xl" />
-                  <h3 className="text-lg font-bold text-white text-center">{c.name}</h3>
+                  <img src={c.image} alt={c.title} className="w-full h-40 object-cover rounded-xl" />
+                  <h3 className="text-lg font-bold text-white text-center">{c.title}</h3>
                   <div className="space-y-2 text-xs text-slate-300">
                     <div className="flex justify-between py-2 border-b border-slate-800">
-                      <span className="text-slate-400">السعر اليومي:</span>
-                      <span className="font-extrabold text-amber-400">{c.pricePerDay} درهم</span>
+                      <span className="text-slate-400">السعر:</span>
+                      <span className="font-extrabold text-amber-400">{c.pricePerUnit} {c.unitLabel}</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-slate-800">
                       <span className="text-slate-400">المدينة:</span>
-                      <span className="font-bold">{c.cityName}</span>
+                      <span className="font-bold">{c.city}</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-slate-800">
                       <span className="text-slate-400">التقييم:</span>
                       <span className="font-bold text-amber-400">⭐ {c.rating}</span>
                     </div>
-                    <div className="flex justify-between py-2 border-b border-slate-800">
-                      <span className="text-slate-400">ناقل الحركة:</span>
-                      <span className="font-bold">{c.transmission}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-slate-800">
-                      <span className="text-slate-400">عدد المقاعد:</span>
-                      <span className="font-bold">{c.seats} مقاعد</span>
-                    </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-slate-400">نوع الوقود:</span>
-                      <span className="font-bold">{c.fuel}</span>
+                      <span className="text-slate-400">المزود:</span>
+                      <span className="font-bold">{c.providerName}</span>
                     </div>
                   </div>
-                  <Button
-                    onClick={() => { setShowCompareModal(false); setLocation(`/car/${c.id}`); }}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs py-2.5 rounded-xl"
-                  >
-                    حجز هذه السيارة
-                  </Button>
                 </div>
               ))}
+            </div>
+
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setShowCompareModal(false)}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-8 py-2.5 rounded-xl text-xs"
+              >
+                إنهاء المقارنة
+              </Button>
             </div>
           </div>
         </div>

@@ -80,6 +80,10 @@ export default function Success() {
   };
 
   const handleDownloadPDF = () => {
+    if (!hasSigned) {
+      toast.error('يرجى توقيع العقد في المربع المخصص قبل تنزيله.');
+      return;
+    }
     try {
       const doc = new jsPDF();
       

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, BookmarkCheck, HelpCircle, Phone, Sun, Moon } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -15,21 +15,21 @@ export default function Navbar() {
     { href: '/dashboard', label: 'لوحة الوكالة المستقلة', icon: LayoutDashboard },
     { href: '/add-car', label: 'إضافة سيارة', icon: PlusCircle },
     { href: '/my-bookings', label: 'حجوزاتي', icon: BookmarkCheck },
-    { href: '/help', label: 'المساعدة', icon: HelpCircle },
+    { href: '/help', label: 'الدعم والمساعدة', icon: HelpCircle },
   ];
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border text-foreground shadow-lg transition-colors duration-300">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         
-        {/* الشعار وحده في العنوان بدون نصوص مكررة */}
+        {/* الشعار وحده في العنوان */}
         <Link href="/" className="flex items-center group">
           <div className="h-14 w-36 overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
             <img src="/manus-storage/35942_9a6ce071.png" alt="B2-Rent Logo" className="h-full w-full object-contain" />
           </div>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-3">
+        <nav className="hidden lg:flex items-center gap-2">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = location === link.href;
@@ -65,15 +65,17 @@ export default function Navbar() {
             </button>
           )}
 
-          <a
-            href="https://wa.me/212661234567"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-900/20 transition-all hover:scale-[1.02]"
-          >
-            <Phone className="w-4 h-4" />
-            <span>واتساب مباشر</span>
-          </a>
+          <div className="flex items-center gap-2 bg-muted/50 border border-border px-3 py-2 rounded-xl text-xs">
+            <a href="tel:0754382654" className="flex items-center gap-1.5 text-foreground hover:text-amber-500 font-bold">
+              <Phone className="w-3.5 h-3.5 text-amber-500" />
+              <span>0754382654</span>
+            </a>
+            <span className="text-border">|</span>
+            <a href="mailto:b2rentt@gmail.com" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+              <Mail className="w-3.5 h-3.5 text-amber-500" />
+              <span>b2rentt@gmail.com</span>
+            </a>
+          </div>
 
           <Link href="/add-car">
             <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20">
@@ -125,16 +127,15 @@ export default function Navbar() {
             })}
           </div>
 
-          <div className="pt-4 border-t border-border flex flex-col gap-3">
-            <a
-              href="https://wa.me/212661234567"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-emerald-600 text-white py-3 rounded-xl text-xs font-bold shadow-md"
-            >
-              <Phone className="w-4 h-4" />
-              <span>تواصل عبر الواتساب الفوري</span>
-            </a>
+          <div className="pt-4 border-t border-border flex flex-col gap-3 text-xs">
+            <div className="bg-muted p-3 rounded-xl space-y-2">
+              <a href="tel:0754382654" className="flex items-center gap-2 font-bold text-foreground">
+                <Phone className="w-4 h-4 text-amber-500" /> 0754382654
+              </a>
+              <a href="mailto:b2rentt@gmail.com" className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="w-4 h-4 text-amber-500" /> b2rentt@gmail.com
+              </a>
+            </div>
             <Link href="/add-car" onClick={() => setMobileMenuOpen(false)}>
               <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 text-xs">
                 أضف سيارتك للوكالة

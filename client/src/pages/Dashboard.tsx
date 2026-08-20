@@ -481,12 +481,23 @@ export default function Dashboard() {
                             </>
                           )}
                           {b.status === 'confirmed' && (
-                            <Button
-                              onClick={() => handleStatusChange(b.id, 'completed')}
-                              className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-3 py-1.5 h-auto rounded-xl"
-                            >
-                              إنهاء الإيجار
-                            </Button>
+                            <>
+                              <Button
+                                onClick={() => handleStatusChange(b.id, 'completed')}
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-2.5 py-1.5 h-auto rounded-xl"
+                              >
+                                إنهاء الإيجار
+                              </Button>
+                              <button
+                                onClick={() => {
+                                  toast.success(`تم إرسال تذكير استلام/تسليم عبر الواتساب بنجاح إلى العميل ${b.customerName} (${b.customerPhone})!`);
+                                }}
+                                className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow"
+                                title="إرسال تذكير واتساب بموعد الاستلام والتسليم"
+                              >
+                                💬 تذكير واتساب
+                              </button>
+                            </>
                           )}
                           <a
                             href={`tel:${b.customerPhone}`}

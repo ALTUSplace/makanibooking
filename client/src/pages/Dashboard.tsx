@@ -2,12 +2,38 @@ import { useState, useRef } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet, Calendar, TrendingUp } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { MapView } from '@/components/Map';
 import { jsPDF } from 'jspdf';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 export default function Dashboard() {
+  const utils = trpc.useUtils();
+  const { data: dbListings = [] } = trpc.listings.list.useQuery();
+  const { data: dbBookings = [] } = trpc.bookings.list.useQuery();
+
+  const createListingMutation = trpc.listings.create.useMutation({
+    onSuccess: () => {
+      toast.success('تمت إضافة الإعلان بنجاح إلى قاعدة البيانات!');
+      utils.listings.list.invalidate();
+      setIsAddModalOpen(false);
+      setNewTitle('');
+      setNewPrice('');
+      setNewCity('الدار البيضاء');
+    },
+    onError: (err) => {
+      toast.error('حدث خطأ أثناء إضافة الإعلان: ' + err.message);
+    }
+  });
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState('car');
+  const [newPrice, setNewPrice] = useState('');
+  const [newCity, setNewCity] = useState('الدار البيضاء');
+  const [newImageUrl, setNewImageUrl] = useState('');
+
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>(AGENCIES[0].id);
   const [cars, setCars] = useState<Car[]>(() => {
     const saved = localStorage.getItem('b2_rent_cars');

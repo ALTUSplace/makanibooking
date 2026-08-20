@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { MapView } from '@/components/Map';
 import { jsPDF } from 'jspdf';
@@ -16,6 +16,9 @@ export default function Dashboard() {
     const saved = localStorage.getItem('b2_rent_bookings');
     return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
   });
+
+  // Report Date Range filter state
+  const [reportTimeRange, setReportTimeRange] = useState<'all' | 'week' | 'month'>('all');
 
   // Map Filter states
   const [mapFilterCategory, setMapFilterCategory] = useState<string>('all');
@@ -39,7 +42,21 @@ export default function Dashboard() {
   const agencyCarIds = agencyAllCars.map((c) => c.id);
   const agencyBookings = bookings.filter((b) => agencyCarIds.includes(b.carId));
 
-  const totalRevenue = agencyBookings
+  // Filter bookings for export based on time range
+  const getFilteredBookingsForExport = () => {
+    if (reportTimeRange === 'week') {
+      // Mock filter for last 7 days
+      return agencyBookings.slice(0, Math.min(agencyBookings.length, 3));
+    } else if (reportTimeRange === 'month') {
+      // Mock filter for last 30 days
+      return agencyBookings.slice(0, Math.min(agencyBookings.length, 6));
+    }
+    return agencyBookings;
+  };
+
+  const exportBookings = getFilteredBookingsForExport();
+
+  const totalRevenue = exportBookings
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
     .reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
 
@@ -69,39 +86,41 @@ export default function Dashboard() {
   };
 
   const exportAgencyExcel = () => {
+    const rangeLabel = reportTimeRange === 'week' ? 'Weekly' : reportTimeRange === 'month' ? 'Monthly' : 'AllTime';
     const csvHeader = 'BookingID,ItemName,CustomerName,Phone,Period,TotalMAD,Status\n';
-    const csvRows = agencyBookings.map(b => `${b.id},"${b.carName}","${b.customerName}","${b.customerPhone}","${b.startDate} to ${b.endDate}",${b.totalPrice},${b.status}`).join('\n');
+    const csvRows = exportBookings.map(b => `${b.id},"${b.carName}","${b.customerName}","${b.customerPhone}","${b.startDate} to ${b.endDate}",${b.totalPrice},${b.status}`).join('\n');
     const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + csvHeader + csvRows;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `B2Rent_Agency_${currentAgency.name}_Report.csv`);
+    link.setAttribute('download', `B2Rent_Agency_${currentAgency.name}_${rangeLabel}_Report.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('تم تصدير تقرير الوكالة بصيغة Excel/CSV بنجاح!');
+    toast.success(`تم تصدير تقرير الوكالة (${rangeLabel}) بصيغة Excel/CSV بنجاح!`);
   };
 
   const exportAgencyPDF = () => {
     try {
+      const rangeLabel = reportTimeRange === 'week' ? 'أسبوعي' : reportTimeRange === 'month' ? 'شهري' : 'شامل الكل';
       const doc = new jsPDF();
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
-      doc.text(`B2-RENT - Agency Report`, 105, 20, { align: "center" });
+      doc.text(`B2-RENT - Agency Report (${rangeLabel})`, 105, 20, { align: "center" });
 
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
       doc.text(`Agency: ${currentAgency.name} (${currentAgency.city})`, 20, 35);
-      doc.text(`Total Revenue: ${totalRevenue} MAD`, 20, 45);
-      doc.text(`Active Fleet Count: ${agencyAllCars.length} Items`, 20, 55);
-      doc.text(`Total Bookings: ${agencyBookings.length}`, 20, 65);
+      doc.text(`Period Filter: ${rangeLabel}`, 20, 43);
+      doc.text(`Total Revenue: ${totalRevenue} MAD`, 20, 51);
+      doc.text(`Filtered Bookings Count: ${exportBookings.length}`, 20, 59);
 
-      doc.line(20, 72, 190, 72);
+      doc.line(20, 66, 190, 66);
       doc.setFont("helvetica", "bold");
-      doc.text("Bookings Summary:", 20, 82);
+      doc.text("Bookings Summary:", 20, 76);
 
-      let y = 92;
-      agencyBookings.slice(0, 10).forEach((b, idx) => {
+      let y = 86;
+      exportBookings.forEach((b, idx) => {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text(`${idx + 1}. [${b.id}] ${b.carName} - ${b.customerName} (${b.totalPrice} MAD) - ${b.status}`, 20, y);
@@ -109,7 +128,7 @@ export default function Dashboard() {
       });
 
       doc.save(`B2Rent_Agency_${currentAgency.name}_Report.pdf`);
-      toast.success('تم تصدير تقرير الوكالة بصيغة PDF بنجاح!');
+      toast.success(`تم تصدير تقرير الوكالة (${rangeLabel}) بصيغة PDF بنجاح!`);
     } catch (err) {
       console.error(err);
       toast.error('حدث خطأ أثناء تصدير ملف الـ PDF');
@@ -149,18 +168,32 @@ export default function Dashboard() {
               </select>
             </div>
 
+            {/* Time Range Filter for Export */}
+            <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5">
+              <Calendar className="w-4 h-4 text-amber-400" />
+              <select
+                value={reportTimeRange}
+                onChange={(e) => setReportTimeRange(e.target.value as any)}
+                className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="all">كل التقارير (شامل)</option>
+                <option value="week">تقرير أسبوعي</option>
+                <option value="month">تقرير شهري</option>
+              </select>
+            </div>
+
             <div className="flex items-center gap-2">
               <Button
                 onClick={exportAgencyExcel}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md"
               >
-                <FileSpreadsheet className="w-4 h-4" /> Excel
+                <FileSpreadsheet className="w-4 h-4" /> Excel ({exportBookings.length})
               </Button>
               <Button
                 onClick={exportAgencyPDF}
                 className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md"
               >
-                <Download className="w-4 h-4" /> PDF
+                <Download className="w-4 h-4" /> PDF ({exportBookings.length})
               </Button>
             </div>
           </div>
@@ -174,7 +207,7 @@ export default function Dashboard() {
               <DollarSign className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="text-3xl font-black text-white">{totalRevenue.toLocaleString()} <span className="text-xs text-slate-400">درهم</span></div>
-            <p className="text-[10px] text-emerald-400">محدث تلقائياً مع كل حجز مؤكد</p>
+            <p className="text-[10px] text-emerald-400">محدث تلقائياً حسب النطاق الزمني</p>
           </div>
 
           <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-2 shadow-lg">

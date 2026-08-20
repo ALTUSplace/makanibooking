@@ -22,8 +22,8 @@ import Profile from "./pages/Profile";
 import Help from "./pages/Help";
 import About from "./pages/About";
 import AdminDashboard from "./pages/AdminDashboard";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <Navbar />

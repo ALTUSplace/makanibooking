@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { MOCK_CARS, CITIES, CAR_CATEGORIES, Car } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown } from 'lucide-react';
+import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award } from 'lucide-react';
 
 export default function Search() {
   const [, setLocation] = useLocation();
@@ -12,6 +12,7 @@ export default function Search() {
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'all');
   const [transmissionFilter, setTransmissionFilter] = useState('all');
   const [maxPrice, setMaxPrice] = useState(2500);
+  const [excellenceOnly, setExcellenceOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('rating');
 
   const filteredCars = useMemo(() => {
@@ -20,6 +21,7 @@ export default function Search() {
       if (categoryFilter !== 'all' && car.category !== categoryFilter) return false;
       if (transmissionFilter !== 'all' && car.transmission !== transmissionFilter) return false;
       if (car.pricePerDay > maxPrice) return false;
+      if (excellenceOnly && car.agency.rating < 4.8) return false;
       return true;
     }).sort((a, b) => {
       if (sortBy === 'price-asc') return a.pricePerDay - b.pricePerDay;
@@ -27,7 +29,7 @@ export default function Search() {
       if (sortBy === 'rating') return b.rating - a.rating;
       return 0;
     });
-  }, [cityFilter, categoryFilter, transmissionFilter, maxPrice, sortBy]);
+  }, [cityFilter, categoryFilter, transmissionFilter, maxPrice, excellenceOnly, sortBy]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12">
@@ -50,11 +52,31 @@ export default function Search() {
                   setCategoryFilter('all');
                   setTransmissionFilter('all');
                   setMaxPrice(2500);
+                  setExcellenceOnly(false);
                 }}
                 className="text-xs text-amber-400 hover:underline"
               >
                 إعادة ضبط
               </button>
+            </div>
+
+            {/* Excellence Filter Toggle */}
+            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-400" />
+                  <div>
+                    <div className="text-xs font-bold text-white">الوكالات المتميزة فقط</div>
+                    <div className="text-[10px] text-slate-400">تقييم 4.8 فأكثر ⭐</div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={excellenceOnly}
+                  onChange={(e) => setExcellenceOnly(e.target.checked)}
+                  className="accent-amber-500 rounded w-4 h-4"
+                />
+              </label>
             </div>
 
             <div className="space-y-2">
@@ -147,6 +169,7 @@ export default function Search() {
                     setCategoryFilter('all');
                     setTransmissionFilter('all');
                     setMaxPrice(2500);
+                    setExcellenceOnly(false);
                   }}
                   className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold"
                 >
@@ -155,64 +178,75 @@ export default function Search() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredCars.map((car: Car) => (
-                  <div
-                    key={car.id}
-                    className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500/40 transition-all duration-300 flex flex-col group"
-                  >
-                    <div className="relative h-52 overflow-hidden">
-                      <img
-                        src={car.image}
-                        alt={car.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
-                        {car.cityName}
+                {filteredCars.map((car: Car) => {
+                  const isExcellence = car.agency.rating >= 4.8;
+                  return (
+                    <div
+                      key={car.id}
+                      className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500/40 transition-all duration-300 flex flex-col group"
+                    >
+                      <div className="relative h-52 overflow-hidden">
+                        <img
+                          src={car.image}
+                          alt={car.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
+                          {car.cityName}
+                        </div>
+                        <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold">
+                          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                          <span>{car.rating}</span>
+                        </div>
+                        {isExcellence && (
+                          <div className="absolute bottom-3 right-3 bg-amber-500 text-slate-950 font-bold px-2.5 py-1 rounded-xl text-[10px] flex items-center gap-1 shadow-md">
+                            <Award className="w-3 h-3" /> متميزة
+                          </div>
+                        )}
                       </div>
-                      <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold">
-                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                        <span>{car.rating}</span>
+
+                      <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                        <div className="space-y-2">
+                          <div className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            <span>{car.agency.name}</span>
+                            {isExcellence && <Award className="w-3.5 h-3.5 text-amber-400" />}
+                          </div>
+                          <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                            {car.name}
+                          </h3>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-800 text-xs text-slate-300">
+                          <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
+                            <CarIcon className="w-3.5 h-3.5 text-amber-400" />
+                            <span>{car.transmission}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
+                            <Users className="w-3.5 h-3.5 text-amber-400" />
+                            <span>{car.seats} مقاعد</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                            <span>{car.fuel}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2">
+                          <div>
+                            <span className="text-2xl font-extrabold text-white">{car.pricePerDay}</span>
+                            <span className="text-xs text-slate-400 mr-1">درهم / يوم</span>
+                          </div>
+                          <Button
+                            onClick={() => setLocation(`/car/${car.id}`)}
+                            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-amber-500/20"
+                          >
+                            التفاصيل والحجز
+                          </Button>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                      <div className="space-y-2">
-                        <div className="text-xs text-slate-400 font-medium">{car.agency.name}</div>
-                        <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                          {car.name}
-                        </h3>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-800 text-xs text-slate-300">
-                        <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
-                          <CarIcon className="w-3.5 h-3.5 text-amber-400" />
-                          <span>{car.transmission}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
-                          <Users className="w-3.5 h-3.5 text-amber-400" />
-                          <span>{car.seats} مقاعد</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 justify-center bg-slate-900 py-1.5 rounded-lg">
-                          <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                          <span>{car.fuel}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2">
-                        <div>
-                          <span className="text-2xl font-extrabold text-white">{car.pricePerDay}</span>
-                          <span className="text-xs text-slate-400 mr-1">درهم / يوم</span>
-                        </div>
-                        <Button
-                          onClick={() => setLocation(`/car/${car.id}`)}
-                          className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-amber-500/20"
-                        >
-                          التفاصيل والحجز
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { MOCK_CARS, CITIES, CAR_CATEGORIES, Car } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, Fuel, CheckCircle2, Sparkles } from 'lucide-react';
+import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, Fuel, CheckCircle2, Sparkles, Scale, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Search() {
   const [, setLocation] = useLocation();
@@ -14,6 +15,24 @@ export default function Search() {
   const [maxPrice, setMaxPrice] = useState(2500);
   const [excellenceOnly, setExcellenceOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('rating');
+
+  // ميزة المقارنة (Side-by-Side Comparison)
+  const [compareList, setCompareList] = useState<Car[]>([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
+
+  const toggleCompare = (car: Car) => {
+    if (compareList.find(c => c.id === car.id)) {
+      setCompareList(compareList.filter(c => c.id !== car.id));
+      toast.info('تمت إزالة السيارة من قائمة المقارنة');
+    } else {
+      if (compareList.length >= 2) {
+        toast.error('يمكنك مقارنة سيارتين كحد أقصى في نفس الوقت');
+        return;
+      }
+      setCompareList([...compareList, car]);
+      toast.success('تمت إضافة السيارة إلى قائمة المقارنة');
+    }
+  };
 
   const filteredCars = useMemo(() => {
     return MOCK_CARS.filter((car) => {
@@ -32,11 +51,40 @@ export default function Search() {
   }, [cityFilter, categoryFilter, transmissionFilter, maxPrice, excellenceOnly, sortBy]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 py-12">
+    <div className="min-h-screen bg-slate-900 text-slate-100 py-12" dir="rtl">
       <div className="container mx-auto px-4">
-        <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-extrabold text-white">أسطول سيارات B2-Rent</h1>
-          <p className="text-slate-400 text-sm">استعرض مئات السيارات المتاحة فوراً في مختلف المدن المغربية بأفضل الأسعار</p>
+        
+        {/* شريط عائم للمقارنة إذا تم اختيار سيارات */}
+        {compareList.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-950/95 backdrop-blur-xl border border-amber-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in-50">
+            <div className="flex items-center gap-2">
+              <Scale className="w-5 h-5 text-amber-400" />
+              <span className="text-xs font-bold text-white">المقارنة ({compareList.length}/2):</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {compareList.map(c => (
+                <span key={c.id} className="bg-slate-900 border border-slate-700 text-xs px-3 py-1 rounded-xl text-slate-200 flex items-center gap-2">
+                  {c.name}
+                  <button onClick={() => toggleCompare(c)} className="text-red-400 hover:text-red-300"><X className="w-3.5 h-3.5" /></button>
+                </span>
+              ))}
+            </div>
+            {compareList.length === 2 && (
+              <Button
+                onClick={() => setShowCompareModal(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl shadow-lg"
+              >
+                قارن الآن
+              </Button>
+            )}
+          </div>
+        )}
+
+        <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-extrabold text-white">أسطول سيارات وعقارات B2-Rent</h1>
+            <p className="text-slate-400 text-sm">استعرض مئات العروض المتاحة فوراً في مختلف المدن المغربية مع ميزة المقارنة المتقدمة</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -180,6 +228,7 @@ export default function Search() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredCars.map((car: Car) => {
                   const isExcellence = car.agency.rating >= 4.8;
+                  const isCompared = compareList.some(c => c.id === car.id);
                   return (
                     <div
                       key={car.id}
@@ -206,19 +255,13 @@ export default function Search() {
                           </div>
                         )}
 
-                        {/* Hover Overlay Features Preview */}
-                        <div className="absolute inset-x-0 bottom-0 p-4 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out flex flex-col gap-2">
-                          <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5" /> أبرز مميزات هذه السيارة:
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {car.features.slice(0, 3).map((feat, idx) => (
-                              <span key={idx} className="bg-slate-900 text-slate-300 text-[10px] px-2 py-0.5 rounded-md border border-slate-800 flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3 text-amber-400" /> {feat}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                        {/* زر المقارنة السريع */}
+                        <button
+                          onClick={() => toggleCompare(car)}
+                          className={`absolute bottom-4 left-4 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg ${isCompared ? 'bg-amber-500 text-slate-950' : 'bg-slate-950/80 text-white hover:bg-slate-900 border border-slate-700'}`}
+                        >
+                          <Scale className="w-3.5 h-3.5" /> {isCompared ? 'مضاف للمقارنة' : 'مقارنة'}
+                        </button>
                       </div>
 
                       <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
@@ -268,6 +311,65 @@ export default function Search() {
           </div>
         </div>
       </div>
+
+      {/* نافذة المقارنة المنبثقة (Side-by-Side Modal) */}
+      {showCompareModal && compareList.length === 2 && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl max-w-4xl w-full space-y-6 shadow-2xl relative animate-in zoom-in-95">
+            <button
+              onClick={() => setShowCompareModal(false)}
+              className="absolute top-6 left-6 text-slate-400 hover:text-white bg-slate-900 p-2 rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="text-center space-y-2">
+              <span className="text-amber-500 text-xs font-bold uppercase tracking-widest">مقارنة تفصيلية</span>
+              <h2 className="text-2xl font-black text-white">مقارنة جنباً إلى جنب (Side-by-Side)</h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              {compareList.map(c => (
+                <div key={c.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                  <img src={c.image} alt={c.name} className="w-full h-40 object-cover rounded-xl" />
+                  <h3 className="text-lg font-bold text-white text-center">{c.name}</h3>
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <div className="flex justify-between py-2 border-b border-slate-800">
+                      <span className="text-slate-400">السعر اليومي:</span>
+                      <span className="font-extrabold text-amber-400">{c.pricePerDay} درهم</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-slate-800">
+                      <span className="text-slate-400">المدينة:</span>
+                      <span className="font-bold">{c.cityName}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-slate-800">
+                      <span className="text-slate-400">التقييم:</span>
+                      <span className="font-bold text-amber-400">⭐ {c.rating}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-slate-800">
+                      <span className="text-slate-400">ناقل الحركة:</span>
+                      <span className="font-bold">{c.transmission}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-slate-800">
+                      <span className="text-slate-400">عدد المقاعد:</span>
+                      <span className="font-bold">{c.seats} مقاعد</span>
+                    </div>
+                    <div className="flex justify-between py-2">
+                      <span className="text-slate-400">نوع الوقود:</span>
+                      <span className="font-bold">{c.fuel}</span>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => { setShowCompareModal(false); setLocation(`/car/${c.id}`); }}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs py-2.5 rounded-xl"
+                  >
+                    حجز هذه السيارة
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

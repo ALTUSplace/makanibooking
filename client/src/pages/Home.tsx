@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles } from 'lucide-react';
 import { PARTNERS, LISTINGS } from '@/data/b2rent';
 
 export default function Home() {
@@ -17,13 +17,16 @@ export default function Home() {
     return true;
   });
 
+  // العروض الأعلى تقييماً (Top Rated Showcase) بناءً على نظام التقييمات الجديد
+  const topRatedListings = [...LISTINGS].sort((a, b) => b.rating - a.rating).slice(0, 4);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLocation(`/search?type=${selectedTab}&city=${selectedCity}&q=${encodeURIComponent(searchQuery)}`);
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col" dir="rtl">
       
       {/* القسم الرئيسي البانر */}
       <section className="relative py-24 px-4 overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-border">
@@ -36,7 +39,7 @@ export default function Home() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-tight">
-            بوابةك الموثوقة لحجز <span className="text-amber-500">السيارات</span> و<span className="text-amber-400">العقارات</span> بكل أمان
+            بوابتك الموثوقة لحجز <span className="text-amber-500">السيارات</span> و<span className="text-amber-400">العقارات</span> بكل أمان
           </h1>
 
           <p className="text-slate-400 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
@@ -95,6 +98,61 @@ export default function Home() {
               </button>
             </div>
           </form>
+        </div>
+      </section>
+
+      {/* 1. القسم الديناميكي: السيارات والعقارات الأعلى تقييماً */}
+      <section className="py-16 bg-slate-950 border-b border-border">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 text-amber-500 text-xs font-extrabold uppercase tracking-widest">
+                <Sparkles className="w-4 h-4" /> الأعلى تقييماً وثقة
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white">العروض المتميزة بناءً على آراء العملاء</h2>
+            </div>
+            <Link href="/search" className="text-amber-400 hover:text-amber-300 text-xs font-bold flex items-center gap-1">
+              تصفح كافة العروض <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {topRatedListings.map(item => (
+              <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500/60 transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col group">
+                <div className="relative h-48 overflow-hidden bg-slate-950">
+                  <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute top-3 right-3 bg-amber-500 text-slate-950 px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1 shadow-lg">
+                    <Award className="w-3.5 h-3.5" /> تقييم ممتاز ⭐ {item.rating}
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-slate-950/90 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-extrabold border border-slate-800">
+                    {item.pricePerUnit} {item.unitLabel}
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4 flex-grow flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-amber-500" /> {item.city}</span>
+                      <span className="text-amber-400 font-bold">{item.providerName}</span>
+                    </div>
+                    <h3 className="text-base font-bold text-white group-hover:text-amber-400 transition-colors">{item.title}</h3>
+                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{item.description}</p>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                    <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded-lg">
+                      {item.reviewsCount} مراجعة مؤكدة
+                    </span>
+                    <Link href={`/car/${item.id}`}>
+                      <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow">
+                        عرض التفاصيل
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -250,9 +308,9 @@ export default function Home() {
               <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/40 rounded-2xl flex items-center justify-center text-amber-400">
                 <Building2 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-white">استقلالية تامة للوكلاء</h3>
+              <h3 className="text-lg font-bold text-white">إدارة مستقلة للمزودين</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                لكل شركة ووكالة لوحة تحكم مستقلة خاصة بها تدير من خلالها أسطولها، عقاراتها، وأرباحها بكل سهولة واستقلالية.
+                كل وكالة أو شركة تتوفر على لوحة تحكم مستقلة لإدارة أسطولها، تعديل أسعارها، وقبول أو رفض الحجوزات بكل سهولة.
               </p>
             </div>
           </div>

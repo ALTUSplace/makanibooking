@@ -21,11 +21,45 @@ export const appRouter = router({
   }),
 
   listings: router({
-    list: publicProcedure.query(async () => {
-      const db = await getDb();
-      if (!db) return [];
-      return await db.select().from(listings).orderBy(desc(listings.createdAt));
-    }),
+    list: publicProcedure
+      .input(
+        z.object({
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const allListings = await db.select().from(listings).orderBy(desc(listings.createdAt));
+
+        // Dynamic Pricing Engine calculation
+        return allListings.map(item => {
+          let adjustedPrice = item.pricePerDay;
+          if (input?.startDate && input?.endDate) {
+            const start = new Date(input.startDate);
+            const end = new Date(input.endDate);
+            const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+            // Weekend surge (Friday/Saturday)
+            const dayOfWeek = start.getDay();
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+              adjustedPrice = Math.round(adjustedPrice * 1.20); // 20% weekend surge
+            }
+
+            // Long-stay discount
+            if (days > 30) {
+              adjustedPrice = Math.round(adjustedPrice * 0.80); // 20% off for > 1 month
+            } else if (days > 7) {
+              adjustedPrice = Math.round(adjustedPrice * 0.90); // 10% off for > 7 days
+            }
+          }
+          return {
+            ...item,
+            dynamicPricePerDay: adjustedPrice,
+          };
+        });
+      }),
 
     getById: publicProcedure
       .input(z.object({ id: z.number() }))

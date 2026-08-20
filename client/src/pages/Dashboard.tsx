@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin } from 'lucide-react';
+import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { MapView } from '@/components/Map';
 
@@ -16,13 +16,26 @@ export default function Dashboard() {
     return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
   });
 
+  // Map Filter states
+  const [mapFilterCategory, setMapFilterCategory] = useState<string>('all');
+  const [mapFilterStatus, setMapFilterStatus] = useState<'all' | 'available' | 'booked'>('all');
+
   // Edit car state
   const [editingCar, setEditingCar] = useState<Car | null>(null);
 
   const currentAgency = AGENCIES.find((a) => a.id === selectedAgencyId) || AGENCIES[0];
 
-  const agencyCars = cars.filter((c) => c.agencyId === selectedAgencyId);
-  const agencyCarIds = agencyCars.map((c) => c.id);
+  const agencyCars = cars.filter((c) => {
+    const matchesAgency = c.agencyId === selectedAgencyId;
+    if (!matchesAgency) return false;
+    if (mapFilterCategory !== 'all' && c.category !== mapFilterCategory) return false;
+    if (mapFilterStatus === 'available' && c.available === false) return false;
+    if (mapFilterStatus === 'booked' && c.available === true) return false;
+    return true;
+  });
+
+  const agencyAllCars = cars.filter((c) => c.agencyId === selectedAgencyId);
+  const agencyCarIds = agencyAllCars.map((c) => c.id);
   const agencyBookings = bookings.filter((b) => agencyCarIds.includes(b.carId));
 
   const totalRevenue = agencyBookings
@@ -101,7 +114,7 @@ export default function Dashboard() {
               <span className="text-xs text-slate-400 font-semibold">سيارات وعقارات الأسطول</span>
               <CarIcon className="w-5 h-5 text-amber-400" />
             </div>
-            <div className="text-3xl font-black text-white">{agencyCars.length} <span className="text-xs text-slate-400">عنصر</span></div>
+            <div className="text-3xl font-black text-white">{agencyAllCars.length} <span className="text-xs text-slate-400">عنصر</span></div>
             <p className="text-[10px] text-amber-400">جاهزة للحجز الفوري</p>
           </div>
 
@@ -124,14 +137,48 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Interactive Fleet Map Section */}
+        {/* Interactive Fleet Map Section with Advanced Filters */}
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-amber-400" />
-              <span>خريطة أسطول الوكالة الجغرافية التفاعلية ({currentAgency.city})</span>
-            </h2>
-            <span className="text-xs text-slate-400">استعراض مواقع المركبات والعقارات التابعة للوكالة على الخريطة الحية</span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-amber-400" />
+                <span>خريطة أسطول الوكالة الجغرافية التفاعلية ({currentAgency.city})</span>
+              </h2>
+              <span className="text-xs text-slate-400">استعراض مواقع المركبات والعقارات ومطابقتها مع فلاتر الفرز الحية</span>
+            </div>
+
+            {/* Map Advanced Filters */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
+                <Filter className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[10px] font-bold text-slate-300">الفئة:</span>
+                <select
+                  value={mapFilterCategory}
+                  onChange={(e) => setMapFilterCategory(e.target.value)}
+                  className="bg-transparent text-amber-400 text-xs font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="all">جميع الفئات</option>
+                  <option value="suv">دفع رباعي (SUV)</option>
+                  <option value="luxury">سيارات فاخرة</option>
+                  <option value="sedan">عائلية (Sedan)</option>
+                  <option value="economic">اقتصادية</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
+                <span className="text-[10px] font-bold text-slate-300">التوفر:</span>
+                <select
+                  value={mapFilterStatus}
+                  onChange={(e) => setMapFilterStatus(e.target.value as any)}
+                  className="bg-transparent text-emerald-400 text-xs font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value="all">جميع الحالات</option>
+                  <option value="available">متاح للحجز</option>
+                  <option value="booked">محجوز حالياً</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="h-80 w-full rounded-2xl overflow-hidden border border-slate-800">
@@ -152,11 +199,26 @@ export default function Dashboard() {
                         map,
                         title: currentAgency.name,
                       });
+
+                      // Add markers for filtered cars
+                      agencyCars.forEach((car, index) => {
+                        const offsetLat = loc.lat() + (Math.sin(index) * 0.02);
+                        const offsetLng = loc.lng() + (Math.cos(index) * 0.02);
+                        new maps.Marker({
+                          position: { lat: offsetLat, lng: offsetLng },
+                          map,
+                          title: `${car.name} - ${car.pricePerDay} درهم/يوم`,
+                        });
+                      });
                     }
                   });
                 }
               }}
             />
+          </div>
+          <div className="flex items-center justify-between text-xs text-slate-400 px-2">
+            <span>عدد العناصر المطابقة للفلتر على الخريطة: <strong className="text-amber-400">{agencyCars.length}</strong> عنصر</span>
+            <span>📍 يتم تحديث علامات الخريطة تلقائياً حسب الفلاتر المحددة</span>
           </div>
         </div>
 
@@ -283,7 +345,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {agencyCars.map((car) => (
+            {agencyAllCars.map((car) => (
               <div key={car.id} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between">
                 <div>
                   <div className="relative h-44 overflow-hidden">

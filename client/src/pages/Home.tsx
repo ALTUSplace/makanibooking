@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
+import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
@@ -12,6 +13,27 @@ export default function Home() {
   const [selectedCity, setSelectedCity] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [recentViewed, setRecentViewed] = useState<ListingItem[]>([]);
+  
+  // جلب الإعلانات من قاعدة البيانات الحية
+  const { data: dbListings = [], isLoading: isDbLoading } = trpc.listings.list.useQuery();
+  const activeListings = dbListings.length > 0 ? dbListings.map(item => ({
+    id: String(item.id),
+    title: item.title,
+    category: item.category === 'property' ? 'عقار' : 'سيارة',
+    type: item.category,
+    price: item.pricePerDay,
+    rating: 4.9,
+    reviewsCount: 12,
+    image: item.imageUrl || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800',
+    location: item.city || 'الدار البيضاء',
+    partnerName: 'وكالة الأندلس المعتمدة',
+    partnerBadge: true,
+    specs: {
+      transmission: 'أوتوماتيك',
+      fuel: 'ديزل / بنزين',
+      seats: 5
+    }
+  })) : LISTINGS;
 
   // حالة البحث الذكي بالذكاء الاصطناعي
   const [aiPrompt, setAiPrompt] = useState('');

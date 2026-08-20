@@ -199,18 +199,48 @@ export default function Dashboard() {
               </select>
             </div>
 
-            {/* Time Range Filter for Export */}
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5">
-              <Calendar className="w-4 h-4 text-amber-400" />
-              <select
-                value={reportTimeRange}
-                onChange={(e) => setReportTimeRange(e.target.value as any)}
-                className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+            {/* Time Range Filter for Export & Saved Templates */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5">
+                <Calendar className="w-4 h-4 text-amber-400" />
+                <select
+                  value={reportTimeRange}
+                  onChange={(e) => setReportTimeRange(e.target.value as any)}
+                  className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">كل التقارير (شامل)</option>
+                  <option value="week">تقرير أسبوعي</option>
+                  <option value="month">تقرير شهري</option>
+                </select>
+              </div>
+
+              {/* Saved Templates Button */}
+              <button
+                onClick={() => {
+                  localStorage.setItem(`b2rent_template_${selectedAgencyId}`, reportTimeRange);
+                  toast.success(`تم حفظ قالب التقرير الحالي (${reportTimeRange === 'week' ? 'أسبوعي' : reportTimeRange === 'month' ? 'شهري' : 'شامل'}) بنجاح للوكالة!`);
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1 shadow-sm"
+                title="حفظ إعدادات الفلتر الحالي كقالب افتراضي"
               >
-                <option value="all">كل التقارير (شامل)</option>
-                <option value="week">تقرير أسبوعي</option>
-                <option value="month">تقرير شهري</option>
-              </select>
+                💾 حفظ القالب
+              </button>
+
+              <button
+                onClick={() => {
+                  const savedTemplate = localStorage.getItem(`b2rent_template_${selectedAgencyId}`);
+                  if (savedTemplate && (savedTemplate === 'all' || savedTemplate === 'week' || savedTemplate === 'month')) {
+                    setReportTimeRange(savedTemplate);
+                    toast.success(`تم تطبيق القالب المحفوظ بنجاح: (${savedTemplate === 'week' ? 'أسبوعي' : savedTemplate === 'month' ? 'شهري' : 'شامل'})`);
+                  } else {
+                    toast.error('لا يوجد قالب محفوظ لهذه الوكالة بعد.');
+                  }
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1 shadow-sm"
+                title="استدعاء القالب المحفوظ"
+              >
+                📂 تطبيق القالب
+              </button>
             </div>
 
             <div className="flex items-center gap-2">

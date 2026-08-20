@@ -181,6 +181,26 @@ export const appRouter = router({
 
         return { success: true };
       }),
+
+    updateStatus: protectedProcedure
+      .input(
+        z.object({
+          bookingId: z.number(),
+          status: z.enum(["Pending", "Confirmed", "Cancelled"]),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        if (ctx.user.role !== 'admin') {
+          throw new Error("عذراً، هذه العملية مخصصة لمدير المنصة والمشرفين فقط.");
+        }
+        await db
+          .update(bookings)
+          .set({ status: input.status })
+          .where(eq(bookings.id, input.bookingId));
+        return { success: true };
+      }),
   }),
 });
 

@@ -188,7 +188,10 @@ export default function PartnerDashboard() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">الفترة: من {new Date(booking.startDate).toLocaleDateString('ar-MA')} إلى {new Date(booking.endDate).toLocaleDateString('ar-MA')}</p>
-                      <p className="text-sm font-semibold text-primary">المبلغ الإجمالي: {booking.totalPrice} د.م</p>
+                      <div className="text-sm space-y-0.5">
+                        <p className="text-muted-foreground">المبلغ الإجمالي للزبون: <span className="font-bold text-foreground">{booking.totalPrice} د.م</span></p>
+                        <p className="text-primary font-bold">صافي أرباحك (بعد عمولة 15%): {booking.totalPrice - (booking.commissionFee || Math.round(booking.totalPrice * 0.15))} د.م</p>
+                      </div>
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
                       <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 flex-1 md:flex-none" onClick={() => toast.success('تم قبول طلب الحجز وإرسال العقد للعميل')}>

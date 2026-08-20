@@ -23,6 +23,7 @@ const SuccessPage = lazy(() => import("./pages/Success"));
 const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboard"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
+const CheckoutPage = lazy(() => import("./pages/Checkout"));
 
 function Router() {
   return (
@@ -55,8 +56,15 @@ function Router() {
       </Route>
       <Route path={"/success"}>
         {() => (
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري إعداد العقد الرقمي...</div></div>}>
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري التحميل...</div></div>}>
             <SuccessPage />
+          </Suspense>
+        )}
+      </Route>
+      <Route path={"/checkout"}>
+        {() => (
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل واجهة الدفع...</div></div>}>
+            <CheckoutPage />
           </Suspense>
         )}
       </Route>

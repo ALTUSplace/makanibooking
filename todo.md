@@ -17,3 +17,5 @@
 - [ ] Add Bundled Packages (Car + Real Estate) with special discounts
 - [ ] Add Interactive Booking Calculator with transparent commission fee breakdown
 - [ ] Add Review & Rating system for rented cars and properties
+- [ ] Design and implement Checkout Page with multiple payment options (Credit Card, E-Wallets, Cash on Delivery/Handover)
+- [ ] Implement automatic platform commission calculation (15%) and detailed invoice breakdown for renters and partners (net profit)

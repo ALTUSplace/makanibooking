@@ -98,7 +98,7 @@ export const appRouter = router({
           throw new Error("عذراً، المركبة أو العقار محجوز بالكامل في هذا النطاق الزمني.");
         }
 
-        const commission = Math.round(input.totalPrice * 0.1); // 10% commission
+        const commission = Math.round(input.totalPrice * 0.15); // 15% platform commission
 
         await db.insert(bookings).values({
           renterId: ctx.user.id,

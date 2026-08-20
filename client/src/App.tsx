@@ -16,6 +16,7 @@ import AddCar from "./pages/AddCar";
 import MyBookings from "./pages/MyBookings";
 import Help from "./pages/Help";
 import About from "./pages/About";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
           <Route path="/my-bookings" component={MyBookings} />
           <Route path="/help" component={Help} />
           <Route path="/about" component={About} />
+          <Route path="/admin" component={AdminDashboard} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>

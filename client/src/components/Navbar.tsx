@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -12,7 +12,8 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', label: 'الرئيسية' },
     { href: '/search', label: 'تصفح السيارات' },
-    { href: '/dashboard', label: 'لوحة الوكالة المستقلة', icon: LayoutDashboard },
+    { href: '/admin', label: 'لوحة الإدارة الشاملة', icon: ShieldAlert },
+    { href: '/dashboard', label: 'لوحة الوكالة', icon: LayoutDashboard },
     { href: '/add-car', label: 'إضافة سيارة', icon: PlusCircle },
     { href: '/my-bookings', label: 'حجوزاتي', icon: BookmarkCheck },
     { href: '/help', label: 'الدعم والمساعدة', icon: HelpCircle },
@@ -29,7 +30,7 @@ export default function Navbar() {
           </div>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-2">
+        <nav className="hidden lg:flex items-center gap-1.5">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = location === link.href;
@@ -37,13 +38,13 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-1.5 text-xs font-bold transition-all py-2 px-3 rounded-xl ${
+                className={`flex items-center gap-1 text-xs font-bold transition-all py-2 px-2.5 rounded-xl ${
                   isActive
                     ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 }`}
               >
-                {Icon && <Icon className="w-4 h-4 text-amber-500" />}
+                {Icon && <Icon className="w-3.5 h-3.5 text-amber-500" />}
                 {link.label}
               </Link>
             );

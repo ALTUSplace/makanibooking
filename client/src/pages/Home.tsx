@@ -409,6 +409,78 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 1.1 قسم العروض الترويجية والخصومات الموسمية الحصرية */}
+      <section className="py-16 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-border relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:16px_16px]" />
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 text-red-500 text-xs font-extrabold uppercase tracking-widest bg-red-500/10 px-3 py-1 rounded-full border border-red-500/30">
+                🔥 عروض لفترة محدودة
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white">الخصومات الموسمية والعروض الترويجية الحصرية</h2>
+            </div>
+            <p className="text-xs text-slate-400 max-w-sm text-right">استفيد من خصومات تصل حتى 25% على الحجوزات المبكرة للسيارات والعقارات لدى الوكالات المستقلة المعتمدة.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-amber-500/20 via-slate-900 to-slate-950 border border-amber-500/40 rounded-3xl p-6 relative overflow-hidden shadow-2xl group">
+              <div className="absolute top-4 left-4 bg-red-600 text-white text-xs font-black px-3 py-1 rounded-xl animate-pulse">
+                خصم 20%
+              </div>
+              <div className="space-y-4">
+                <div className="text-xs text-amber-400 font-extrabold">عروض مدينة مراكش وأغادير</div>
+                <h3 className="text-xl font-black text-white">باقات كراء سيارات الدفع الرباعي</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">احجز سيارتك المفضلة لمدة تتجاوز 5 أيام واحصل على تخفيض فوري مع توصيل مجاني للمطار.</p>
+                <div className="pt-2">
+                  <Link href="/search">
+                    <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl text-xs">
+                      احجز العرض الآن
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-500/20 via-slate-900 to-slate-950 border border-blue-500/40 rounded-3xl p-6 relative overflow-hidden shadow-2xl group">
+              <div className="absolute top-4 left-4 bg-amber-500 text-slate-950 text-xs font-black px-3 py-1 rounded-xl">
+                خصم 25%
+              </div>
+              <div className="space-y-4">
+                <div className="text-xs text-blue-400 font-extrabold">الشقاق الفاخرة والعقارات</div>
+                <h3 className="text-xl font-black text-white">إقامات الصيف الفاخرة</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">شقق مفروشة راقية مع إطلالات ساحرة ومسابح خاصة في طنجة والدار البيضاء بأسعار تنافسية.</p>
+                <div className="pt-2">
+                  <Link href="/search">
+                    <Button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl text-xs">
+                      استكشف العقارات
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-500/20 via-slate-900 to-slate-950 border border-emerald-500/40 rounded-3xl p-6 relative overflow-hidden shadow-2xl group">
+              <div className="absolute top-4 left-4 bg-emerald-600 text-white text-xs font-black px-3 py-1 rounded-xl">
+                هدية مجانية
+              </div>
+              <div className="space-y-4">
+                <div className="text-xs text-emerald-400 font-extrabold">عروض الوكالات المتميزة</div>
+                <h3 className="text-xl font-black text-white">تأمين شامل وعقد رقمي مجاني</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">جميع الحجوزات تتضمن عقوداً إلكترونية موثقة وتأمين شامل ضد كافة المخاطر مع دعم فني 24/7.</p>
+                <div className="pt-2">
+                  <Link href="/search">
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-xs">
+                      ابدأ الحجز الفوري
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 2. قسم شوهد مؤخراً (Recently Viewed) لمساعدة المستخدمين على العودة بسهولة */}
       {recentViewed.length > 0 && (
         <section className="py-12 bg-slate-900/40 border-b border-border">

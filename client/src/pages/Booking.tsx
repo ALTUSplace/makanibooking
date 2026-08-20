@@ -119,33 +119,61 @@ export default function Booking() {
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-slate-800">
-                  <h3 className="text-sm font-bold text-white">طريقة الدفع</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'agency' ? 'bg-amber-500/10 border-amber-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                  <h3 className="text-sm font-bold text-white">طريقة الدفع وبوابات الدفع المحلية</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'cmi' ? 'bg-amber-500/10 border-amber-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
                       <input
                         type="radio"
                         name="payment"
-                        checked={paymentMethod === 'agency'}
-                        onChange={() => setPaymentMethod('agency')}
+                        checked={paymentMethod === 'cmi'}
+                        onChange={() => setPaymentMethod('cmi')}
                         className="mt-1 accent-amber-500"
                       />
                       <div className="space-y-1">
-                        <div className="font-bold text-sm text-white">الدفع عند الاستلام للوكالة</div>
-                        <div className="text-xs">الدفع نقداً أو بالبطاقة عند استلام السيارة في المطار أو الوكالة</div>
+                        <div className="font-bold text-xs text-white">البطاقات البنكية المغربية (CMI)</div>
+                        <div className="text-xs text-slate-400">الدفع الآمن عبر المركز البنكي المغربي</div>
                       </div>
                     </label>
 
-                    <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'card' ? 'bg-amber-500/10 border-amber-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                    <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'paytabs' ? 'bg-amber-500/10 border-amber-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
                       <input
                         type="radio"
                         name="payment"
-                        checked={paymentMethod === 'card'}
-                        onChange={() => setPaymentMethod('card')}
+                        checked={paymentMethod === 'paytabs'}
+                        onChange={() => setPaymentMethod('paytabs')}
                         className="mt-1 accent-amber-500"
                       />
                       <div className="space-y-1">
-                        <div className="font-bold text-sm text-white">الدفع الإلكتروني الآمن</div>
-                        <div className="text-xs">تأكيد الحجز فورياً عبر بطاقة البانك المغربية أو الدولية</div>
+                        <div className="font-bold text-xs text-white">بوابة PayTabs</div>
+                        <div className="text-xs text-slate-400">دفع إلكتروني سريع ومعتمد إقليمياً</div>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'transfer' ? 'bg-amber-500/10 border-amber-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={paymentMethod === 'transfer'}
+                        onChange={() => setPaymentMethod('transfer')}
+                        className="mt-1 accent-amber-500"
+                      />
+                      <div className="space-y-1">
+                        <div className="font-bold text-xs text-white">تحويل بنكي مباشر (RIB)</div>
+                        <div className="text-xs text-slate-400">إرسال إيصال التحويل عبر الواتساب</div>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'cod' ? 'bg-amber-500/10 border-amber-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={paymentMethod === 'cod'}
+                        onChange={() => setPaymentMethod('cod')}
+                        className="mt-1 accent-amber-500"
+                      />
+                      <div className="space-y-1">
+                        <div className="font-bold text-xs text-white">الدفع عند الاستلام (COD)</div>
+                        <div className="text-xs text-slate-400">الدفع نقداً عند استلام السيارة أو العقار</div>
                       </div>
                     </label>
                   </div>

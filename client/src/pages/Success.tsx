@@ -1,6 +1,8 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Phone, Home } from 'lucide-react';
+import { CheckCircle2, Phone, Home, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 
 export default function Success() {
   const [, setLocation] = useLocation();
@@ -13,6 +15,79 @@ export default function Success() {
   const days = searchParams.get('days') || '5';
   const start = searchParams.get('start') || '2026-08-15';
   const end = searchParams.get('end') || '2026-08-20';
+
+  const handleDownloadPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.text("B2-RENT - Digital Rental Contract", 105, 20, { align: "center" });
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text("Official Car Rental Agreement in Morocco", 105, 28, { align: "center" });
+      
+      doc.line(20, 35, 190, 35);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Contract Reference:", 20, 48);
+      doc.setFont("helvetica", "normal");
+      doc.text(bookingRef, 70, 48);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Customer Name:", 20, 58);
+      doc.setFont("helvetica", "normal");
+      doc.text(name, 70, 58);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Phone Number:", 20, 68);
+      doc.setFont("helvetica", "normal");
+      doc.text(phone, 70, 68);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Rental Period:", 20, 78);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${start} to ${end} (${days} Days)`, 70, 78);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Amount:", 20, 88);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${total} MAD (Cash or Card at pickup)`, 70, 88);
+
+      doc.line(20, 100, 190, 100);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Terms & Conditions Summary:", 20, 115);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const terms = [
+        "1. Driver must hold a valid driver's license for at least 2 years.",
+        "2. Fuel policy: Return with the same fuel level as received.",
+        "3. Comprehensive insurance covers all authorized drivers as per contract.",
+        "4. Free cancellation up to 24 hours before pickup time.",
+        "5. For assistance, contact the agency WhatsApp directly."
+      ];
+      
+      let y = 125;
+      terms.forEach(term => {
+        doc.text(term, 20, y);
+        y += 8;
+      });
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Agency Stamp & Signature", 30, 185);
+      doc.text("Customer Signature", 140, 185);
+
+      doc.save(`B2-Rent-Contract-${bookingRef}.pdf`);
+      toast.success('تم تحميل عقد الإيجار الرقمي بصيغة PDF بنجاح!');
+    } catch (error) {
+      console.error(error);
+      toast.error('حدث خطأ أثناء توليد ملف PDF');
+    }
+  };
 
   const whatsappMessage = encodeURIComponent(
     `مرحباً، لقد قمت بحجز سيارة عبر منصة B2-Rent.\nرقم الحجز: ${bookingRef}\nالاسم: ${name}\nالهاتف: ${phone}\nمن تاريخ ${start} إلى ${end} (${days} أيام)\nالمجموع: ${total} درهم.`
@@ -50,6 +125,14 @@ export default function Success() {
           </div>
 
           <div className="space-y-4 pt-4">
+            <Button
+              onClick={handleDownloadPDF}
+              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-4 rounded-xl text-base flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+            >
+              <Download className="w-5 h-5" />
+              <span>تحميل عقد الإيجار الرقمي (PDF)</span>
+            </Button>
+
             <a
               href={`https://wa.me/212661234567?text=${whatsappMessage}`}
               target="_blank"

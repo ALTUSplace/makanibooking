@@ -14,6 +14,7 @@ import { lazy, Suspense } from "react";
 // Lazy-loaded pages for performance optimization & code splitting
 import Home from "./pages/Home";
 import RenterDashboard from "./pages/RenterDashboard";
+import PartnerDashboard from "./pages/PartnerDashboard";
 const SearchPage = lazy(() => import("./pages/Search"));
 const CarDetailsPage = lazy(() => import("./pages/CarDetails"));
 const BookingPage = lazy(() => import("./pages/Booking"));
@@ -81,6 +82,7 @@ function Router() {
       </Route>
       <Route path={"/"} component={Home} />
       <Route path={"/renter-dashboard"} component={RenterDashboard} />
+      <Route path={"/partner-dashboard"} component={PartnerDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

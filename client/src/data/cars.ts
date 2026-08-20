@@ -26,6 +26,46 @@ export interface Car {
   available: boolean;
 }
 
+export interface Review {
+  id: string;
+  carId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  verifiedBooking: boolean;
+}
+
+export const INITIAL_REVIEWS: Review[] = [
+  {
+    id: 'rev-1',
+    carId: 'car-1',
+    userName: 'عمر المنصوري',
+    rating: 5,
+    comment: 'سيارة رائعة جداً ونظيفة، الاستلام من مطار مراكش كان سلساً للغاية والوكالة في غاية الاحترافية.',
+    date: '2026-08-10',
+    verifiedBooking: true,
+  },
+  {
+    id: 'rev-2',
+    carId: 'car-1',
+    userName: 'كريمة التازي',
+    rating: 5,
+    comment: 'تجربة ممتازة أنصح بها بشدة. خدمة العملاء عبر واتساب كانت سريعة جداً في الرد.',
+    date: '2026-08-05',
+    verifiedBooking: true,
+  },
+  {
+    id: 'rev-3',
+    carId: 'car-3',
+    userName: 'مهدي الإدريسي',
+    rating: 4,
+    comment: 'سيارة اقتصادية ممتازة لتحمل جبال سوس وشواطئ أغادير. شكراً B2-Rent.',
+    date: '2026-08-02',
+    verifiedBooking: true,
+  },
+];
+
 export const CITIES = [
   { id: 'all', name: 'جميع المدن المغربية' },
   { id: 'agadir', name: 'أغادير' },

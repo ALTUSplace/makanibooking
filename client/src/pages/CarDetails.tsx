@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
-import { MOCK_CARS, Car } from '@/data/cars';
+import { MOCK_CARS, INITIAL_REVIEWS, Review } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { Car as CarIcon, Star, ShieldCheck, Users, Calendar, CheckCircle2, Phone, ArrowRight, Fuel, Briefcase } from 'lucide-react';
+import { Car as CarIcon, Star, ShieldCheck, Users, Calendar, CheckCircle2, Phone, ArrowRight, Fuel, Briefcase, MessageSquarePlus } from 'lucide-react';
 
 export default function CarDetails() {
   const [, setLocation] = useLocation();
@@ -10,11 +10,18 @@ export default function CarDetails() {
   const carId = params?.id || 'car-1';
 
   const car = MOCK_CARS.find((c) => c.id === carId) || MOCK_CARS[0];
+  const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS.filter(r => r.carId === car.id));
 
   const [startDate, setStartDate] = useState('2026-08-15');
   const [endDate, setEndDate] = useState('2026-08-20');
   const [includeInsurance, setIncludeInsurance] = useState(true);
   const [includeBabySeat, setIncludeBabySeat] = useState(false);
+
+  // New review form state
+  const [newReviewName, setNewReviewName] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [newReviewComment, setNewReviewComment] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -40,6 +47,27 @@ export default function CarDetails() {
     setLocation(`/booking?${query.toString()}`);
   };
 
+  const handleAddReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReviewName.trim() || !newReviewComment.trim()) return;
+
+    const created: Review = {
+      id: 'rev-' + Date.now(),
+      carId: car.id,
+      userName: newReviewName,
+      rating: Number(newReviewRating),
+      comment: newReviewComment,
+      date: new Date().toISOString().split('T')[0],
+      verifiedBooking: true,
+    };
+
+    setReviews([created, ...reviews]);
+    setNewReviewName('');
+    setNewReviewComment('');
+    setReviewSubmitted(true);
+    setTimeout(() => setReviewSubmitted(false), 4000);
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12">
       <div className="container mx-auto px-4">
@@ -60,7 +88,7 @@ export default function CarDetails() {
               </div>
               <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md text-white px-3 py-1.5 rounded-2xl text-sm flex items-center gap-1.5 font-semibold">
                 <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                <span>{car.rating} ({car.reviewsCount} تقييم)</span>
+                <span>{car.rating} ({car.reviewsCount + reviews.length} تقييم)</span>
               </div>
             </div>
 
@@ -138,6 +166,113 @@ export default function CarDetails() {
                     <span className="text-sm text-slate-200">{feat}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-8 shadow-xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <h2 className="text-lg font-bold text-white border-l-2 border-amber-500 pl-3">تقييمات ومراجعات العملاء</h2>
+                <div className="flex items-center gap-1.5 text-amber-400 font-bold bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
+                  <Star className="w-4 h-4 fill-amber-400" />
+                  <span>{car.rating} من 5</span>
+                </div>
+              </div>
+
+              {/* Reviews List */}
+              <div className="space-y-4">
+                {reviews.length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-6">لا توجد تقييمات لهذه السيارة بعد. كن أول من يتقيمها!</p>
+                ) : (
+                  reviews.map((rev) => (
+                    <div key={rev.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-sm">{rev.userName}</span>
+                          {rev.verifiedBooking && (
+                            <span className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-md text-[10px] font-semibold">
+                              <ShieldCheck className="w-3 h-3" /> حجز مؤكد
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-slate-500">{rev.date}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3.5 h-3.5 ${i < rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-700'}`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-slate-300 text-xs leading-relaxed">{rev.comment}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add Review Form */}
+              <div className="pt-6 border-t border-slate-800 space-y-4">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <MessageSquarePlus className="w-4 h-4 text-amber-400" />
+                  <span>أضف تقييمك بعد تجربة السيارة</span>
+                </h3>
+
+                {reviewSubmitted && (
+                  <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 p-3.5 rounded-xl text-xs flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>تم إضافة تقييمك بنجاح ونشره في قائمة التقييمات!</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleAddReview} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-300">اسم المستأجر</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="مثال: حمزة الفيلالي"
+                        value={newReviewName}
+                        onChange={(e) => setNewReviewName(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-300">التقييم (من 1 إلى 5 نجوم)</label>
+                      <select
+                        value={newReviewRating}
+                        onChange={(e) => setNewReviewRating(Number(e.target.value))}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                      >
+                        <option value={5}>⭐⭐⭐⭐⭐ (5/5 ممتاز جداً)</option>
+                        <option value={4}>⭐⭐⭐⭐ (4/5 جيد جداً)</option>
+                        <option value={3}>⭐⭐⭐ (3/5 جيد)</option>
+                        <option value={2}>⭐⭐ (2/5 مقبول)</option>
+                        <option value={1}>⭐ (1/5 ضعيف)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-300">تعليقك وتجربتك مع السيارة</label>
+                    <textarea
+                      required
+                      rows={3}
+                      placeholder="اكتب تفاصيل تجربتك مع نظافة السيارة، الاستلام من المطار، وتعامل الوكالة..."
+                      value={newReviewComment}
+                      onChange={(e) => setNewReviewComment(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs shadow-md shadow-amber-500/20"
+                  >
+                    نشر التقييم والتعليق
+                  </Button>
+                </form>
               </div>
             </div>
           </div>

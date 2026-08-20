@@ -3,6 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
+import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -409,7 +410,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 1.1 قسم العروض الترويجية والخصومات الموسمية الحصرية */}
+      {/* 1.1 قسم التوصيات الذكية بالذكاء الاصطناعي */}
+      <SmartRecommendations />
+
+      {/* 1.2 قسم العروض الترويجية والخصومات الموسمية الحصرية */}
       <section className="py-16 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-border relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:16px_16px]" />
         <div className="container mx-auto px-4 relative z-10">

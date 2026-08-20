@@ -1,16 +1,31 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { User, Mail, Phone, MapPin, ShieldCheck, Heart, Calendar, Settings, CheckCircle2, Save } from 'lucide-react';
+import { User, Mail, Phone, MapPin, ShieldCheck, Heart, Calendar, Settings, Bookmark, Sun, Moon, Trash2, Save, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { LISTINGS } from '@/data/b2rent';
 import { Link } from 'wouter';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Profile() {
   const [name, setName] = useState('يوسف المنصوري');
   const [email, setEmail] = useState('youssef.mansouri@gmail.com');
   const [phone, setPhone] = useState('+212 6 12 34 56 78');
   const [city, setCity] = useState('مراكش');
-  const [activeTab, setActiveTab] = useState<'info' | 'bookings' | 'favorites'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'bookings' | 'favorites' | 'searches'>('info');
+
+  const { theme, toggleTheme } = useTheme();
+
+  // عمليات البحث المحفوظة
+  const [savedSearches, setSavedSearches] = useState([
+    { id: '1', query: 'سيارة دفع رباعي في أغادير', date: 'أمس، 04:30 مساءً', count: 4 },
+    { id: '2', query: 'شقة فخمة بمراكش مع مسبح', date: 'منذ 3 أيام', count: 2 },
+    { id: '3', query: 'داسيا لوغان الدار البيضاء', date: 'منذ أسبوع', count: 8 },
+  ]);
+
+  const handleDeleteSearch = (id: string) => {
+    setSavedSearches(savedSearches.filter(s => s.id !== id));
+    toast.success('تم حذف عملية البحث المحفوظة بنجاح');
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +40,7 @@ export default function Profile() {
   const userFavorites = LISTINGS.slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-12 px-4" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground py-12 px-4 transition-colors duration-500" dir="rtl">
       <div className="container mx-auto max-w-5xl space-y-8">
         
         {/* رأس الملف الشخصي */}
@@ -47,22 +62,28 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800 text-xs">
+          <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800 text-xs">
             <button
               onClick={() => setActiveTab('info')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'info' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'info' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
             >
               البيانات الشخصية
             </button>
             <button
               onClick={() => setActiveTab('bookings')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'bookings' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'bookings' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
             >
               حجوزاتي ({userBookings.length})
             </button>
             <button
+              onClick={() => setActiveTab('searches')}
+              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'searches' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+            >
+              البحوث المحفوظة ({savedSearches.length})
+            </button>
+            <button
               onClick={() => setActiveTab('favorites')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${activeTab === 'favorites' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'favorites' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
             >
               المفضلة ({userFavorites.length})
             </button>
@@ -72,62 +93,132 @@ export default function Profile() {
         {/* محتوى التبويبات */}
         <div className="space-y-6">
           {activeTab === 'info' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl">
-              <h2 className="text-lg font-black text-white mb-6 flex items-center gap-2">
-                <Settings className="w-5 h-5 text-amber-500" /> تعديل بيانات الملف الشخصي
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-8">
+              <div>
+                <h2 className="text-lg font-black text-white mb-6 flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-amber-500" /> تعديل بيانات الملف الشخصي
+                </h2>
+
+                <form onSubmit={handleSaveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2 text-right">
+                    <label className="text-xs font-bold text-slate-300">الاسم الكامل</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2 text-right">
+                    <label className="text-xs font-bold text-slate-300">البريد الإلكتروني</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2 text-right">
+                    <label className="text-xs font-bold text-slate-300">رقم الهاتف</label>
+                    <input
+                      type="text"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2 text-right">
+                    <label className="text-xs font-bold text-slate-300">المدينة المفضلة</label>
+                    <select
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="مراكش">مراكش</option>
+                      <option value="أغادير">أغادير</option>
+                      <option value="الدار البيضاء">الدار البيضاء</option>
+                      <option value="طنجة">طنجة</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2 pt-4 flex justify-end">
+                    <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-6 py-3 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20">
+                      <Save className="w-4 h-4" /> حفظ التغييرات
+                    </Button>
+                  </div>
+                </form>
+              </div>
+
+              {/* تفضيلات المظهر والوضع الليلي */}
+              <div className="pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="space-y-1 text-right">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    {theme === 'dark' ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                    تفضيلات المظهر والوضع الليلي
+                  </h3>
+                  <p className="text-xs text-slate-400">الوضع الحالي: <span className="text-amber-400 font-bold">{theme === 'dark' ? 'الوضع الليلي المريح (Dark)' : 'الوضع النهاري الساطع (Light)'}</span></p>
+                </div>
+
+                {toggleTheme && (
+                  <Button
+                    onClick={() => {
+                      toggleTheme();
+                      toast.success(theme === 'dark' ? 'تم التبديل إلى الوضع النهاري ☀️' : 'تم التبديل إلى الوضع الليلي 🌙');
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-5 py-2.5 rounded-xl text-xs border border-slate-700 shadow"
+                  >
+                    تبديل مظهر المنصة الآن
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'searches' && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-amber-500" /> إدارة عمليات البحث المحفوظة ({savedSearches.length})
               </h2>
 
-              <form onSubmit={handleSaveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2 text-right">
-                  <label className="text-xs font-bold text-slate-300">الاسم الكامل</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+              <div className="grid grid-cols-1 gap-4">
+                {savedSearches.length === 0 ? (
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center text-slate-400 text-xs">
+                    لا توجد عمليات بحث محفوظة حالياً. يمكنك حفظ عمليات البحث من الصفحة الرئيسية أو صفحة البحث المتقدم.
+                  </div>
+                ) : (
+                  savedSearches.map(search => (
+                    <div key={search.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+                      <div className="space-y-1 text-right">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-amber-400">{search.date}</span>
+                          <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 font-bold">
+                            {search.count} نتائج مطابقة
+                          </span>
+                        </div>
+                        <h3 className="text-base font-bold text-white">"{search.query}"</h3>
+                      </div>
 
-                <div className="space-y-2 text-right">
-                  <label className="text-xs font-bold text-slate-300">البريد الإلكتروني</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="space-y-2 text-right">
-                  <label className="text-xs font-bold text-slate-300">رقم الهاتف</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="space-y-2 text-right">
-                  <label className="text-xs font-bold text-slate-300">المدينة المفضلة</label>
-                  <select
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="مراكش">مراكش</option>
-                    <option value="أغادير">أغادير</option>
-                    <option value="الدار البيضاء">الدار البيضاء</option>
-                    <option value="طنجة">طنجة</option>
-                  </select>
-                </div>
-
-                <div className="md:col-span-2 pt-4 flex justify-end">
-                  <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-6 py-3 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20">
-                    <Save className="w-4 h-4" /> حفظ التغييرات
-                  </Button>
-                </div>
-              </form>
+                      <div className="flex items-center gap-3">
+                        <Link href={`/search?q=${encodeURIComponent(search.query)}`}>
+                          <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow">
+                            <ExternalLink className="w-3.5 h-3.5" /> تنفيذ البحث
+                          </Button>
+                        </Link>
+                        <Button
+                          onClick={() => handleDeleteSearch(search.id)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-2 rounded-xl text-xs"
+                          title="حذف البحث المحفوظ"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 

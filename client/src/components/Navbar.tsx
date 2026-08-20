@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useRole } from '@/contexts/RoleContext';
 
 export default function Navbar() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { role } = useRole();
 
   const navLinks = [
     { href: '/', label: 'الرئيسية' },
@@ -52,6 +54,21 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
+          {/* شارة دور المستخدم الحالي في الترويسة */}
+          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl text-[11px] font-bold text-amber-400 shadow-sm">
+            {role === 'super_admin' ? (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span>المشرف العام</span>
+              </>
+            ) : (
+              <>
+                <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span>مدير الوكالة</span>
+              </>
+            )}
+          </div>
+
           {toggleTheme && (
             <button
               onClick={toggleTheme}
@@ -106,6 +123,15 @@ export default function Navbar() {
 
       {mobileMenuOpen && (
         <div className="lg:hidden bg-background border-b border-border px-4 py-6 space-y-4 animate-in slide-in-from-top duration-200">
+          {/* شارة الدور للجوال */}
+          <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-xs font-bold text-amber-400">
+            <span>دور المستخدم الحالي:</span>
+            <span className="flex items-center gap-1">
+              {role === 'super_admin' ? <ShieldCheck className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+              {role === 'super_admin' ? 'المشرف العام' : 'مدير الوكالة'}
+            </span>
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             {navLinks.map((link) => {
               const Icon = link.icon;

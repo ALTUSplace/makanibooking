@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Plus, Star, Award, Settings, FileText, Lock, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PARTNERS, LISTINGS } from '@/data/b2rent';
+import { useRole } from '@/contexts/RoleContext';
 
 export default function AdminDashboard() {
-  const [role, setRole] = useState<'super_admin' | 'agency_manager'>('super_admin');
+  const { role, setRole } = useRole();
   const [activeTab, setActiveTab] = useState<'overview' | 'agencies' | 'listings' | 'bookings' | 'settings'>('overview');
   const [agenciesList, setAgenciesList] = useState(PARTNERS);
   const [listingsList, setListingsList] = useState(LISTINGS);

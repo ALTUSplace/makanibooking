@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, CheckCircle2, MessageSquare } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -37,7 +37,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border text-foreground shadow-lg transition-colors duration-300" dir="rtl">
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border text-foreground shadow-lg transition-colors duration-500" dir="rtl">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         
         {/* الشعار وحده في العنوان */}
@@ -70,15 +70,15 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-3">
           {/* شارة دور المستخدم الحالي في الترويسة */}
-          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl text-[11px] font-bold text-amber-400 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl text-[11px] font-bold text-amber-500 dark:text-amber-400 shadow-sm">
             {role === 'super_admin' ? (
               <>
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <ShieldCheck className="w-3.5 h-3.5" />
                 <span>المشرف العام</span>
               </>
             ) : (
               <>
-                <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                <UserCheck className="w-3.5 h-3.5" />
                 <span>مدير الوكالة</span>
               </>
             )}
@@ -100,7 +100,7 @@ export default function Navbar() {
             </button>
 
             {notificationsOpen && (
-              <div className="absolute left-0 mt-3 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 space-y-4 animate-in fade-in-50">
+              <div className="absolute left-0 mt-3 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 space-y-4 animate-in fade-in-50 text-right">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Bell className="w-4 h-4 text-amber-400" /> الإشعارات والتحديثات
@@ -132,16 +132,20 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* مفتاح تبديل الوضع الليلي والنهاتي السلس */}
           {toggleTheme && (
             <button
-              onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-muted/80 hover:bg-muted text-foreground transition-colors border border-border flex items-center justify-center shadow-sm"
-              title="تبديل وضع المظهر"
+              onClick={() => {
+                toggleTheme();
+                toast.success(theme === 'dark' ? 'تم التفعيل إلى الوضع النهاري الساطع ☀️' : 'تم التفعيل إلى الوضع الليلي المريح 🌙');
+              }}
+              className="p-2.5 rounded-xl bg-muted/80 hover:bg-muted text-foreground transition-all duration-300 border border-border flex items-center justify-center shadow-sm hover:scale-105 group"
+              title="تبديل وضع المظهر (ليلي / نهاري)"
             >
               {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-amber-400" />
+                <Sun className="w-4 h-4 text-amber-400 transform group-hover:rotate-90 transition-transform duration-500" />
               ) : (
-                <Moon className="w-4 h-4 text-slate-700" />
+                <Moon className="w-4 h-4 text-slate-700 transform group-hover:-rotate-12 transition-transform duration-500" />
               )}
             </button>
           )}
@@ -187,7 +191,7 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="lg:hidden bg-background border-b border-border px-4 py-6 space-y-4 animate-in slide-in-from-top duration-200">
           {/* شارة الدور للجوال */}
-          <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-xs font-bold text-amber-400">
+          <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-xs font-bold text-amber-500 dark:text-amber-400">
             <span>دور المستخدم الحالي:</span>
             <span className="flex items-center gap-1">
               {role === 'super_admin' ? <ShieldCheck className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}

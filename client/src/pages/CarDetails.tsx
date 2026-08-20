@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { MOCK_CARS, INITIAL_REVIEWS, Review } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { Car as CarIcon, Star, ShieldCheck, Users, Calendar, CheckCircle2, Phone, ArrowRight, Fuel, Briefcase, MessageSquarePlus } from 'lucide-react';
+import { Car as CarIcon, Star, ShieldCheck, Users, Calendar, CheckCircle2, Phone, ArrowRight, Fuel, Briefcase, MessageSquarePlus, Award } from 'lucide-react';
 
 export default function CarDetails() {
   const [, setLocation] = useLocation();
@@ -68,6 +68,8 @@ export default function CarDetails() {
     setTimeout(() => setReviewSubmitted(false), 4000);
   };
 
+  const isAgencyExcellence = car.agency.rating >= 4.8;
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12">
       <div className="container mx-auto px-4">
@@ -106,24 +108,31 @@ export default function CarDetails() {
 
               <p className="text-slate-300 text-sm leading-relaxed">{car.description}</p>
 
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold">
                     {car.agency.name.charAt(0)}
                   </div>
                   <div>
-                    <h4 className="text-white font-bold text-sm flex items-center gap-1.5">
-                      <span>{car.agency.name}</span>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-white font-bold text-sm">{car.agency.name}</h4>
                       {car.agency.verified && <ShieldCheck className="w-4 h-4 text-emerald-400" />}
-                    </h4>
-                    <p className="text-xs text-slate-400">وكالة معتمدة لدى B2-Rent</p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-slate-400">تقييم الوكالة: {car.agency.rating} ⭐</span>
+                      {isAgencyExcellence && (
+                        <span className="inline-flex items-center gap-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                          <Award className="w-3 h-3 text-amber-400" /> وكالة متميزة (Excellence)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <a
                   href={`https://wa.me/${car.agency.whatsapp}?text=السلام عليكم، مهتم بتأجير سيارة ${car.name}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors"
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors justify-center"
                 >
                   <Phone className="w-4 h-4" />
                   <span>مراسلة الوكالة</span>

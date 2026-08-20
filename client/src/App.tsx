@@ -4,32 +4,48 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import Home from "./pages/Home";
-
+import Search from "./pages/Search";
+import CarDetails from "./pages/CarDetails";
+import Booking from "./pages/Booking";
+import Success from "./pages/Success";
+import Dashboard from "./pages/Dashboard";
+import AddCar from "./pages/AddCar";
+import MyBookings from "./pages/MyBookings";
+import Help from "./pages/Help";
+import About from "./pages/About";
 
 function Router() {
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100 font-sans">
+      <Navbar />
+      <main className="flex-1">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/search" component={Search} />
+          <Route path="/car/:id" component={CarDetails} />
+          <Route path="/booking" component={Booking} />
+          <Route path="/success" component={Success} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/add-car" component={AddCar} />
+          <Route path="/my-bookings" component={MyBookings} />
+          <Route path="/help" component={Help} />
+          <Route path="/about" component={About} />
+          <Route path="/404" component={NotFound} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+      <Footer />
+    </div>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
-function App() {
+export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
           <Router />
@@ -38,5 +54,3 @@ function App() {
     </ErrorBoundary>
   );
 }
-
-export default App;

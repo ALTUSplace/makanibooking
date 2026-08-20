@@ -27,6 +27,38 @@ export const appRouter = router({
       return await db.select().from(listings).orderBy(desc(listings.createdAt));
     }),
 
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return null;
+        const result = await db.select().from(listings).where(eq(listings.id, input.id)).limit(1);
+        return result[0] || null;
+      }),
+
+    getBookedDates: publicProcedure
+      .input(z.object({ listingId: z.number() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const res = await db
+          .select({
+            start: bookings.startDate,
+            end: bookings.endDate,
+          })
+          .from(bookings)
+          .where(
+            and(
+              eq(bookings.listingId, input.listingId),
+              eq(bookings.status, "Confirmed")
+            )
+          );
+        return res.map(b => ({
+          start: new Date(b.start).toISOString().split('T')[0],
+          end: new Date(b.end).toISOString().split('T')[0],
+        }));
+      }),
+
     create: protectedProcedure
       .input(
         z.object({
@@ -50,6 +82,41 @@ export const appRouter = router({
           imageUrl: input.imageUrl,
           city: input.city,
           status: "Available",
+        });
+        return { success: true };
+      }),
+  }),
+
+  reviews: router({
+    list: publicProcedure
+      .input(z.object({ listingId: z.number().optional() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        if (input.listingId) {
+          return await db.select().from(reviews).where(eq(reviews.listingId, input.listingId)).orderBy(desc(reviews.createdAt));
+        }
+        return await db.select().from(reviews).orderBy(desc(reviews.createdAt));
+      }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          bookingId: z.number(),
+          listingId: z.number(),
+          rating: z.number().min(1).max(5),
+          comment: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        await db.insert(reviews).values({
+          bookingId: input.bookingId,
+          listingId: input.listingId,
+          userId: ctx.user.id,
+          rating: input.rating,
+          comment: input.comment,
         });
         return { success: true };
       }),
@@ -98,7 +165,8 @@ export const appRouter = router({
           throw new Error("عذراً، المركبة أو العقار محجوز بالكامل في هذا النطاق الزمني.");
         }
 
-        const commission = Math.round(input.totalPrice * 0.15); // 15% platform commission
+        const commissionFee = Math.round(input.totalPrice * 0.10); // 10% platform commission
+        const netProfit = input.totalPrice - commissionFee;
 
         await db.insert(bookings).values({
           renterId: ctx.user.id,
@@ -106,7 +174,8 @@ export const appRouter = router({
           startDate: start,
           endDate: end,
           totalPrice: input.totalPrice,
-          commissionFee: commission,
+          commissionFee,
+          netProfit,
           status: "Pending",
         });
 

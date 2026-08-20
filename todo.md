@@ -1,21 +1,8 @@
-# Project TODO
+# B2-Rent Marketplace TODO
 
-- [x] Basic homepage layout & RTL support
-- [x] AI search & voice search integration
-- [x] Multi-tenant agency management & RBAC
-- [x] 2FA security for admin accounts
-- [x] Interactive PDF contract generation with digital signature validation
-- [x] Automated WhatsApp & Email notification triggers
-- [x] Automated E2E test script and skill creation (`b2-rent-booking-testing`)
-- [x] Health check API and high-availability diagnostics
-- [x] Add local payment gateway options (PayTabs, CMI Morocco, Bank Transfer, Cash on Delivery) in checkout flow
-- [x] Add AI Smart Vehicle & Real Estate Recommendations feature based on browsing history and preferences
-- [x] Optimize codebase performance, lazy loading, and add comprehensive SEO Meta Tags & Open Graph tags
-- [x] Build dedicated Renter Dashboard for tracking bookings, invoices, and support contact
-- [x] Build dedicated Partner (Owner) Portal for fleet/property CRUD, availability status, and booking requests management
-- [x] Implement Smart Real-time Notification System for instant partner alerts on new booking requests
-- [ ] Add Bundled Packages (Car + Real Estate) with special discounts
-- [ ] Add Interactive Booking Calculator with transparent commission fee breakdown
-- [ ] Add Review & Rating system for rented cars and properties
-- [ ] Design and implement Checkout Page with multiple payment options (Credit Card, E-Wallets, Cash on Delivery/Handover)
-- [ ] Implement automatic platform commission calculation (15%) and detailed invoice breakdown for renters and partners (net profit)
+- [x] Update database schema for listing approvals (Pending/Approved), 10% commission, and bundled bookings
+- [x] Implement Mobile-First UI design with Navy (#0A192F) and Matte Gold (#D4AF37) theme and BottomNavigationBar
+- [x] Build Advanced Dual Search & BottomSheet filters (City, Price Slider, Fuel/Transmission, Rooms)
+- [x] Implement Three-Way Dashboard (Renter, Partner/Owner, Admin approval & monitoring portal)
+- [x] Develop Interactive Availability Calendar & Pricing Calculator with 15% Bundled Package discount
+- [x] Build Secure Checkout page with multi-payment support, WhatsApp/LiveChat integration, and SEO metadata

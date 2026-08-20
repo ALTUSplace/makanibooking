@@ -18,11 +18,14 @@ export const listings = mysqlTable("listings", {
   ownerId: int("owner_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
-  category: varchar("category", { length: 64 }).notNull(), // سيارات أو عقارات
+  category: varchar("category", { length: 64 }).notNull(), // car أو real_estate
   pricePerDay: int("price_per_day").notNull(),
   imageUrl: text("image_url"),
-  status: mysqlEnum("status", ["Available", "Rented", "Pending"]).default("Available").notNull(),
+  status: mysqlEnum("status", ["Pending", "Approved", "Available", "Rented", "Rejected"]).default("Pending").notNull(),
   city: varchar("city", { length: 64 }).default("الدار البيضاء").notNull(),
+  fuelType: varchar("fuel_type", { length: 32 }).default("ديزل"),
+  transmission: varchar("transmission", { length: 32 }).default("أوتوماتيك"),
+  rooms: int("rooms").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -30,10 +33,12 @@ export const bookings = mysqlTable("bookings", {
   id: int("booking_id").autoincrement().primaryKey(),
   renterId: int("renter_id").notNull(),
   listingId: int("listing_id").notNull(),
+  secondaryListingId: int("secondary_listing_id"), // للباقات المدمجة (عقاب + سيارة)
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   totalPrice: int("total_price").notNull(),
-  commissionFee: int("commission_fee").notNull(),
+  commissionFee: int("commission_fee").notNull(), // 10% عمولة المنصة
+  netProfit: int("net_profit").notNull(), // صافي ربح الشريك
   status: mysqlEnum("status", ["Pending", "Confirmed", "Cancelled"]).default("Pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -41,6 +46,8 @@ export const bookings = mysqlTable("bookings", {
 export const reviews = mysqlTable("reviews", {
   id: int("review_id").autoincrement().primaryKey(),
   bookingId: int("booking_id").notNull(),
+  listingId: int("listing_id").notNull(),
+  userId: int("user_id").notNull(),
   rating: int("rating").notNull(),
   comment: text("comment"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

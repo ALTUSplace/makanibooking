@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { MOCK_CARS, Car, Review } from '@/data/cars';
 import { Button } from '@/components/ui/button';
+import InteractiveCalendar from '@/components/InteractiveCalendar';
 import { Star, ShieldCheck, Users, Car as CarIcon, Fuel, MapPin, Phone, CheckCircle2, Award, Calendar, ChevronRight, Share2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -313,28 +314,44 @@ export default function CarDetails() {
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-1">
+                {/* Interactive Calendar Widget */}
+                <div className="space-y-2">
                   <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" /> تاريخ الاستلام
+                    <Calendar className="w-3.5 h-3.5 text-amber-400" /> تقويم التوفر المباشر
                   </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                  <InteractiveCalendar
+                    listingId={1}
+                    bookedDates={[
+                      { start: '2026-08-15', end: '2026-08-17' },
+                      { start: '2026-08-25', end: '2026-08-27' }
+                    ]}
+                    onDateSelect={(start, end) => {
+                      setStartDate(start);
+                      setEndDate(end);
+                      toast.success(`تم اختيار وتأكيد قفل الفترة: من ${start} إلى ${end}`);
+                    }}
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" /> تاريخ الإرجاع
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
-                  />
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-semibold">تاريخ الاستلام</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-semibold">تاريخ الإرجاع</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-3 pt-3 border-t border-slate-800">

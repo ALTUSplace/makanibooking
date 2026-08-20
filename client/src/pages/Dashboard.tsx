@@ -28,6 +28,10 @@ export default function Dashboard() {
   // Edit car state
   const [editingCar, setEditingCar] = useState<Car | null>(null);
 
+  // WhatsApp Custom Reminder Modal state
+  const [whatsappBooking, setWhatsappBooking] = useState<Booking | null>(null);
+  const [customWhatsappMsg, setCustomWhatsappMsg] = useState<string>('');
+
   const currentAgency = AGENCIES.find((a) => a.id === selectedAgencyId) || AGENCIES[0];
 
   const agencyCars = cars.filter((c) => {
@@ -490,10 +494,11 @@ export default function Dashboard() {
                               </Button>
                               <button
                                 onClick={() => {
-                                  toast.success(`تم إرسال تذكير استلام/تسليم عبر الواتساب بنجاح إلى العميل ${b.customerName} (${b.customerPhone})!`);
+                                  setWhatsappBooking(b);
+                                  setCustomWhatsappMsg(`مرحباً ${b.customerName}، نذكركم بموعد استلام/تسليم حجزكم (${b.carName}) رقم ${b.id} المقرر في الفترة من ${b.startDate} إلى ${b.endDate}. شكراً لاختياركم B2-Rent.`);
                                 }}
                                 className="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow"
-                                title="إرسال تذكير واتساب بموعد الاستلام والتسليم"
+                                title="تخصيص وإرسال تذكير واتساب"
                               >
                                 💬 تذكير واتساب
                               </button>
@@ -619,7 +624,7 @@ export default function Dashboard() {
                   <Button
                     type="button"
                     onClick={() => setEditingCar(null)}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs"
+                    className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs"
                   >
                     إلغاء
                   </Button>
@@ -631,6 +636,64 @@ export default function Dashboard() {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Custom WhatsApp Reminder Modal */}
+        {whatsappBooking && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-950 border border-slate-800 rounded-3xl p-8 max-w-lg w-full space-y-6 shadow-2xl" dir="rtl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                  <span>💬 تخصيص رسالة تذكير الواتساب</span>
+                </h3>
+                <button onClick={() => setWhatsappBooking(null)} className="text-slate-400 hover:text-white font-bold">✕</button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2 text-xs">
+                  <div className="flex justify-between text-slate-300">
+                    <span>العميل: <strong className="text-white">{whatsappBooking.customerName}</strong></span>
+                    <span>الهاتف: <strong className="text-amber-400">{whatsappBooking.customerPhone}</strong></span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span>العنصر: <strong className="text-white">{whatsappBooking.carName}</strong></span>
+                    <span>رقم الحجز: <strong className="text-amber-400">{whatsappBooking.id}</strong></span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 text-right">
+                  <label className="text-xs font-bold text-slate-300">نص الرسالة المراد إرسالها:</label>
+                  <textarea
+                    rows={4}
+                    value={customWhatsappMsg}
+                    onChange={(e) => setCustomWhatsappMsg(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  />
+                  <p className="text-[10px] text-slate-400">يمكنك تعديل أي تفاصيل في النص قبل إرسال التذكير الرسمي للعميل.</p>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                  <Button
+                    type="button"
+                    onClick={() => setWhatsappBooking(null)}
+                    className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs"
+                  >
+                    إلغاء
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      toast.success(`تم إرسال رسالة الواتساب المخصصة بنجاح إلى العميل ${whatsappBooking.customerName} (${whatsappBooking.customerPhone})!`);
+                      setWhatsappBooking(null);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-600/20 flex items-center gap-1.5"
+                  >
+                    <span>إرسال عبر الواتساب 💬</span>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}

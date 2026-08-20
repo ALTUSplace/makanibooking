@@ -1,6 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check, Stamp } from 'lucide-react';
+import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check, Stamp, FileCheck, X } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useRef, useState, useEffect } from 'react';
@@ -22,6 +22,7 @@ export default function Success() {
   const [hasSigned, setHasSigned] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [includeOfficialStamp, setIncludeOfficialStamp] = useState(true);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -166,6 +167,7 @@ export default function Success() {
 
       doc.save(`B2-Rent-Contract-${bookingRef}.pdf`);
       toast.success('تم تحميل عقد الإيجار الرقمي بنجاح!');
+      setShowDownloadModal(true); // إظهار نافذة التأكيد المرئية المنبثقة
     } catch (error) {
       console.error("PDF generation error:", error);
       toast.error('حدث خطأ أثناء توليد ملف PDF. يرجى المحاولة مرة أخرى.');
@@ -177,7 +179,7 @@ export default function Success() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 py-12 px-4">
+    <div className="min-h-screen bg-slate-900 text-slate-100 py-12 px-4 relative">
       <div className="container mx-auto px-4 max-w-2xl text-center space-y-8">
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
           <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto text-emerald-400">
@@ -299,6 +301,51 @@ export default function Success() {
           </div>
         </div>
       </div>
+
+      {/* نافذة التأكيد المرئية المنبثقة فور نجاح التحميل */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-amber-500/40 p-8 rounded-3xl max-w-md w-full text-center space-y-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowDownloadModal(false)}
+              className="absolute top-4 left-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="w-20 h-20 bg-amber-500/20 border border-amber-500/40 rounded-full flex items-center justify-center mx-auto text-amber-400 animate-bounce">
+              <FileCheck className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="bg-amber-500/15 text-amber-400 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/30">
+                عملية ناجحة 100%
+              </span>
+              <h2 className="text-2xl font-extrabold text-white">تم تحميل عقد الإيجار بنجاح!</h2>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                تم حفظ وثيقة عقد الإيجار الرقمي المذيل بتوقيعك الإلكتروني والختم الرسمي للوكالة على جهازك بنجاح. رقم مرجع العقد: <span className="text-amber-400 font-bold">{bookingRef}</span>
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <Button
+                onClick={() => setShowDownloadModal(false)}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl text-xs"
+              >
+                حسناً، متابعة التصفح
+              </Button>
+              <a
+                href={`https://wa.me/212661234567?text=${whatsappMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs"
+              >
+                <Phone className="w-4 h-4" /> إرسال نسخة الوثيقة عبر واتساب الوكالة
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

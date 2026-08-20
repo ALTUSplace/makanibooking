@@ -23,6 +23,7 @@ export default function Success() {
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [includeOfficialStamp, setIncludeOfficialStamp] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -84,8 +85,10 @@ export default function Success() {
       toast.error('يرجى توقيع العقد في المربع المخصص قبل تنزيله.');
       return;
     }
-    try {
-      const doc = new jsPDF();
+    setIsGeneratingPDF(true);
+    setTimeout(() => {
+      try {
+        const doc = new jsPDF();
       
       doc.setFont("helvetica", "bold");
       doc.setFontSize(22);
@@ -169,13 +172,16 @@ export default function Success() {
         doc.text("(Electronically Agreed)", 140, 190);
       }
 
-      doc.save(`B2-Rent-Contract-${bookingRef}.pdf`);
-      toast.success('تم تحميل عقد الإيجار الرقمي بنجاح!');
-      setShowDownloadModal(true); // إظهار نافذة التأكيد المرئية المنبثقة
-    } catch (error) {
-      console.error("PDF generation error:", error);
-      toast.error('حدث خطأ أثناء توليد ملف PDF. يرجى المحاولة مرة أخرى.');
-    }
+        doc.save(`B2-Rent-Contract-${bookingRef}.pdf`);
+        toast.success('تم تحميل عقد الإيجار الرقمي بنجاح!');
+        setShowDownloadModal(true); // إظهار نافذة التأكيد المرئية المنبثقة
+      } catch (error) {
+        console.error("PDF generation error:", error);
+        toast.error('حدث خطأ أثناء توليد ملف PDF. يرجى المحاولة مرة أخرى.');
+      } finally {
+        setIsGeneratingPDF(false);
+      }
+    }, 800);
   };
 
   const whatsappMessage = encodeURIComponent(
@@ -262,13 +268,16 @@ export default function Success() {
               )}
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-slate-400">
+                {hasSigned ? 'التوقيع جاهز للاعتماد في العقد' : 'يرجى رسم التوقيع أعلاه'}
+              </span>
               <button
                 onClick={clearSignature}
                 type="button"
-                className="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 transition-colors"
+                className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border border-amber-500/20"
               >
-                <Eraser className="w-3.5 h-3.5" /> مسح وإعادة التوقيع
+                <Eraser className="w-3.5 h-3.5" /> مسح وإعادة المحاولة
               </button>
             </div>
           </div>
@@ -276,11 +285,21 @@ export default function Success() {
           <div className="space-y-4 pt-2">
             <Button
               onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF}
               type="button"
-              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
+              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-5 h-5" />
-              <span>تحميل عقد الإيجار الرقمي المذيل بالختم والتوقيع (PDF)</span>
+              {isGeneratingPDF ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  <span>جاري توليد ملف الـ PDF وتجهيز الختم...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  <span>تحميل عقد الإيجار الرقمي المذيل بالختم والتوقيع (PDF)</span>
+                </>
+              )}
             </Button>
 
             <a

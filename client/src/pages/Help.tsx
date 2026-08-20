@@ -1,40 +1,52 @@
 import { useState } from 'react';
-import { HelpCircle, ChevronDown, Phone, Mail, ShieldCheck } from 'lucide-react';
+import { HelpCircle, ChevronDown, Phone, Mail, Send, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Help() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const [submitted, setSubmitted] = useState(false);
 
   const faqs = [
     {
-      q: 'ما هي الشروط المطلوبة لتأجير سيارة في المغرب عبر المنصة؟',
-      a: 'يجب أن يتوفر المستأجر على رخصة قيادة سارية المفعول (مغربية أو دولية)، وأن يكون بلغ سن 21 سنة على الأقل (أو 25 سنة لبعض السيارات الفاخرة)، مع بطاقة الوطنية أو جواز السفر.',
+      q: 'ما هي الشروط المطلوبة لتأجير سيارة أو عقار في المغرب عبر المنصة؟',
+      a: 'يجب أن يتوفر المستأجر على رخصة قيادة أو بطاقة وطنية سارية المفعول، وأن يكون بلغ سن 21 سنة على الأقل. بالنسبة للعقارات، يكفي إدلاء بطاقة الهوية أو جواز السفر.',
     },
     {
-      q: 'كيف يتم تأكيد الحجز والدفع؟',
-      a: 'بعد اختيار السيارة وتحديد تواريخ الاستلام والتسليم، يمكنك إرسال تفاصيل الحجز مباشرة إلى الوكالة عبر واتساب أو اختيار الدفع عند الاستلام نقداً أو بالبطاقة.',
+      q: 'كيف يتم تأكيد الحجز وإصدار العقد الرقمي؟',
+      a: 'بعد اختيار الخدمة وتحديد التواريخ، يتم إصدار الحجز فوراً مع عقد إيجار رقمي بصيغة PDF يتضمن التوقيع الإلكتروني والختم الرسمي للوكالة.',
     },
     {
-      q: 'هل يشمل السعر التأمين على السيارة؟',
-      a: 'نعم، جميع السيارات المدرجة في المنصة تشمل تأميناً أساسياً ضد الغير. يمكنك إضافة تأمين شامل ممتاز أثناء إتمام عملية الحجز لحماية إضافية.',
+      q: 'هل الوكالات والشركات المنضمة للمنصة موثوقة؟',
+      a: 'نعم، جميع وكالات كراء السيارات والشركات العقارية تخضع لعمليات تدقيق صارمة وتحمل شارة الاعتماد الرسمي والتقييمات الحقيقية للزبائن.',
     },
     {
-      q: 'هل يمكنني استلام السيارة من مطار أغادير أو مراكش أو الدار البيضاء؟',
-      a: 'بالتأكيد! توفر وكالاتنا خدمة التوصيل والاستلام المجاني أو المدفوع مباشرة عند بوابة الوصول في جميع مطارات المغرب الرئيسية والفنادق.',
+      q: 'كيف يمكنني التواصل مع فريق الدعم الفني مباشرة؟',
+      a: 'يمكنك الاتصال عبر الهاتف الرسمي 0754382654 أو إرسال استفسارك عبر نموذج الدعم أدناه وسيتم الرد خلال دقائق عبر b2rentt@gmail.com.',
     },
   ];
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
+    setSubmitted(true);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 py-12">
-      <div className="container mx-auto px-4 max-w-3xl space-y-8">
+    <div className="min-h-screen bg-background text-foreground py-12 px-4">
+      <div className="container mx-auto max-w-4xl space-y-12">
+        
         <div className="text-center space-y-3">
           <div className="w-16 h-16 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 mx-auto">
             <HelpCircle className="w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-extrabold text-white">مركز المساعدة والأسئلة الشائعة</h1>
-          <p className="text-slate-400 text-sm">كل ما تحتاج معرفته حول تأجير السيارات عبر منصة B2-Rent في المغرب</p>
+          <h1 className="text-3xl font-black text-white">مركز المساعدة والدعم الفني</h1>
+          <p className="text-slate-400 text-sm">نحن هنا للإجابة عن كافة استفساراتك وتوفير تجربة وساطة سلسة وموثوقة</p>
         </div>
 
+        {/* الأسئلة الشائعة */}
         <div className="space-y-4">
+          <h2 className="text-xl font-bold text-white mb-4">الأسئلة الأكثر شيوعاً</h2>
           {faqs.map((faq, idx) => (
             <div key={idx} className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
               <button
@@ -53,19 +65,118 @@ export default function Help() {
           ))}
         </div>
 
-        <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl text-center space-y-4 shadow-xl mt-12">
-          <h3 className="text-xl font-bold text-white">لم تجد إجابة لسؤالك؟</h3>
-          <p className="text-slate-400 text-sm">فريق الدعم في خدمتك على مدار الساعة طوال أيام الأسبوع.</p>
-          <a
-            href="https://wa.me/212661234567"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-sm"
-          >
-            <Phone className="w-4 h-4" />
-            <span>تواصل معنا عبر واتساب الفوري</span>
-          </a>
+        {/* نموذج التواصل المباشر للدعم الفني */}
+        <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
+          <div className="flex items-center gap-3 border-b border-slate-900 pb-4">
+            <div className="w-10 h-10 bg-amber-500/20 border border-amber-500/40 rounded-xl flex items-center justify-center text-amber-400">
+              <Mail className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">إرسال استفسار للدعم الفني</h3>
+              <p className="text-xs text-slate-400">سيتم إرسال رسالتك مباشرة إلى البريد المعتمد: b2rentt@gmail.com</p>
+            </div>
+          </div>
+
+          {submitted ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 p-8 rounded-2xl text-center space-y-3">
+              <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+              <h4 className="text-lg font-bold text-white">تم إرسال رسالتك بنجاح!</h4>
+              <p className="text-xs text-slate-300">شكراً لتواصلك معنا. سنقوم بالرد على بريدك الإلكتروني في أقرب وقت ممكن.</p>
+              <Button
+                onClick={() => { setSubmitted(false); setFormData({ name: '', email: '', subject: '', message: '' }); }}
+                className="bg-amber-500 text-slate-950 font-bold text-xs mt-2"
+              >
+                إرسال استفسار آخر
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5 text-right">
+                  <label className="text-xs font-bold text-slate-300">الاسم الكامل</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="أدخل اسمك..."
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5 text-right">
+                  <label className="text-xs font-bold text-slate-300">البريد الإلكتروني</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="example@domain.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-right">
+                <label className="text-xs font-bold text-slate-300">موضوع الاستفسار</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: استفسار حول حجز سيارة أو عقد إيجار..."
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="space-y-1.5 text-right">
+                <label className="text-xs font-bold text-slate-300">نص الرسالة أو الاستفسار</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="اكتب تفاصيل استفسارك هنا..."
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-extrabold px-8 py-3.5 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>إرسال الاستفسار للدعم الفني</span>
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
+
+        {/* معلومات الاتصال المباشر */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+          <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
+              <Phone className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs text-slate-400">رقم الهاتف الرسمي للدعم</div>
+              <a href="tel:0754382654" className="text-base font-bold text-white hover:text-amber-400">0754382654</a>
+            </div>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-800 p-6 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-500/15 border border-amber-500/30 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
+              <Mail className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs text-slate-400">البريد الإلكتروني المعتمد</div>
+              <a href="mailto:b2rentt@gmail.com" className="text-base font-bold text-white hover:text-amber-400">b2rentt@gmail.com</a>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

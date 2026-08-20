@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1787267041664,
+      "tag": "0000_eager_roland_deschain",
+      "breakpoints": true
+    }
+  ]
 }

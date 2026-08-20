@@ -7,7 +7,7 @@
 - [x] Develop Interactive Availability Calendar & Pricing Calculator with 15% Bundled Package discount
 - [x] Build Secure Checkout page with multi-payment support, WhatsApp/LiveChat integration, and SEO metadata
 - [x] Dynamic Pricing Engine (weekend surge + long stay discounts)
-- [ ] Map-Based Search with dynamic price pins
-- [ ] AI Recommendation System & Cross-Selling bundle checkout
+- [x] Map-Based Search with dynamic price pins
+- [x] AI Recommendation System & Cross-Selling bundle checkout
 - [x] Advanced Media Upload with compression & watermark simulation
-- [ ] Enhanced SEO & Response optimization
+- [x] Enhanced SEO & Response optimization

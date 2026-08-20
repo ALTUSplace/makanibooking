@@ -137,7 +137,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Interactive Fleet Map Section with Advanced Filters */}
+        {/* Interactive Fleet Map Section with Advanced Filters & InfoWindows */}
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl space-y-6 shadow-xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
             <div>
@@ -145,7 +145,7 @@ export default function Dashboard() {
                 <MapPin className="w-5 h-5 text-amber-400" />
                 <span>خريطة أسطول الوكالة الجغرافية التفاعلية ({currentAgency.city})</span>
               </h2>
-              <span className="text-xs text-slate-400">استعراض مواقع المركبات والعقارات ومطابقتها مع فلاتر الفرز الحية</span>
+              <span className="text-xs text-slate-400">انقر على أي علامة في الخريطة لعرض تفاصيل العنصر والصورة وحالة الحجز</span>
             </div>
 
             {/* Map Advanced Filters */}
@@ -194,20 +194,51 @@ export default function Dashboard() {
                       map.setZoom(12);
 
                       // Add marker for agency
-                      new maps.Marker({
+                      const agencyMarker = new maps.Marker({
                         position: loc,
                         map,
                         title: currentAgency.name,
                       });
 
-                      // Add markers for filtered cars
+                      const agencyInfoWindow = new maps.InfoWindow({
+                        content: `<div style="direction: rtl; font-family: Cairo, sans-serif; padding: 8px; max-width: 200px;">
+                          <h4 style="font-weight: bold; font-size: 13px; color: #1e293b; margin-bottom: 4px;">${currentAgency.name}</h4>
+                          <p style="font-size: 11px; color: #64748b; margin: 0;">الفرع الرئيسي - ${currentAgency.city}</p>
+                        </div>`
+                      });
+
+                      agencyMarker.addListener('click', () => {
+                        agencyInfoWindow.open(map, agencyMarker);
+                      });
+
+                      // Add markers for filtered cars with Interactive InfoWindows
                       agencyCars.forEach((car, index) => {
-                        const offsetLat = loc.lat() + (Math.sin(index) * 0.02);
-                        const offsetLng = loc.lng() + (Math.cos(index) * 0.02);
-                        new maps.Marker({
+                        const offsetLat = loc.lat() + (Math.sin(index + 1) * 0.025);
+                        const offsetLng = loc.lng() + (Math.cos(index + 1) * 0.025);
+                        
+                        const marker = new maps.Marker({
                           position: { lat: offsetLat, lng: offsetLng },
                           map,
-                          title: `${car.name} - ${car.pricePerDay} درهم/يوم`,
+                          title: car.name,
+                        });
+
+                        const infoContent = `
+                          <div style="direction: rtl; font-family: Cairo, sans-serif; padding: 10px; width: 220px; background: #fff; border-radius: 12px;">
+                            <img src="${car.image}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 6px;" />
+                            <h4 style="font-weight: bold; font-size: 13px; color: #0f172a; margin: 0 0 4px 0;">${car.name}</h4>
+                            <p style="font-size: 11px; color: #d97706; font-weight: bold; margin: 0 0 4px 0;">${car.pricePerDay} درهم / يوم</p>
+                            <span style="display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: bold; border-radius: 9999px; background: ${car.available !== false ? '#dcfce7' : '#fee2e2'}; color: ${car.available !== false ? '#166534' : '#991b1b'};">
+                              ${car.available !== false ? '✓ متاح للحجز' : '✕ محجوز حالياً'}
+                            </span>
+                          </div>
+                        `;
+
+                        const infoWindow = new maps.InfoWindow({
+                          content: infoContent
+                        });
+
+                        marker.addListener('click', () => {
+                          infoWindow.open(map, marker);
                         });
                       });
                     }
@@ -218,7 +249,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center justify-between text-xs text-slate-400 px-2">
             <span>عدد العناصر المطابقة للفلتر على الخريطة: <strong className="text-amber-400">{agencyCars.length}</strong> عنصر</span>
-            <span>📍 يتم تحديث علامات الخريطة تلقائياً حسب الفلاتر المحددة</span>
+            <span>📍 انقر على أي دبوس في الخريطة لعرض بطاقة المعلومات والـ Modal السريع</span>
           </div>
         </div>
 

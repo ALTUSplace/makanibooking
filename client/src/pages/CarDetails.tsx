@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import InteractiveCalendar from '@/components/InteractiveCalendar';
 import { Star, ShieldCheck, Users, Car as CarIcon, Fuel, MapPin, Phone, CheckCircle2, Award, Calendar, ChevronRight, Share2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { trpc } from '@/lib/trpc';
 
 export default function CarDetails() {
   const [, params] = useRoute('/car/:id');
@@ -26,7 +27,20 @@ export default function CarDetails() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const daysCount = 5; // simplified or calculated
+  const numericListingId = Number(carId.replace(/\D/g, '')) || 1;
+  const { data: bookedDatesData } = trpc.listings.getBookedDates.useQuery({ listingId: numericListingId });
+
+  const calcDays = () => {
+    try {
+      const d1 = new Date(startDate);
+      const d2 = new Date(endDate);
+      const diff = Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+      return diff > 0 ? diff : 1;
+    } catch {
+      return 5;
+    }
+  };
+  const daysCount = calcDays();
   const dailyPrice = car.pricePerDay;
   const insurancePrice = includeInsurance ? 100 * daysCount : 0;
   const babySeatPrice = includeBabySeat ? 50 * daysCount : 0;
@@ -76,6 +90,10 @@ export default function CarDetails() {
   };
 
   const handleProceedBooking = () => {
+    if (!startDate || !endDate) {
+      toast.error('يرجى تحديد تاريخ الاستلام والإرجاع');
+      return;
+    }
     const bookingData = {
       carId: car.id,
       carName: car.name,
@@ -89,7 +107,7 @@ export default function CarDetails() {
       whatsapp: car.agency.whatsapp,
     };
     localStorage.setItem('b2_current_booking', JSON.stringify(bookingData));
-    setLocation('/booking');
+    setLocation(`/checkout?listingId=${numericListingId}&title=${encodeURIComponent(car.name)}&pricePerDay=${dailyPrice}&days=${daysCount}&startDate=${startDate}&endDate=${endDate}`);
   };
 
   return (
@@ -320,11 +338,8 @@ export default function CarDetails() {
                     <Calendar className="w-3.5 h-3.5 text-amber-400" /> تقويم التوفر المباشر
                   </label>
                   <InteractiveCalendar
-                    listingId={1}
-                    bookedDates={[
-                      { start: '2026-08-15', end: '2026-08-17' },
-                      { start: '2026-08-25', end: '2026-08-27' }
-                    ]}
+                    listingId={numericListingId}
+                    bookedDates={bookedDatesData || []}
                     onDateSelect={(start, end) => {
                       setStartDate(start);
                       setEndDate(end);

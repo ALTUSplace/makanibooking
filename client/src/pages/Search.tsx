@@ -12,13 +12,25 @@ const CITIES = [
   { id: 'أغادير', name: 'أغادير' },
   { id: 'الدار البيضاء', name: 'الدار البيضاء' },
   { id: 'طنجة', name: 'طنجة' },
+  { id: 'الرباط', name: 'الرباط' },
 ];
+
+const cityMap: Record<string, string> = {
+  agadir: 'أغادير',
+  marrakech: 'مراكش',
+  casablanca: 'الدار البيضاء',
+  tangier: 'طنجة',
+  rabat: 'الرباط',
+};
 
 export default function Search() {
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
 
-  const [cityFilter, setCityFilter] = useState(searchParams.get('city') || 'all');
+  const rawCity = searchParams.get('city') || 'all';
+  const resolvedCity = cityMap[rawCity] || rawCity;
+
+  const [cityFilter, setCityFilter] = useState(resolvedCity);
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
   const [maxPrice, setMaxPrice] = useState(4000);
   const [excellenceOnly, setExcellenceOnly] = useState(false);
@@ -162,7 +174,7 @@ export default function Search() {
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
               >
                 {CITIES.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={c.name}>
                     {c.name}
                   </option>
                 ))}

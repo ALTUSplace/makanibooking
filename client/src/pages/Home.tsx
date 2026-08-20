@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { toast } from 'sonner';
 
@@ -16,13 +16,63 @@ export default function Home() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiResults, setAiResults] = useState<ListingItem[] | null>(null);
+  const [savedSearches, setSavedSearches] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('b2_saved_searches');
+      return saved ? JSON.parse(saved) : ['سيارة دفع رباعي أغادير', 'شقة ملاسح مراكش'];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     const mockRecent = LISTINGS.slice(0, 3);
     setRecentViewed(mockRecent);
   }, []);
 
-  // دالة محاكاة معالجة البحث الذكي باللغة الطبيعية عبر الذكاء الاصطناعي
+  // دعم البحث الصوتي عبر Web Speech API
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('متصفحك لا يدعم ميزة البحث الصوتي المباشر');
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ar-MA';
+    recognition.start();
+
+    toast.info('جاري الاستماع لطلبك الصوتي...');
+
+    recognition.onresult = (event: any) => {
+      const speechToText = event.results[0][0].transcript;
+      setAiPrompt(speechToText);
+      toast.success(`تم التعرف على الصوت: "${speechToText}"`);
+    };
+
+    recognition.onerror = () => {
+      toast.error('تعذر التعرف على الصوت، يرجى المحاولة مرة أخرى');
+    };
+  };
+
+  // حفظ البحث الحالي
+  const handleSaveSearch = () => {
+    if (!aiPrompt.trim()) {
+      toast.error('لا يوجد استعلام لحفظه');
+      return;
+    }
+    if (savedSearches.includes(aiPrompt)) {
+      toast.info('هذا الاستعلام محفوط مسبقاً');
+      return;
+    }
+    const updated = [aiPrompt, ...savedSearches].slice(0, 5);
+    setSavedSearches(updated);
+    try {
+      localStorage.setItem('b2_saved_searches', JSON.stringify(updated));
+    } catch {}
+    toast.success('تم حفظ استعلام البحث الذكي بنجاح');
+  };
+
+  // دالة معالجة البحث الذكي باللغة الطبيعية عبر الذكاء الاصطناعي مع Skeleton Loading
   const handleAiSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiPrompt.trim()) {
@@ -37,7 +87,6 @@ export default function Home() {
       setIsAiSearching(false);
       const queryLower = aiPrompt.toLowerCase();
       
-      // مطابقة ذكية للمحتوى بناءً على الكلمات المفتاحية الواردة في الطلب
       const matched = LISTINGS.filter(item => {
         if (queryLower.includes('أغادير') && item.city !== 'أغادير') return false;
         if (queryLower.includes('مراكش') && item.city !== 'مراكش') return false;
@@ -56,11 +105,10 @@ export default function Home() {
         );
       });
 
-      // إذا لم يتم العثور على مطابقة دقيقة، نعرض اقترحات مميزة قريبة
       const finalResults = matched.length > 0 ? matched : LISTINGS.slice(0, 2);
       setAiResults(finalResults);
       toast.success('تم تحليل طلبك بنجاح وعرض النتائج المطابقة عبر الذكاء الاصطناعي!');
-    }, 800);
+    }, 1000);
   };
 
   // الإكمال التلقائي لاقتراحات البحث مع الصور المصغرة والأسعار
@@ -71,13 +119,6 @@ export default function Home() {
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
       ).slice(0, 5)
     : [];
-
-  const filteredListings = LISTINGS.filter(item => {
-    if (selectedTab !== 'all' && item.type !== selectedTab) return false;
-    if (selectedCity !== 'all' && item.city !== selectedCity) return false;
-    if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) && !item.city.toLowerCase().includes(searchQuery.toLowerCase()) && !item.category.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
 
   const topRatedListings = [...LISTINGS].sort((a, b) => b.rating - a.rating).slice(0, 4);
 
@@ -116,20 +157,42 @@ export default function Home() {
                 </div>
                 <div className="text-right">
                   <h3 className="text-sm font-black text-white">مساعد البحث الذكي بالذكاء الاصطناعي</h3>
-                  <p className="text-[11px] text-slate-400">اكتب ما تبحث عنه بلغتك الطبيعية وسيقوم الذكاء الاصطناعي بإيجاد أفضل العروض</p>
+                  <p className="text-[11px] text-slate-400">اكتب ما تبحث عنه بلغتك الطبيعية أو استخدم البحث الصوتي</p>
                 </div>
               </div>
-              <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-full animate-pulse">جديد ✨</span>
+              <div className="flex items-center gap-2">
+                {aiPrompt && (
+                  <button
+                    onClick={handleSaveSearch}
+                    className="flex items-center gap-1 text-[11px] bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl transition-all"
+                    title="حفظ الاستعلام الحالي"
+                  >
+                    <Bookmark className="w-3.5 h-3.5" /> حفظ البحث
+                  </button>
+                )}
+                <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-full animate-pulse">جديد ✨</span>
+              </div>
             </div>
 
             <form onSubmit={handleAiSearch} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="مثال: أريد سيارة دفع رباعي في أغادير أو شقة فخمة بمراكش مع مسبح..."
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                className="flex-1 bg-slate-900 border border-slate-700 text-white rounded-2xl px-4 py-3 text-xs focus:outline-none focus:border-amber-500"
-              />
+              <div className="relative flex-1 flex items-center">
+                <input
+                  type="text"
+                  placeholder="مثال: أريد سيارة دفع رباعي في أغادير أو شقة فخمة بمراكش مع مسبح..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-2xl px-4 py-3 text-xs focus:outline-none focus:border-amber-500 pl-10"
+                />
+                <button
+                  type="button"
+                  onClick={handleVoiceSearch}
+                  className="absolute left-3 text-slate-400 hover:text-amber-400 transition-colors"
+                  title="بحث صوتي باللغة الطبيعية"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              </div>
+
               <Button
                 type="submit"
                 disabled={isAiSearching}
@@ -146,8 +209,44 @@ export default function Home() {
               </Button>
             </form>
 
+            {/* الأبحاث المحفوظة السريعة */}
+            {savedSearches.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap pt-1 text-[11px] text-slate-400">
+                <span className="font-bold text-slate-300">عمليات البحث المحفوظة:</span>
+                {savedSearches.map((s, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setAiPrompt(s)}
+                    className="bg-slate-900 hover:bg-slate-800 text-amber-400/90 border border-slate-800 px-2.5 py-1 rounded-lg transition-all"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* رسم متحرك للتحميل (Skeleton Loading) أثناء معالجة الذكاء الاصطناعي */}
+            {isAiSearching && (
+              <div className="pt-4 border-t border-slate-800 space-y-3 animate-pulse text-right">
+                <div className="flex items-center gap-2 text-xs text-amber-400">
+                  <span className="animate-spin">✨</span> جاري تحليل طلبك بالذكاء الاصطناعي واستخراج المطابقات...
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[1, 2].map((n) => (
+                    <div key={n} className="bg-slate-900/60 border border-slate-800 p-3 rounded-2xl flex items-center gap-3">
+                      <div className="w-14 h-14 bg-slate-800 rounded-xl" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-slate-800 rounded w-1/2" />
+                        <div className="h-4 bg-slate-800 rounded w-3/4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* نتائج البحث الذكي المنبثقة */}
-            {aiResults && (
+            {aiResults && !isAiSearching && (
               <div className="pt-4 border-t border-slate-800 space-y-3 animate-in fade-in-50 text-right">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-semibold">
                   <span>نتائج التحليل الذكي للطلب ({aiResults.length} عرض مطابق):</span>
@@ -201,6 +300,7 @@ export default function Home() {
                   <option value="مراكش">مراكش</option>
                   <option value="الدار البيضاء">الدار البيضاء</option>
                   <option value="طنجة">طنجة</option>
+                  <option value="الرباط">الرباط</option>
                 </select>
               </div>
 

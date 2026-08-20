@@ -1,6 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check } from 'lucide-react';
+import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check, Stamp } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useRef, useState, useEffect } from 'react';
@@ -21,6 +21,7 @@ export default function Success() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSigned, setHasSigned] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [includeOfficialStamp, setIncludeOfficialStamp] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -138,10 +139,24 @@ export default function Success() {
         y += 7;
       });
 
-      // إضافة التوقيع الإلكتروني إذا كان متوفراً
+      // مساحة التوقيع والختم الرقمي الرسمي
       doc.setFont("helvetica", "bold");
       doc.text("Agency Stamp & Signature", 30, 175);
       doc.text("Customer Signature", 140, 175);
+
+      // رسم ختم رسمي افتراضي للوكالة في حال اختياره
+      if (includeOfficialStamp) {
+        doc.setDrawColor(217, 119, 6); // برونزي ذهبي
+        doc.setFillColor(254, 243, 199);
+        doc.roundedRect(25, 180, 45, 25, 3, 3, 'FD');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(180, 83, 9);
+        doc.text("B2-RENT OFFICIAL", 47, 188, { align: "center" });
+        doc.text("VERIFIED AGENCY", 47, 195, { align: "center" });
+        doc.text("MOROCCO", 47, 201, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+      }
 
       if (signatureDataUrl) {
         doc.addImage(signatureDataUrl, 'PNG', 135, 180, 50, 20);
@@ -152,7 +167,7 @@ export default function Success() {
       }
 
       doc.save(`B2-Rent-Contract-${bookingRef}.pdf`);
-      toast.success('تم تحميل عقد الإيجار الرقمي المذيل بتوقيعك بنجاح!');
+      toast.success('تم تحميل عقد الإيجار الرقمي المذيل بالتوقيع والختم الرقمي بنجاح!');
     } catch (error) {
       console.error(error);
       toast.error('حدث خطأ أثناء توليد ملف PDF');
@@ -160,7 +175,7 @@ export default function Success() {
   };
 
   const whatsappMessage = encodeURIComponent(
-    `مرحباً، لقد قمت بحجز سيارة عبر منصة B2-Rent وتوقيع العقد إلكترونياً.\nرقم الحجز: ${bookingRef}\nالاسم: ${name}\nالهاتف: ${phone}\nمن تاريخ ${start} إلى ${end} (${days} أيام)\nالمجموع: ${total} درهم.`
+    `مرحباً، لقد قمت بحجز سيارة عبر منصة B2-Rent وتوقيع العقد إلكترونياً مع الختم الرسمي.\nرقم الحجز: ${bookingRef}\nالاسم: ${name}\nالهاتف: ${phone}\nمن تاريخ ${start} إلى ${end} (${days} أيام)\nالمجموع: ${total} درهم.`
   );
 
   return (
@@ -175,7 +190,7 @@ export default function Success() {
             <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">تم الحجز بنجاح 🚀</span>
             <h1 className="text-2xl font-extrabold text-white">شكراً لك، {name}!</h1>
             <p className="text-slate-400 text-xs max-w-md mx-auto">
-              رقم مرجع الحجز الخاص بك هو <span className="text-amber-400 font-bold">{bookingRef}</span>. يرجى التوقيع أدناه لتوثيق عقد الإيجار الرقمي.
+              رقم مرجع الحجز الخاص بك هو <span className="text-amber-400 font-bold">{bookingRef}</span>. يرجى توقيع العقد أدناه.
             </p>
           </div>
 
@@ -192,6 +207,23 @@ export default function Success() {
               <span className="text-slate-400">المبلغ الإجمالي:</span>
               <span className="font-bold text-amber-400">{total} درهم</span>
             </div>
+          </div>
+
+          {/* خيار إدراج الختم الرقمي */}
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Stamp className="w-5 h-5 text-amber-400" />
+              <div className="text-right">
+                <div className="text-xs font-bold text-white">إدراج الختم الرقمي الرسمي للوكالة</div>
+                <div className="text-[10px] text-slate-400">يثبت المصداقية القانونية والاعتماد الرسمي للوكالة</div>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={includeOfficialStamp}
+              onChange={(e) => setIncludeOfficialStamp(e.target.checked)}
+              className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+            />
           </div>
 
           {/* لوحة التوقيع الإلكتروني التفاعلي */}
@@ -245,7 +277,7 @@ export default function Success() {
               className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
             >
               <Download className="w-4 h-4" />
-              <span>تحميل عقد الإيجار الرقمي المذيل بالتوقيع (PDF)</span>
+              <span>تحميل عقد الإيجار الرقمي المذيل بالختم والتوقيع (PDF)</span>
             </Button>
 
             <a

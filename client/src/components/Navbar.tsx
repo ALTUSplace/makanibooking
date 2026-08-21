@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield, Coins } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield, Coins, Car, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -38,13 +38,13 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { href: '/', label: t('home') },
-    { href: '/search', label: t('search') },
-    { href: '/admin', label: t('admin'), icon: ShieldAlert },
-    { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { href: '/add-car', label: t('addCar'), icon: PlusCircle },
-    { href: '/my-bookings', label: t('myBookings'), icon: BookmarkCheck },
-    { href: '/help', label: t('help'), icon: HelpCircle },
+    { href: '/', label: 'الرئيسية' },
+    { href: '/search?type=car', label: 'تأجير السيارات', icon: Car },
+    { href: '/search?type=property', label: 'العقارات الفاخرة', icon: Building2 },
+    { href: '/admin', label: 'لوحة الإدارة', icon: ShieldAlert },
+    { href: '/partner-dashboard', label: 'لوحة الوكلاء', icon: LayoutDashboard },
+    { href: '/my-bookings', label: 'حجوزاتي', icon: BookmarkCheck },
+    { href: '/help', label: 'الدعم الفني', icon: HelpCircle },
   ];
 
   return (

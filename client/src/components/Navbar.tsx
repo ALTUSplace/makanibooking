@@ -232,6 +232,55 @@ export default function Navbar() {
         }}
       />
 
+      {mobileMenuOpen && (
+        <div className="lg:hidden absolute top-20 right-0 left-0 bg-slate-950/98 backdrop-blur-xl border-b border-slate-800 p-5 shadow-2xl z-50 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex flex-col gap-3">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              const isActive = location === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 text-sm font-bold py-3 px-4 rounded-xl transition-all ${
+                    isActive
+                      ? 'bg-amber-500 text-slate-950 shadow-md'
+                      : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  {link.label}
+                </Link>
+              );
+            })}
+
+            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between px-2">
+                <span className="text-xs text-slate-400 font-medium">الدور الحالي:</span>
+                <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg">
+                  {role === 'super_admin' ? 'مشرف عام' : 'مدير وكالة'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => { setTwoFaModalOpen(true); setMobileMenuOpen(false); }}
+                  className="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2"
+                >
+                  <Shield className="w-3.5 h-3.5" /> 2FA أمان
+                </button>
+                <button
+                  onClick={() => { setCmiModalOpen(true); setMobileMenuOpen(false); }}
+                  className="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="w-3.5 h-3.5" /> CMI دفع
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TwoFactorAuthModal
         isOpen={twoFaModalOpen}
         onClose={() => setTwoFaModalOpen(false)}

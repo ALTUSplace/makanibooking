@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreditCard, Wallet, Banknote, ShieldCheck, CheckCircle2, ArrowRight, FileText, Percent } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { LoadingAnimation } from '@/components/LoadingAnimation';
 
 export default function CheckoutPage() {
   const [location, setLocation] = useLocation();
@@ -47,6 +48,17 @@ export default function CheckoutPage() {
       totalPrice: total,
     });
   };
+
+  if (isSubmitting) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <LoadingAnimation 
+          text="جاري معالجة الدفع وتأكيد الحجز..." 
+          subtext="نقوم بتأكيد التواريخ وقفل التقويم وتوليد العقد الرقمي الآمن" 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8" dir="rtl">

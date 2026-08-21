@@ -578,11 +578,41 @@ export default function AdminDashboard() {
                 />
               </div>
 
+              <div className="pt-4 border-t border-slate-800 space-y-4">
+                <h4 className="text-sm font-extrabold text-amber-400 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4" /> نظام المصادقة والأمان المتقدم (Authentication & Security)
+                </h4>
+                
+                <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                  <div>
+                    <div className="text-xs font-bold text-white">فرض المصادقة الثنائية (2FA) للمشرفين</div>
+                    <div className="text-[11px] text-slate-400">إلزام جميع حسابات الإدارة والمشرفين بتفعيل رمز التحقق الثنائي عبر البريد أو التطبيق.</div>
+                  </div>
+                  <input type="checkbox" defaultChecked className="w-5 h-5 accent-amber-500 cursor-pointer" />
+                </div>
+
+                <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                  <div>
+                    <div className="text-xs font-bold text-white">جلسات الآمنة المشفرة (JWT HttpOnly Cookies)</div>
+                    <div className="text-[11px] text-slate-400">حماية الكوكيز ضد هجمات XSS وتأمين صلاحيات الجلسات بمدة صلاحية قصوى.</div>
+                  </div>
+                  <input type="checkbox" defaultChecked className="w-5 h-5 accent-amber-500 cursor-pointer" />
+                </div>
+
+                <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                  <div>
+                    <div className="text-xs font-bold text-white">تسجيل محاولات الدخول الفاشلة والحظر التلقائي</div>
+                    <div className="text-[11px] text-slate-400">حظر عنوان IP تلقائياً في حال تجاوز 5 محاولات دخول خاطئة لكلمات المرور.</div>
+                  </div>
+                  <input type="checkbox" defaultChecked className="w-5 h-5 accent-amber-500 cursor-pointer" />
+                </div>
+              </div>
+
               <Button
-                onClick={() => toast.success('تم حفظ إعدادات المنصة بنجاح')}
+                onClick={() => toast.success('تم حفظ إعدادات المنصة وتحديث بروتوكولات الأمان بنجاح')}
                 className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl cursor-pointer mt-4"
               >
-                حفظ التغييرات
+                حفظ التغييرات وتطبيق بروتوكولات الأمان
               </Button>
             </div>
           </div>

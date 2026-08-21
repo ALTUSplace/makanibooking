@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Star, Award, Settings, Globe, UserCheck, FileSpreadsheet, ShieldAlert, CheckCircle, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Building2, Car, Calendar, Users, DollarSign, ShieldCheck, CheckCircle2, Trash2, Star, Award, Settings, Globe, UserCheck, FileSpreadsheet, ShieldAlert, CheckCircle, RefreshCw, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PARTNERS, LISTINGS } from '@/data/b2rent';
 import { useRole } from '@/contexts/RoleContext';
@@ -15,15 +15,15 @@ const bookingData = [
   { name: 'يونيو', الحجوزات: 48, الإيرادات: 105000 },
 ];
 
-const agencyTypeData = [
-  { name: 'وكالات كراء السيارات', value: 3 },
-  { name: 'الوكالات العقارية', value: 2 },
+const commissionSplitData = [
+  { name: 'عمولات السيارات', value: 65000 },
+  { name: 'عمولات العقارات', value: 43000 },
 ];
 const COLORS = ['#f59e0b', '#0B3C5D'];
 
 export default function AdminDashboard() {
   const { role, setRole } = useRole();
-  const [activeTab, setActiveTab] = useState<'overview' | 'agencies' | 'listings' | 'users' | 'bookings' | 'settings' | 'domain'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'agencies' | 'listings' | 'users' | 'bookings' | 'wallet' | 'security' | 'domain' | 'settings'>('overview');
   const [agenciesList, setAgenciesList] = useState(PARTNERS.map(p => ({ ...p, status: p.status || 'active' })));
   const [listingsList, setListingsList] = useState(LISTINGS);
   const [usersList, setUsersList] = useState([
@@ -31,6 +31,16 @@ export default function AdminDashboard() {
     { id: 'u2', name: 'محمد الزبون', email: 'customer@gmail.com', role: 'customer', status: 'نشط', joined: '2026-02-15' },
     { id: 'u3', name: 'خالد العقاري', email: 'khaled_rent@gmail.com', role: 'vendor_property', status: 'نشط', joined: '2026-02-20' },
     { id: 'u4', name: 'وكالة الأناقة', email: 'luxury_cars@gmail.com', role: 'vendor_car', status: 'معلق', joined: '2026-03-01' },
+  ]);
+  const [securityLogs, setSecurityLogs] = useState([
+    { id: 1, type: 'تحذير أسعار', description: 'محاولة إدخال سعر استئجار غير منطقي (5 د.م/يوم) لعقار في الدار البيضاء', ip: '192.168.1.45', time: 'منذ 5 دقائق', status: 'تم الحظر تلقائياً' },
+    { id: 2, type: 'هجوم محتمل (SQLi)', description: 'محاولة حقن بيانات مشبوهة عبر نموذج البحث الذكي', ip: '41.141.22.10', time: 'منذ 25 دقيقة', status: 'صد بواسطة جدار الحماية' },
+    { id: 3, type: 'تحقق وثائق', description: 'رفع وثيقة س سجل تجاري غير مطابقة من قبل حساب وهمي', ip: '105.155.88.2', time: 'منذ ساعة', status: 'رفض المعاملة تلقائياً' },
+  ]);
+  const [whatsappQueue, setWhatsappQueue] = useState([
+    { id: 1, recipient: '+2126XXXXXXXX (العميل محمد)', message: 'تأكيد الحجز رقم #1082 - سيارة Range Rover - تم الدفع بنجاح', status: 'تم الإرسال (WhatsApp Cloud API)' },
+    { id: 2, recipient: '+2126XXXXXXXX (وكالة الأناقة)', message: 'تنبيه: يوجد زبون جديد حجز سيارتك لمدة 4 أيام - يرجى تسليم المفتاح', status: 'تم الإرسال بنجاح' },
+    { id: 3, recipient: 'إدارة المنصة (Admin)', message: 'عمولة جديدة بقيمة 918 د.م أضيفت لمحفظتك من الحجز المدمج', status: 'تم التسليم' },
   ]);
   const [platformSettings, setPlatformSettings] = useState({
     siteName: 'B2-Rent',
@@ -41,8 +51,6 @@ export default function AdminDashboard() {
   const [customDomainInput, setCustomDomainInput] = useState('b2rent.ma');
   const [domainStatus, setDomainStatus] = useState<'verified' | 'pending'>('verified');
   const [authWarning, setAuthWarning] = useState<string | null>(null);
-  const [agencyStatusFilter, setAgencyStatusFilter] = useState<'all' | 'active' | 'pending' | 'rejected'>('all');
-  const [selectedAgencies, setSelectedAgencies] = useState<string[]>([]);
 
   const totalRevenue = listingsList.reduce((acc, item) => acc + (item.pricePerUnit * 3), 125000);
 
@@ -108,8 +116,8 @@ export default function AdminDashboard() {
               <LayoutDashboard className="w-8 h-8" />
             </div>
             <div>
-              <span className="text-amber-500 text-xs font-extrabold uppercase tracking-widest">لوحة التحكم الإدارية المتقدمة</span>
-              <h1 className="text-2xl md:text-3xl font-black text-white">إدارة المشرف العام والعمليات</h1>
+              <span className="text-amber-500 text-xs font-extrabold uppercase tracking-widest">لوحة التحكم الإدارية المتقدمة (Admin & CISO)</span>
+              <h1 className="text-2xl md:text-3xl font-black text-white">إدارة المشرف العام، الأمان والعمليات المالية</h1>
             </div>
           </div>
 
@@ -150,6 +158,8 @@ export default function AdminDashboard() {
         <div className="flex flex-wrap gap-2 bg-slate-950 border border-slate-800 p-2 rounded-2xl">
           {[
             { id: 'overview', label: 'نظرة عامة والتحليلات', icon: LayoutDashboard },
+            { id: 'wallet', label: 'المحفظة والعمولات', icon: DollarSign },
+            { id: 'security', label: 'الأمان وجدار الحماية', icon: Lock },
             { id: 'agencies', label: `إدارة الوكالات (${agenciesList.length})`, icon: Building2 },
             { id: 'listings', label: `إشراف العروض (${listingsList.length})`, icon: Car },
             { id: 'users', label: `إدارة المستخدمين (${usersList.length})`, icon: Users },
@@ -252,25 +262,14 @@ export default function AdminDashboard() {
 
               <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
-                    <Building2 className="w-5 h-5 text-amber-400" />
-                    <span>توزيع المزودين والوكالات</span>
-                  </h3>
-                  <p className="text-xs text-slate-400">نسبة وكالات السيارات مقارنة بالوكالات العقارية</p>
+                  <h3 className="text-lg font-bold text-white mb-2">توزيع العمولات حسب القطاع</h3>
+                  <p className="text-xs text-slate-400">نسبة أرباح عمولات السيارات مقابل العقارات</p>
                 </div>
-                <div className="h-48 w-full flex items-center justify-center">
+                <div className="h-56 w-full flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        data={agencyTypeData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {agencyTypeData.map((_entry, index) => (
+                      <Pie data={commissionSplitData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={5} dataKey="value">
+                        {commissionSplitData.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -278,10 +277,128 @@ export default function AdminDashboard() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex justify-center gap-6 text-xs text-slate-300">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> السيارات</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> العقارات</span>
+                <div className="flex justify-around text-xs font-bold pt-4 border-t border-slate-800">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> السيارات (60%)</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#0B3C5D] inline-block"></span> العقارات (40%)</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* WALLET & FINANCIAL LEDGER TAB */}
+        {activeTab === 'wallet' && (
+          <div className="space-y-8 animate-in fade-in-50 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-3">
+                <span className="text-xs text-slate-400 font-bold">أرباح عمولات السيارات (صافي)</span>
+                <div className="text-3xl font-black text-amber-400">65,000 د.م</div>
+                <p className="text-xs text-emerald-400">↑ 18% مقارنة بالشهر السابق</p>
+              </div>
+              <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-3">
+                <span className="text-xs text-slate-400 font-bold">أرباح عمولات العقارات (صافي)</span>
+                <div className="text-3xl font-black text-blue-400">43,000 د.م</div>
+                <p className="text-xs text-emerald-400">↑ 22% مقارنة بالشهر السابق</p>
+              </div>
+              <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-3">
+                <span className="text-xs text-slate-400 font-bold">مستحقات الشركاء المعلقة للدفع</span>
+                <div className="text-3xl font-black text-white">18,500 د.م</div>
+                <Button onClick={() => toast.success('تمت تسوية المستحقات وتحويلها للشركاء بنجاح')} className="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white">
+                  تسوية المستحقات دفعة واحدة
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+              <h3 className="text-lg font-bold text-white">سجل الحركات المالية والتحويلات للشركاء</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400 text-xs">
+                      <th className="pb-3">رقم العملية</th>
+                      <th className="pb-3">الشريك / الوكالة</th>
+                      <th className="pb-3">النوع</th>
+                      <th className="pb-3">المبلغ الإجمالي</th>
+                      <th className="pb-3">عمولة المنصة (10%)</th>
+                      <th className="pb-3">الحالة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-xs">
+                    <tr>
+                      <td className="py-4 font-mono">#TX-9982</td>
+                      <td className="py-4 font-bold text-white">وكالة الأناقة للسيارات</td>
+                      <td className="py-4">كراء سيارة (Range Rover)</td>
+                      <td className="py-4 font-bold">7,500 د.م</td>
+                      <td className="py-4 text-emerald-400 font-bold">750 د.م</td>
+                      <td className="py-4"><span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-bold">مكتمل ومحول</span></td>
+                    </tr>
+                    <tr>
+                      <td className="py-4 font-mono">#TX-9981</td>
+                      <td className="py-4 font-bold text-white">خالد العقاري</td>
+                      <td className="py-4">كراء فيلا مراكش</td>
+                      <td className="py-4 font-bold">10,000 د.م</td>
+                      <td className="py-4 text-emerald-400 font-bold">1,000 د.م</td>
+                      <td className="py-4"><span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-bold">مكتمل ومحول</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECURITY & ANTI-FRAUD TAB */}
+        {activeTab === 'security' && (
+          <div className="space-y-8 animate-in fade-in-50 duration-300">
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <ShieldAlert className="w-6 h-6 text-red-500" />
+                    <span>سجل جدار الحماية وأنظمة كشف الاحتيال (Anti-Fraud & Mock Firewall)</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">مراقبة لحظية لمحاولات التلاعب بالأسعار أو حقن البيانات أو الحسابات الوهمية.</p>
+                </div>
+                <span className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" /> النظام محمي 100%
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                {securityLogs.map(log => (
+                  <div key={log.id} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-red-500/15 text-red-400 text-xs font-bold rounded-lg">{log.type}</span>
+                        <span className="text-xs text-slate-400 font-mono">IP: {log.ip}</span>
+                        <span className="text-xs text-slate-500">{log.time}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-white">{log.description}</p>
+                    </div>
+                    <span className="px-3 py-1.5 bg-amber-500/10 text-amber-400 font-bold text-xs rounded-xl self-start md:self-auto">
+                      {log.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>سجل إشعارات الـ WhatsApp & SMS الفورية (Mock Twilio / Infobip)</span>
+              </h3>
+              <div className="space-y-3">
+                {whatsappQueue.map(item => (
+                  <div key={item.id} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <span className="font-bold text-amber-400 block mb-1">إلى: {item.recipient}</span>
+                      <span className="text-slate-300">{item.message}</span>
+                    </div>
+                    <span className="bg-emerald-500/15 text-emerald-400 font-bold px-3 py-1 rounded-lg self-start sm:self-auto">
+                      {item.status}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -289,331 +406,196 @@ export default function AdminDashboard() {
 
         {/* AGENCIES TAB */}
         {activeTab === 'agencies' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <Building2 className="w-6 h-6 text-amber-400" />
-                <span>إدارة الوكالات والشركاء</span>
-              </h3>
-
-              <div className="flex flex-wrap gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl">
-                {[
-                  { id: 'all', label: `الكل (${agenciesList.length})` },
-                  { id: 'active', label: `المعتمدة (${agenciesList.filter(a => a.status === 'active').length})` },
-                  { id: 'pending', label: `المعلقة (${agenciesList.filter(a => a.status === 'pending').length})` },
-                  { id: 'rejected', label: `المرفوضة (${agenciesList.filter(a => a.status === 'rejected').length})` },
-                ].map(filter => (
-                  <button
-                    key={filter.id}
-                    onClick={() => setAgencyStatusFilter(filter.id as any)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${agencyStatusFilter === filter.id ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+              <h3 className="text-lg font-bold text-white">إدارة الوكالات وطلبات الانضمام</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400 text-xs">
+                      <th className="pb-3">اسم الوكالة</th>
+                      <th className="pb-3">المدينة</th>
+                      <th className="pb-3">التقييم</th>
+                      <th className="pb-3">الحالة الحالية</th>
+                      <th className="pb-3">إجراءات الإدارة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-xs">
+                    {agenciesList.map(ag => (
+                      <tr key={ag.id}>
+                        <td className="py-4 font-bold text-white flex items-center gap-2">
+                          <span>{ag.name}</span>
+                          {ag.isExcellence && <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full text-[10px]">فئة ذهبية</span>}
+                        </td>
+                        <td className="py-4 text-slate-300">{ag.city}</td>
+                        <td className="py-4 text-amber-400 font-bold">⭐ {ag.rating}</td>
+                        <td className="py-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${ag.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                            {ag.status === 'active' ? 'معتمد' : 'معلق للمراجعة'}
+                          </span>
+                        </td>
+                        <td className="py-4 space-x-2 space-x-reverse">
+                          <Button onClick={() => toggleAgencyStatus(ag.id, 'active')} className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] h-8 px-3">
+                            موافقة
+                          </Button>
+                          <Button onClick={() => toggleAgencyStatus(ag.id, 'rejected')} variant="destructive" className="text-[11px] h-8 px-3">
+                            رفض
+                          </Button>
+                          <Button onClick={() => toggleAgencyExcellence(ag.id)} variant="outline" className="text-[11px] h-8 px-3 border-amber-500 text-amber-400 hover:bg-amber-500/10">
+                            {ag.isExcellence ? 'إلغاء التميز' : 'منح شارة التميز'}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {agenciesList
-                .filter(agency => agencyStatusFilter === 'all' || agency.status === agencyStatusFilter)
-                .map(agency => (
-                <div key={agency.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-bold">{agency.city}</span>
-                      <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
-                        <Star className="w-3.5 h-3.5 fill-amber-400" /> {agency.rating}
-                      </div>
-                    </div>
-                    <h4 className="text-base font-extrabold text-white">{agency.name}</h4>
-                    <p className="text-xs text-slate-400">المدينة الرئيسية: {agency.city}</p>
-                    <p className="text-xs text-amber-400/90 font-semibold">{agency.email}</p>
-                    <div className="pt-2">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                        agency.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                        agency.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                        'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      }`}>
-                        {agency.status === 'active' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
-                        {agency.status === 'active' ? 'معتمد' : agency.status === 'pending' ? 'معلق للمراجعة' : 'مرفوض'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 pt-4 border-t border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() => toggleAgencyStatus(agency.id, 'active')}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 rounded-xl cursor-pointer"
-                      >
-                        قبول
-                      </Button>
-                      <Button
-                        onClick={() => toggleAgencyStatus(agency.id, 'rejected')}
-                        className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2 rounded-xl cursor-pointer"
-                      >
-                        رفض
-                      </Button>
-                    </div>
-                    <Button
-                      onClick={() => toggleAgencyExcellence(agency.id)}
-                      variant="outline"
-                      className="w-full border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 font-bold text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Award className={`w-4 h-4 ${agency.isExcellence ? 'text-amber-400' : 'text-slate-400'}`} />
-                      <span>{agency.isExcellence ? 'إلغاء شارة التميز' : 'منح شارة التميز الذهبية'}</span>
-                    </Button>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         )}
 
         {/* LISTINGS TAB */}
         {activeTab === 'listings' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-              <Car className="w-6 h-6 text-amber-400" />
-              <span>إشراف العروض والإعلانات ({listingsList.length})</span>
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {listingsList.map(item => (
-                <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between">
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs bg-amber-500/10 text-amber-400 font-bold px-3 py-1 rounded-full">{item.city}</span>
-                      <span className="text-sm font-black text-amber-400">{item.pricePerUnit} د.م / يوم</span>
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+              <h3 className="text-lg font-bold text-white">إشراف عروض السيارات والعقارات</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {listingsList.map(item => (
+                  <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                    <img src={item.image} alt={item.title} className="w-full h-40 object-cover rounded-xl" />
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-white text-sm">{item.title}</h4>
+                        <span className="text-xs text-slate-400">{item.city}</span>
+                      </div>
+                      <span className="font-extrabold text-amber-400 text-sm">{item.pricePerUnit} د.م</span>
                     </div>
-                    <h4 className="text-base font-bold text-white">{item.title}</h4>
-                    <p className="text-xs text-slate-400 line-clamp-2">{item.description}</p>
-                  </div>
-
-                  <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between">
-                    <span className="text-xs text-slate-400 font-bold">التقييم: ⭐ {item.rating}</span>
-                    <Button
-                      onClick={() => deleteListing(item.id)}
-                      variant="destructive"
-                      className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> حذف الإعلان
+                    <Button onClick={() => deleteListing(item.id)} variant="destructive" className="w-full h-9 text-xs gap-2">
+                      <Trash2 className="w-4 h-4" /> حذف الإعلان من المنصة
                     </Button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* USERS TAB */}
         {activeTab === 'users' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <Users className="w-6 h-6 text-amber-400" />
-                <span>إدارة المستخدمين والصلاحيات ({usersList.length})</span>
-              </h3>
-              <span className="text-xs text-slate-400">سجل المشتركين والعملاء والشركاء</span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="py-3 px-4">المستخدم</th>
-                    <th className="py-3 px-4">البريد الإلكتروني</th>
-                    <th className="py-3 px-4">الدور / الصلاحية</th>
-                    <th className="py-3 px-4">الحالة</th>
-                    <th className="py-3 px-4">تاريخ الانضمام</th>
-                    <th className="py-3 px-4 text-center">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800 text-slate-200">
-                  {usersList.map(user => (
-                    <tr key={user.id} className="hover:bg-slate-900/50 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-white flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-xs">
-                          {user.name.charAt(0)}
-                        </div>
-                        {user.name}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-400">{user.email}</td>
-                      <td className="py-3.5 px-4">
-                        <span className="bg-slate-800 text-amber-400 px-2.5 py-1 rounded-lg font-bold">
-                          {user.role === 'super_admin' ? 'المشرف العام' : user.role === 'customer' ? 'زبون' : 'مزود / شريك'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-full">{user.status}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-400">{user.joined}</td>
-                      <td className="py-3.5 px-4 text-center">
-                        <Button
-                          onClick={() => {
-                            setUsersList(usersList.filter(u => u.id !== user.id));
-                            toast.success('تم حذف المستخدم بنجاح');
-                          }}
-                          variant="ghost"
-                          className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 h-8 w-8 p-0 rounded-lg cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </td>
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+              <h3 className="text-lg font-bold text-white">إدارة المستخدمين والصلاحيات</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400 text-xs">
+                      <th className="pb-3">الاسم</th>
+                      <th className="pb-3">البريد الإلكتروني</th>
+                      <th className="pb-3">الدور</th>
+                      <th className="pb-3">الحالة</th>
+                      <th className="pb-3">تاريخ الانضمام</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-xs">
+                    {usersList.map(u => (
+                      <tr key={u.id}>
+                        <td className="py-4 font-bold text-white">{u.name}</td>
+                        <td className="py-4 text-slate-300">{u.email}</td>
+                        <td className="py-4"><span className="bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-lg">{u.role}</span></td>
+                        <td className="py-4 text-emerald-400">{u.status}</td>
+                        <td className="py-4 text-slate-400">{u.joined}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
         {/* BOOKINGS TAB */}
         {activeTab === 'bookings' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-              <Calendar className="w-6 h-6 text-amber-400" />
-              <span>متابعة الحجوزات والعقود الرقمية</span>
-            </h3>
-
-            <div className="space-y-4">
-              {[
-                { id: 'BK-9842', client: 'محمد الزبون', item: 'Range Rover Vogue 2024', dates: '2026-09-01 إلى 2026-09-05', total: '9,180 د.م', status: 'مؤكد ومدفوع' },
-                { id: 'BK-9843', client: 'سارة العلمي', item: 'شقة فاخرة مطلة على البحر', dates: '2026-09-10 إلى 2026-09-15', total: '6,000 د.م', status: 'معلق' },
-              ].map(booking => (
-                <div key={booking.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="space-y-1 text-right w-full sm:w-auto">
-                    <span className="text-xs bg-amber-500/10 text-amber-400 font-bold px-2.5 py-1 rounded-md">{booking.id}</span>
-                    <h4 className="text-base font-bold text-white mt-1">{booking.item}</h4>
-                    <p className="text-xs text-slate-400">العميل: <strong className="text-slate-200">{booking.client}</strong> | الفترة: {booking.dates}</p>
-                  </div>
-
-                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                    <div className="text-left">
-                      <div className="text-sm font-black text-amber-400">{booking.total}</div>
-                      <span className="text-xs text-emerald-400 font-bold">{booking.status}</span>
-                    </div>
-                    <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl cursor-pointer">
-                      عرض العقد PDF
-                    </Button>
-                  </div>
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+              <h3 className="text-lg font-bold text-white">سجل الحجوزات المؤكدة في المنصة</h3>
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-white text-sm">حجز تجريبي مدمج (عقار + سيارة)</h4>
+                  <p className="text-xs text-slate-400">الزبون: محمد الزبون | التواريخ: 01 ستمبر - 05 ستمبر 2026</p>
                 </div>
-              ))}
+                <span className="bg-emerald-500/15 text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold">مؤكد ومقفل بالتقويم</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* DOMAIN LINKING TAB */}
+        {/* DOMAIN TAB */}
         {activeTab === 'domain' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50 max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-              <Globe className="w-6 h-6 text-amber-400" />
-              <span>ربط النطاق المخصص (Custom Domain)</span>
-            </h3>
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl max-w-2xl space-y-6">
+              <div>
+                <h3 className="text-xl font-bold text-white">ربط النطاق المخصص (Custom Domain)</h3>
+                <p className="text-xs text-slate-400 mt-1">اربط نطاقك التجاري (مثل b2rent.ma) بمنصة B2-Rent بكل سهولة.</p>
+              </div>
 
-            <form onSubmit={handleVerifyDomain} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-300">اسم النطاق الخاص بك</label>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={customDomainInput}
-                    onChange={(e) => setCustomDomainInput(e.target.value)}
-                    placeholder="example.ma"
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"
-                  />
-                  <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 rounded-xl cursor-pointer">
-                    التحقق والربط
-                  </Button>
+              <form onSubmit={handleVerifyDomain} className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 block mb-2">اسم النطاق التجاري</label>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={customDomainInput}
+                      onChange={(e) => setCustomDomainInput(e.target.value)}
+                      placeholder="e.g. b2rent.ma"
+                      className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm"
+                    />
+                    <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6">
+                      تحقق وربط
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between text-xs">
-                <span className="text-slate-400">حالة النطاق:</span>
-                <span className="text-emerald-400 font-bold flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4" /> {domainStatus === 'verified' ? 'متصل ومحمي (SSL Active)' : 'قيد الانتظار'}
-                </span>
-              </div>
-            </form>
+                <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" /> حالة النطاق: نشط ومحمي بشهادة SSL
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    النطاق مرتبط بنجاح عبر خوادم البث السريع لـ B2-Rent. الزوار سيتم توجيههم مباشرة للمنصة مع تفعيل التشفير التام.
+                  </p>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && role === 'super_admin' && (
-          <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50 max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-              <Settings className="w-6 h-6 text-amber-400" />
-              <span>إعدادات النظام والمنصة العامة</span>
-            </h3>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">اسم المنصة</label>
-                <input
-                  type="text"
-                  value={platformSettings.siteName}
-                  onChange={(e) => setPlatformSettings({ ...platformSettings, siteName: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">البريد الإلكتروني للإدارة</label>
-                <input
-                  type="email"
-                  value={platformSettings.email}
-                  onChange={(e) => setPlatformSettings({ ...platformSettings, email: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">نسبة عمولة المنصة (%)</label>
-                <input
-                  type="text"
-                  value={platformSettings.commissionRate}
-                  onChange={(e) => setPlatformSettings({ ...platformSettings, commissionRate: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-slate-800 space-y-4">
-                <h4 className="text-sm font-extrabold text-amber-400 flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4" /> نظام المصادقة والأمان المتقدم (Authentication & Security)
-                </h4>
-                
-                <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
-                  <div>
-                    <div className="text-xs font-bold text-white">فرض المصادقة الثنائية (2FA) للمشرفين</div>
-                    <div className="text-[11px] text-slate-400">إلزام جميع حسابات الإدارة والمشرفين بتفعيل رمز التحقق الثنائي عبر البريد أو التطبيق.</div>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-5 h-5 accent-amber-500 cursor-pointer" />
+          <div className="space-y-6 animate-in fade-in-50 duration-300">
+            <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl max-w-2xl space-y-6">
+              <h3 className="text-xl font-bold text-white">إعدادات المنصة العامة</h3>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">اسم المنصة</label>
+                  <input
+                    type="text"
+                    value={platformSettings.siteName}
+                    onChange={(e) => setPlatformSettings({ ...platformSettings, siteName: e.target.value })}
+                    className="w-full p-3 bg-slate-900 border border-slate-800 rounded-xl text-white"
+                  />
                 </div>
-
-                <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
-                  <div>
-                    <div className="text-xs font-bold text-white">جلسات الآمنة المشفرة (JWT HttpOnly Cookies)</div>
-                    <div className="text-[11px] text-slate-400">حماية الكوكيز ضد هجمات XSS وتأمين صلاحيات الجلسات بمدة صلاحية قصوى.</div>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-5 h-5 accent-amber-500 cursor-pointer" />
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">نسبة عمولة المنصة (%)</label>
+                  <input
+                    type="text"
+                    value={platformSettings.commissionRate}
+                    onChange={(e) => setPlatformSettings({ ...platformSettings, commissionRate: e.target.value })}
+                    className="w-full p-3 bg-slate-900 border border-slate-800 rounded-xl text-white"
+                  />
                 </div>
-
-                <div className="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
-                  <div>
-                    <div className="text-xs font-bold text-white">تسجيل محاولات الدخول الفاشلة والحظر التلقائي</div>
-                    <div className="text-[11px] text-slate-400">حظر عنوان IP تلقائياً في حال تجاوز 5 محاولات دخول خاطئة لكلمات المرور.</div>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-5 h-5 accent-amber-500 cursor-pointer" />
-                </div>
+                <Button onClick={() => toast.success('تم حفظ إعدادات المنصة بنجاح')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold">
+                  حفظ التعديلات
+                </Button>
               </div>
-
-              <Button
-                onClick={() => toast.success('تم حفظ إعدادات المنصة وتحديث بروتوكولات الأمان بنجاح')}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl cursor-pointer mt-4"
-              >
-                حفظ التغييرات وتطبيق بروتوكولات الأمان
-              </Button>
             </div>
           </div>
         )}

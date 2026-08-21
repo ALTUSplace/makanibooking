@@ -205,7 +205,8 @@ export default function Navbar() {
           <div className="flex items-center gap-2 lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl bg-muted text-foreground"
+              className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 transition-all shadow-sm"
+              aria-label="Toggle Mobile Menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -233,7 +234,7 @@ export default function Navbar() {
       />
 
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-20 right-0 left-0 bg-slate-950/98 backdrop-blur-xl border-b border-slate-800 p-5 shadow-2xl z-50 animate-in slide-in-from-top-4 duration-300">
+        <div className="lg:hidden fixed top-20 right-0 left-0 bg-slate-950/98 backdrop-blur-2xl border-b border-amber-500/30 p-6 shadow-2xl z-[9999] animate-in slide-in-from-top-4 duration-300 max-h-[calc(100vh-5rem)] overflow-y-auto">
           <div className="flex flex-col gap-3">
             {navLinks.map((link) => {
               const Icon = link.icon;

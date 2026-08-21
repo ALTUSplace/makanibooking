@@ -356,8 +356,70 @@ export default function Home() {
         </div>
       </section>
 
+      {/* WordPress-Style Featured Blog Section */}
+      <section className="py-16 bg-slate-100 mt-12 border-y border-slate-200">
+        <div className="container mx-auto max-w-6xl px-4 space-y-8">
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
+            <div>
+              <span className="text-[#E57C23] font-bold text-xs uppercase tracking-widest bg-[#E57C23]/10 px-3 py-1 rounded-full">مدونة المنصة</span>
+              <h2 className="text-2xl md:text-3xl font-black text-[#0B3C5D] mt-2">أحدث المقالات والنصائح العقارية والسياحية</h2>
+            </div>
+            <Link href="/blog">
+              <Button variant="outline" className="border-[#0B3C5D] text-[#0B3C5D] hover:bg-[#0B3C5D] hover:text-white rounded-xl text-xs font-bold gap-2">
+                <span>تصفح جميع المقالات</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col group">
+              <div className="h-48 overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" alt="Car rental" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-between space-y-3">
+                <span className="text-xs font-bold text-[#E57C23]">دليل السفر</span>
+                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">دليلك الشامل لكراء السيارات في الدار البيضاء ومراكش 2026</h3>
+                <p className="text-xs text-slate-600 line-clamp-2">تعرف على أهم النصائح القانونية والتقنية لتأجير السيارات بكل أمان في المدن الكبرى بالمغرب.</p>
+                <Link href="/blog">
+                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">اقرأ المزيد <ArrowRight className="w-3 h-3" /></span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col group">
+              <div className="h-48 overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" alt="Real Estate" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-between space-y-3">
+                <span className="text-xs font-bold text-[#E57C23]">استثمار عقاري</span>
+                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">أفضل المناطق الاستثمارية العقارية في طنجة وأغادير</h3>
+                <p className="text-xs text-slate-600 line-clamp-2">استعراض لأهم الأحياء المطلة على البحر والتي تشهد إقبالاً كبيراً من السياح والمستثمرين.</p>
+                <Link href="/blog">
+                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">اقرأ المزيد <ArrowRight className="w-3 h-3" /></span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col group">
+              <div className="h-48 overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" alt="Driving" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-between space-y-3">
+                <span className="text-xs font-bold text-[#E57C23]">نصائح قيادة</span>
+                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">كيف تختار السيارة المناسبة لرحلتك العائلية عبر الطرق السيارة؟</h3>
+                <p className="text-xs text-slate-600 line-clamp-2">مقارنة شاملة بين سيارات الـ SUV والاقتصادية والفاخرة لضمان أقصى درجات الراحة والأمان.</p>
+                <Link href="/blog">
+                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">اقرأ المزيد <ArrowRight className="w-3 h-3" /></span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Trust & Features Banner */}
-      <section className="py-16 bg-[#0B3C5D] text-white mt-12">
+      <section className="py-16 bg-[#0B3C5D] text-white mt-0">
         <div className="container mx-auto max-w-6xl px-4 grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
           <div className="space-y-3">
             <div className="w-14 h-14 bg-[#E57C23] text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg">

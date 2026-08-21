@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield, Coins, Car, Building2 } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield, Coins, Car, Building2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -45,6 +45,7 @@ export default function Navbar() {
     { href: '/partner-dashboard', label: 'لوحة الوكلاء', icon: LayoutDashboard },
     { href: '/my-bookings', label: 'حجوزاتي', icon: BookmarkCheck },
     { href: '/help', label: 'الدعم الفني', icon: HelpCircle },
+    { href: '/blog', label: 'المدونة', icon: BookOpen },
   ];
 
   return (

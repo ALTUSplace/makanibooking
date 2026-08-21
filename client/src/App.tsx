@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
@@ -6,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { RoleProvider } from "./contexts/RoleContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { CurrencyProvider } from "./contexts/CurrencyContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BottomNavigationBar from "./components/BottomNavigationBar";
@@ -24,7 +24,7 @@ import Favorites from "./pages/Favorites";
 import About from "./pages/About";
 import SupportTickets from "./pages/SupportTickets";
 import NotificationsPage from "./pages/NotificationsPage";
-import { CurrencyProvider } from "./contexts/CurrencyContext";
+import BlogPage from "./pages/BlogPage";
 
 const SearchPage = lazy(() => import("./pages/Search"));
 const CarDetailsPage = lazy(() => import("./pages/CarDetails"));
@@ -66,56 +66,53 @@ function Router() {
       </Route>
       <Route path={"/success"}>
         {() => (
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري التحميل...</div></div>}>
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري معالجة التأكيد...</div></div>}>
             <SuccessPage />
-          </Suspense>
-        )}
-      </Route>
-      <Route path={"/checkout"}>
-        {() => (
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل واجهة الدفع...</div></div>}>
-            <CheckoutPage />
           </Suspense>
         )}
       </Route>
       <Route path={"/dashboard"} component={DashboardPage} />
       <Route path={"/admin"} component={AdminDashboardPage} />
-      <Route path={"/profile"} component={ProfilePage} />
-      <Route path={"/renter-dashboard"} component={RenterDashboard} />
-      <Route path={"/partner-dashboard"} component={PartnerDashboard} />
+      <Route path={"/partner"} component={PartnerDashboard} />
       <Route path={"/add-car"} component={AddCar} />
       <Route path={"/my-bookings"} component={MyBookings} />
+      <Route path={"/profile"} component={ProfilePage} />
+      <Route path={"/checkout"} component={CheckoutPage} />
       <Route path={"/help"} component={Help} />
       <Route path={"/support-tickets"} component={SupportTickets} />
       <Route path={"/notifications"} component={NotificationsPage} />
       <Route path={"/favorites"} component={Favorites} />
-      <Route path={"/about"} component={About} />
+      <Route path={"/about"}>
+        <About />
+      </Route>
+      <Route path={"/blog"}>
+        <BlogPage />
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light">
         <RoleProvider>
           <LanguageProvider>
             <CurrencyProvider>
               <TooltipProvider>
-              <Toaster />
-              <div className="min-h-screen flex flex-col bg-background text-foreground">
-                <Navbar />
-                <main className="flex-1">
+                <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
+                  <Navbar />
                   <BreadcrumbNav />
-                  <PageTransition>
-                    <Router />
-                  </PageTransition>
-                </main>
-                <Footer />
-                <BottomNavigationBar />
-              </div>
-            </TooltipProvider>
+                  <main className="flex-1 pb-16 md:pb-0">
+                    <PageTransition>
+                      <Router />
+                    </PageTransition>
+                  </main>
+                  <Footer />
+                  <BottomNavigationBar />
+                </div>
+              </TooltipProvider>
             </CurrencyProvider>
           </LanguageProvider>
         </RoleProvider>
@@ -123,5 +120,3 @@ function App() {
     </ErrorBoundary>
   );
 }
-
-export default App;

@@ -18,7 +18,9 @@ import Home from "./pages/Home";
 import RenterDashboard from "./pages/RenterDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import PartnerDashboard from "@/pages/PartnerDashboard";
-import DisputeResolution from "@/pages/DisputeResolution";
+import DisputeResolution from './pages/DisputeResolution';
+import TermsOfService from './pages/TermsOfService';
+import AIChatWidget from './components/AIChatWidget';
 import AddCar from "./pages/AddCar";
 import MyBookings from "./pages/MyBookings";
 import Help from "./pages/Help";
@@ -76,6 +78,7 @@ function Router() {
       <Route path={"/dashboard"} component={DashboardPage} />
       <Route path="/admin" component={AdminDashboard} />
           <Route path="/dispute-resolution" component={DisputeResolution} />
+          <Route path="/terms" component={TermsOfService} />
       <Route path={"/partner"} component={PartnerDashboard} />
       <Route path={"/partner-dashboard"} component={PartnerDashboard} />
       <Route path={"/add-car"} component={AddCar} />
@@ -115,6 +118,7 @@ export default function App() {
                   </main>
                   <Footer />
                   <BottomNavigationBar />
+                  <AIChatWidget />
                 </div>
               </TooltipProvider>
             </CurrencyProvider>

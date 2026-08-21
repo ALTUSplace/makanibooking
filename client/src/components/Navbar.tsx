@@ -49,7 +49,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border text-foreground shadow-lg transition-colors duration-500" dir="rtl">
+      <header className="sticky top-0 z-50 glass-header text-foreground transition-all duration-500 shadow-sm" dir="rtl">
         <div className="container mx-auto px-4 h-20 flex items-center justify-between">
           
           {/* الشعار */}

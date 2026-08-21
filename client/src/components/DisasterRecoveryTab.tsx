@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Database, Download, RefreshCw, CheckCircle2, HardDrive, Clock } from 'lucide-react';
+import { ShieldAlert, Database, Download, RefreshCw, CheckCircle2, HardDrive, Clock, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const DisasterRecoveryTab: React.FC = () => {
@@ -38,6 +38,20 @@ export const DisasterRecoveryTab: React.FC = () => {
     }, 2000);
   };
 
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Backup Name', 'Type', 'Size', 'Time', 'Status'];
+    const rows = backups.map(b => [b.id, b.name, b.type, b.size, b.time, b.status]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `b2rent_backup_logs_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('تم تصدير سجلات النسخ الاحتياطي بصيغة CSV بنجاح.');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-xl">
@@ -50,14 +64,24 @@ export const DisasterRecoveryTab: React.FC = () => {
             إدارة النسخ الاحتياطية لبيانات السيارات، العقارات، المستخدمين، والحجوزات لضمان استمرارية العمل بنسبة 100%.
           </p>
         </div>
-        <Button
-          onClick={handleCreateBackup}
-          disabled={isCreating}
-          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold shadow-lg"
-        >
-          {isCreating ? <RefreshCw className="w-4 h-4 ml-2 animate-spin" /> : <HardDrive className="w-4 h-4 ml-2" />}
-          {isCreating ? 'جاري إنشاء النسخة...' : 'إنشاء نسخة احتياطية الآن'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleExportCSV}
+            variant="outline"
+            className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700"
+          >
+            <FileSpreadsheet className="w-4 h-4 ml-2 text-emerald-400" />
+            تصدير السجلات (CSV)
+          </Button>
+          <Button
+            onClick={handleCreateBackup}
+            disabled={isCreating}
+            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold shadow-lg"
+          >
+            {isCreating ? <RefreshCw className="w-4 h-4 ml-2 animate-spin" /> : <HardDrive className="w-4 h-4 ml-2" />}
+            {isCreating ? 'جاري إنشاء النسخة...' : 'إنشاء نسخة احتياطية الآن'}
+          </Button>
+        </div>
       </div>
 
       {/* Grid Status */}

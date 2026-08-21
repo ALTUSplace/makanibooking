@@ -9,6 +9,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BottomNavigationBar from "./components/BottomNavigationBar";
+import BreadcrumbNav from "./components/BreadcrumbNav";
 import { PageTransition } from "./components/PageTransition";
 import { lazy, Suspense } from "react";
 
@@ -100,6 +101,7 @@ function App() {
               <div className="min-h-screen flex flex-col bg-background text-foreground">
                 <Navbar />
                 <main className="flex-1">
+                  <BreadcrumbNav />
                   <PageTransition>
                     <Router />
                   </PageTransition>

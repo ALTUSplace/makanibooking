@@ -235,15 +235,22 @@ export default function PartnerDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">رقم الحساب البنكي (RIB)</label>
+                  <label className="block text-sm font-medium mb-1">طريقة السحب واستلام الأموال</label>
+                  <select className="w-full p-3 rounded-xl bg-background border border-border text-sm">
+                    <option value="bank">تحويل بنكي مباشر (RIB)</option>
+                    <option value="wafacash">وفاكاش (WafaCash - سحب نقدي فوري)</option>
+                    <option value="cashplus">كاش بلوس (Cash Plus - وكالات مغربية)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">رقم الحساب أو رقم الهاتف المعتمد</label>
                   <input 
                     type="text" 
-                    defaultValue="MA64 0111 2222 3333 4444 5555 66" 
+                    defaultValue="MA64 0111 2222 3333 4444 5555 66 أو +212600000000" 
                     className="w-full p-3 rounded-xl bg-background border border-border text-sm" 
-                    disabled 
                   />
                 </div>
-                <Button type="submit" className="w-full font-bold">
+                <Button type="submit" className="w-full font-bold bg-amber-500 hover:bg-amber-600 text-slate-950">
                   تأكيد وإرسال طلب السحب الفوري
                 </Button>
               </form>

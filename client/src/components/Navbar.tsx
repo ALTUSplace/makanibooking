@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield } from 'lucide-react';
+import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRole } from '@/contexts/RoleContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCurrency, Currency } from '@/contexts/CurrencyContext';
 import { CMIPaymentModal } from './CMIPaymentModal';
 import { WhatsAppNotificationModal } from './WhatsAppNotificationModal';
 import { TwoFactorAuthModal } from './TwoFactorAuthModal';
@@ -27,6 +28,7 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { role } = useRole();
   const { language, setLanguage, t } = useLanguage();
+  const { currency, setCurrency } = useCurrency();
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -80,6 +82,27 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-2.5">
             
+            {/* اختيار العملة */}
+            <div className="flex items-center bg-muted/80 border border-border rounded-xl p-1 text-xs font-bold">
+              <Coins className="w-3.5 h-3.5 text-amber-500 mx-1.5" />
+              {(['MAD', 'EUR', 'USD'] as Currency[]).map((curr) => (
+                <button
+                  key={curr}
+                  onClick={() => {
+                    setCurrency(curr);
+                    toast.success(`تم تبديل العملة إلى ${curr}`);
+                  }}
+                  className={`px-2 py-1 rounded-lg uppercase transition-all ${
+                    currency === curr
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {curr}
+                </button>
+              ))}
+            </div>
+
             {/* اختيار اللغة */}
             <div className="flex items-center bg-muted/80 border border-border rounded-xl p-1 text-xs font-bold">
               <Globe className="w-3.5 h-3.5 text-amber-500 mx-1.5" />

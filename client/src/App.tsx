@@ -22,6 +22,8 @@ import MyBookings from "./pages/MyBookings";
 import Help from "./pages/Help";
 import Favorites from "./pages/Favorites";
 import About from "./pages/About";
+import SupportTickets from "./pages/SupportTickets";
+import { CurrencyProvider } from "./contexts/CurrencyContext";
 
 const SearchPage = lazy(() => import("./pages/Search"));
 const CarDetailsPage = lazy(() => import("./pages/CarDetails"));
@@ -83,6 +85,7 @@ function Router() {
       <Route path={"/add-car"} component={AddCar} />
       <Route path={"/my-bookings"} component={MyBookings} />
       <Route path={"/help"} component={Help} />
+      <Route path={"/support-tickets"} component={SupportTickets} />
       <Route path={"/favorites"} component={Favorites} />
       <Route path={"/about"} component={About} />
       <Route component={NotFound} />
@@ -96,7 +99,8 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <RoleProvider>
           <LanguageProvider>
-            <TooltipProvider>
+            <CurrencyProvider>
+              <TooltipProvider>
               <Toaster />
               <div className="min-h-screen flex flex-col bg-background text-foreground">
                 <Navbar />
@@ -110,6 +114,7 @@ function App() {
                 <BottomNavigationBar />
               </div>
             </TooltipProvider>
+            </CurrencyProvider>
           </LanguageProvider>
         </RoleProvider>
       </ThemeProvider>

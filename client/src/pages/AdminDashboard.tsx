@@ -35,6 +35,7 @@ export default function AdminDashboard() {
   const [customDomainInput, setCustomDomainInput] = useState('b2rent.ma');
   const [domainStatus, setDomainStatus] = useState<'verified' | 'pending'>('verified');
   const [authWarning, setAuthWarning] = useState<string | null>(null);
+  const [agencyStatusFilter, setAgencyStatusFilter] = useState<'all' | 'active' | 'pending' | 'rejected'>('all');
 
   const totalRevenue = listingsList.reduce((acc, item) => acc + (item.pricePerUnit * 3), 12500);
 
@@ -290,13 +291,48 @@ export default function AdminDashboard() {
 
         {activeTab === 'agencies' && (
           <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl space-y-6 animate-in fade-in-50">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Building2 className="w-6 h-6 text-amber-400" />
-              <span>إدارة الوكالات ومنح شارات التميز للوكالات (تقييم &gt; 4.8)</span>
-            </h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Building2 className="w-6 h-6 text-amber-400" />
+                <span>إدارة الوكالات والشركاء (حسب الحالة)</span>
+              </h3>
+
+              <div className="flex flex-wrap gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl">
+                <button
+                  onClick={() => setAgencyStatusFilter('all')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${agencyStatusFilter === 'all' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                >
+                  الكل ({agenciesList.length})
+                </button>
+                <button
+                  onClick={() => setAgencyStatusFilter('active')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${agencyStatusFilter === 'active' ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                >
+                  المعتمدة ({agenciesList.filter(a => a.status === 'active' || !a.status).length})
+                </button>
+                <button
+                  onClick={() => setAgencyStatusFilter('pending')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${agencyStatusFilter === 'pending' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                >
+                  المعلقة ({agenciesList.filter(a => a.status === 'pending').length})
+                </button>
+                <button
+                  onClick={() => setAgencyStatusFilter('rejected')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${agencyStatusFilter === 'rejected' ? 'bg-rose-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
+                >
+                  المرفوضة ({agenciesList.filter(a => a.status === 'rejected').length})
+                </button>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {agenciesList.map(agency => (
+              {agenciesList
+                .filter(agency => {
+                  if (agencyStatusFilter === 'all') return true;
+                  if (agencyStatusFilter === 'active') return agency.status === 'active' || !agency.status;
+                  return agency.status === agencyStatusFilter;
+                })
+                .map(agency => (
                 <div key={agency.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -310,21 +346,55 @@ export default function AdminDashboard() {
                     <p className="text-xs text-amber-400/90 font-semibold">{agency.phone} | {agency.email}</p>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
-                    {agency.isExcellence ? (
-                      <span className="bg-amber-500/25 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center gap-1.5">
-                        <Award className="w-4 h-4" /> وكالة متميزة
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold">
+                        {agency.status === 'pending' && <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-lg">معلقة للمراجعة</span>}
+                        {agency.status === 'rejected' && <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2.5 py-1 rounded-lg">مرفوضة</span>}
+                        {(!agency.status || agency.status === 'active') && <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg">معتمدة ونشطة</span>}
                       </span>
-                    ) : (
-                      <span className="text-xs text-slate-500">بدون شارة</span>
-                    )}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setAgenciesList(agenciesList.map(a => a.id === agency.id ? { ...a, status: 'active' } : a));
+                            toast.success(`تم اعتماد الوكالة "${agency.name}" بنجاح وإرسال إشعار للعميل`);
+                          }}
+                          className="h-7 px-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]"
+                        >
+                          موافقة
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setAgenciesList(agenciesList.map(a => a.id === agency.id ? { ...a, status: 'rejected' } : a));
+                            toast.error(`تم رفض طلب الوكالة "${agency.name}"`);
+                          }}
+                          className="h-7 px-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/30 text-[10px]"
+                        >
+                          رفض
+                        </Button>
+                      </div>
+                    </div>
 
-                    <Button
-                      onClick={() => toggleAgencyExcellence(agency.id)}
-                      className={`text-xs font-bold px-4 py-2 rounded-xl ${agency.isExcellence ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-amber-500 hover:bg-amber-600 text-slate-950'}`}
-                    >
-                      {agency.isExcellence ? 'إزالة الشارة' : 'منح شارة التميز'}
-                    </Button>
+                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                      {agency.isExcellence ? (
+                        <span className="bg-amber-500/25 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center gap-1.5">
+                          <Award className="w-4 h-4" /> مميزة
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-500">عادية</span>
+                      )}
+
+                      <Button
+                        onClick={() => toggleAgencyExcellence(agency.id)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-xl ${agency.isExcellence ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-amber-500 hover:bg-amber-600 text-slate-950'}`}
+                      >
+                        {agency.isExcellence ? 'إزالة الشارة' : 'منح التميز'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

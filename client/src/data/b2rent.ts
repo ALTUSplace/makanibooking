@@ -10,6 +10,7 @@ export interface PartnerProvider {
   email: string;
   logo: string;
   verified: boolean;
+  status?: 'active' | 'pending' | 'rejected';
 }
 
 export interface ListingItem {
@@ -51,6 +52,7 @@ export const PARTNERS: PartnerProvider[] = [
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=200&q=80',
     verified: true,
+    status: 'active',
   },
   {
     id: 'p2',
@@ -64,6 +66,7 @@ export const PARTNERS: PartnerProvider[] = [
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=200&q=80',
     verified: true,
+    status: 'active',
   },
   {
     id: 'p3',
@@ -77,6 +80,7 @@ export const PARTNERS: PartnerProvider[] = [
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=200&q=80',
     verified: true,
+    status: 'pending',
   },
   {
     id: 'p4',
@@ -90,6 +94,7 @@ export const PARTNERS: PartnerProvider[] = [
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=200&q=80',
     verified: true,
+    status: 'rejected',
   },
 ];
 

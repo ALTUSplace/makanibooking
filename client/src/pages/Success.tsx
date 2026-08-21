@@ -4,6 +4,7 @@ import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check, Stamp, FileC
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useRef, useState, useEffect } from 'react';
+import { playSuccessSound } from '@/lib/sound';
 
 export default function Success() {
   const [, setLocation] = useLocation();
@@ -26,6 +27,7 @@ export default function Success() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   useEffect(() => {
+    playSuccessSound();
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');

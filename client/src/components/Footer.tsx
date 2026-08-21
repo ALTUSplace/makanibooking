@@ -32,14 +32,15 @@ export default function Footer() {
                 { href: '/', label: 'الصفحة الرئيسية' },
                 { href: '/search?type=car', label: 'تصفح أسطول السيارات' },
                 { href: '/search?type=property', label: 'العقارات الفاخرة' },
-                { href: '/partner-dashboard', label: 'لوحة تحكم الوكالة' },
+                { href: '/partner', label: 'لوحة تحكم الوكالة' },
                 { href: '/add-car', label: 'إضافة إعلان جديد' },
                 { href: '/help', label: 'الدعم وخدمة العملاء' },
               ].map((link, idx) => (
                 <li key={idx}>
                   <Link
                     href={link.href}
-                    className="group flex items-center gap-2.5 py-1 px-2 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-800/60 transition-all duration-300"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="group flex items-center gap-2.5 py-2 px-2 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-800/60 transition-all duration-300 cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4 text-amber-500 opacity-70 group-hover:opacity-100 transition-opacity" />
                     <span className="font-medium">{link.label}</span>
@@ -62,7 +63,8 @@ export default function Footer() {
                 <li key={idx}>
                   <Link
                     href={`/search?city=${encodeURIComponent(item.city)}`}
-                    className="group flex items-center gap-2.5 py-1 px-2 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-800/60 transition-all duration-300"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="group flex items-center gap-2.5 py-2 px-2 rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-800/60 transition-all duration-300 cursor-pointer"
                   >
                     <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
                     <span className="font-medium">{item.label}</span>

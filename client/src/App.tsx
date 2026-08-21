@@ -74,6 +74,7 @@ function Router() {
       <Route path={"/dashboard"} component={DashboardPage} />
       <Route path={"/admin"} component={AdminDashboardPage} />
       <Route path={"/partner"} component={PartnerDashboard} />
+      <Route path={"/partner-dashboard"} component={PartnerDashboard} />
       <Route path={"/add-car"} component={AddCar} />
       <Route path={"/my-bookings"} component={MyBookings} />
       <Route path={"/profile"} component={ProfilePage} />

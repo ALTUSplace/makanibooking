@@ -159,18 +159,18 @@ export default function Navbar() {
 
             {/* إشعارات */}
             <div className="relative">
-              <button
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative p-2.5 rounded-xl bg-muted/80 hover:bg-muted text-foreground transition-colors border border-border flex items-center justify-center shadow-sm"
-                title="الإشعارات والتنبيهات"
+              <Link
+                href="/notifications"
+                className="relative p-2 rounded-xl bg-muted/80 border border-border text-foreground hover:bg-muted transition-all flex items-center justify-center"
+                title="الإشعارات المخصصة"
               >
                 <Bell className="w-4 h-4 text-amber-500" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-bounce">
                     {unreadCount}
                   </span>
                 )}
-              </button>
+              </Link>
 
               {notificationsOpen && (
                 <div className="absolute left-0 mt-3 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 space-y-4 animate-in fade-in-50 text-right">

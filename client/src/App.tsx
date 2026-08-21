@@ -23,6 +23,7 @@ import Help from "./pages/Help";
 import Favorites from "./pages/Favorites";
 import About from "./pages/About";
 import SupportTickets from "./pages/SupportTickets";
+import NotificationsPage from "./pages/NotificationsPage";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 
 const SearchPage = lazy(() => import("./pages/Search"));
@@ -86,6 +87,7 @@ function Router() {
       <Route path={"/my-bookings"} component={MyBookings} />
       <Route path={"/help"} component={Help} />
       <Route path={"/support-tickets"} component={SupportTickets} />
+      <Route path={"/notifications"} component={NotificationsPage} />
       <Route path={"/favorites"} component={Favorites} />
       <Route path={"/about"} component={About} />
       <Route component={NotFound} />

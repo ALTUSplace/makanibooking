@@ -217,6 +217,35 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Car Brands Marquee Section (OneClickDrive Morocco Style) */}
+      <section className="py-10 bg-slate-50 border-y border-slate-200 overflow-hidden">
+        <div className="container mx-auto max-w-6xl px-4 text-center mb-6">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">أشهر ماركات السيارات العالمية المتوفرة في المنصة</p>
+        </div>
+        <div className="flex overflow-x-auto no-scrollbar gap-6 px-4 py-2 justify-center items-center flex-wrap max-w-6xl mx-auto">
+          {[
+            { name: "Mercedes-Benz", icon: "⭐", count: "45+ سيارة" },
+            { name: "Range Rover", icon: "🚙", count: "30+ سيارة" },
+            { name: "BMW", icon: "🏎️", count: "40+ سيارة" },
+            { name: "Audi", icon: "🚘", count: "25+ سيارة" },
+            { name: "Dacia", icon: "🚗", count: "80+ سيارة" },
+            { name: "Renault", icon: "🚙", count: "60+ سيارة" },
+            { name: "Hyundai", icon: "🚗", count: "50+ سيارة" },
+            { name: "Volkswagen", icon: "🚘", count: "35+ سيارة" }
+          ].map((brand, idx) => (
+            <Link key={idx} href={`/search?type=car&brand=${brand.name}`}>
+              <div className="bg-white hover:bg-[#0B3C5D] hover:text-white text-[#0B3C5D] border border-slate-200 hover:border-[#0B3C5D] px-6 py-4 rounded-2xl shadow-sm transition-all duration-300 flex items-center gap-3 cursor-pointer group min-w-[160px] justify-center">
+                <span className="text-2xl group-hover:scale-110 transition-transform">{brand.icon}</span>
+                <div className="text-right">
+                  <h4 className="font-black text-sm">{brand.name}</h4>
+                  <span className="text-[10px] text-slate-400 group-hover:text-slate-200">{brand.count}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Bento Grid Section (Separating Cars and Properties cleanly) */}
       <section className="py-16 px-4 container mx-auto max-w-6xl">
         <div className="text-center space-y-3 mb-12">

@@ -31,6 +31,8 @@ export default function Search() {
   const resolvedCity = cityMap[rawCity] || rawCity;
 
   const naturalQuery = searchParams.get('q') || '';
+  const brandParam = searchParams.get('brand') || '';
+  const categoryParam = searchParams.get('category') || '';
   const [cityFilter, setCityFilter] = useState(resolvedCity);
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
   const [searchQuery, setSearchQuery] = useState(naturalQuery);
@@ -67,6 +69,14 @@ export default function Search() {
       if (cityFilter !== 'all' && item.city !== cityFilter) return false;
       if (typeFilter !== 'all' && item.type !== typeFilter) return false;
       if (item.pricePerUnit > maxPrice) return false;
+      if (brandParam) {
+        const b = brandParam.toLowerCase();
+        if (!item.title.toLowerCase().includes(b) && !item.category.toLowerCase().includes(b)) return false;
+      }
+      if (categoryParam) {
+        const c = categoryParam.toLowerCase();
+        if (!item.category.toLowerCase().includes(c) && !item.title.toLowerCase().includes(c) && !item.description.toLowerCase().includes(c)) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matches = item.title.toLowerCase().includes(q) ||

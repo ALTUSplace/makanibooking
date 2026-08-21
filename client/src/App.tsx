@@ -16,7 +16,9 @@ import { lazy, Suspense } from "react";
 // Lazy-loaded pages for performance optimization & code splitting
 import Home from "./pages/Home";
 import RenterDashboard from "./pages/RenterDashboard";
-import PartnerDashboard from "./pages/PartnerDashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
+import PartnerDashboard from "@/pages/PartnerDashboard";
+import DisputeResolution from "@/pages/DisputeResolution";
 import AddCar from "./pages/AddCar";
 import MyBookings from "./pages/MyBookings";
 import Help from "./pages/Help";
@@ -72,7 +74,8 @@ function Router() {
         )}
       </Route>
       <Route path={"/dashboard"} component={DashboardPage} />
-      <Route path={"/admin"} component={AdminDashboardPage} />
+      <Route path="/admin" component={AdminDashboard} />
+          <Route path="/dispute-resolution" component={DisputeResolution} />
       <Route path={"/partner"} component={PartnerDashboard} />
       <Route path={"/partner-dashboard"} component={PartnerDashboard} />
       <Route path={"/add-car"} component={AddCar} />

@@ -61,7 +61,7 @@ export default function MyBookings() {
 
               <div className="w-full md:w-auto flex md:flex-col gap-2 shrink-0">
                 <a
-                  href={`https://wa.me/212661234567?text=مرحباً، أريد الاستفسار عن حجزي رقم ${booking.id}`}
+                  href="#"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-md transition-colors"

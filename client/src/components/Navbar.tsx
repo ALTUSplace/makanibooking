@@ -251,7 +251,7 @@ export default function Navbar() {
           id: 'B2R-9942',
           carName: 'Dacia Duster 2026',
           customerName: 'محمد العلوي',
-          customerPhone: '0661234567',
+          customerPhone: '',
           totalPrice: 1500,
         }}
       />

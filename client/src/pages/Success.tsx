@@ -305,7 +305,7 @@ export default function Success() {
             </Button>
 
             <a
-              href={`https://wa.me/212661234567?text=${whatsappMessage}`}
+              href="#"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-xs cursor-pointer"
@@ -377,7 +377,7 @@ export default function Success() {
                 حسناً، متابعة التصفح
               </Button>
               <a
-                href={`https://wa.me/212661234567?text=${whatsappMessage}`}
+                href="#"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs"

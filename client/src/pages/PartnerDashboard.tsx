@@ -246,7 +246,7 @@ export default function PartnerDashboard() {
                   <label className="block text-sm font-medium mb-1">رقم الحساب أو رقم الهاتف المعتمد</label>
                   <input 
                     type="text" 
-                    defaultValue="MA64 0111 2222 3333 4444 5555 66 أو +212600000000" 
+                    defaultValue="MA64 0111 2222 3333 4444 5555 66" 
                     className="w-full p-3 rounded-xl bg-background border border-border text-sm" 
                   />
                 </div>

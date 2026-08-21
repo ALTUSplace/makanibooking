@@ -2,33 +2,49 @@
 
 @layer base {
   :root {
-    --background: 210 50% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 216 65% 11%; /* #0A192F الكحلي الداكن */
-    --primary-foreground: 43 74% 52%; /* #D4AF37 الذهبي المطفي */
-    --secondary: 43 74% 52%;
-    --secondary-foreground: 216 65% 11%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 43 74% 52%; /* Luxury Gold #D4AF37 */
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 47% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 65%;
     --accent: 43 74% 52%;
-    --accent-foreground: 216 65% 11%;
-    --destructive: 0 84.2% 60.2%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 216 65% 11%;
-    --radius: 0.75rem;
+    --border: 222 30% 20%;
+    --input: 222 30% 20%;
+    --ring: 43 74% 52%;
+    --radius: 1rem;
   }
 }
 
 body {
   font-family: 'Cairo', sans-serif;
-  background-color: #f8fafc;
-  color: #0A192F;
+  background-color: #07111E;
+  color: #F8FAFC;
   direction: rtl;
   text-align: right;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0A192F;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C5A059;
 }

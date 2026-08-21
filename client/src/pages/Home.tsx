@@ -246,6 +246,32 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Real Estate Types Marquee Section */}
+      <section className="py-8 bg-white border-b border-slate-200 overflow-hidden">
+        <div className="container mx-auto max-w-6xl px-4 text-center mb-6">
+          <p className="text-xs font-bold text-[#0B3C5D] uppercase tracking-widest">أنواع العقارات والفلل والشقق المتاحة للإيجار</p>
+        </div>
+        <div className="flex overflow-x-auto no-scrollbar gap-6 px-4 py-2 justify-center items-center flex-wrap max-w-6xl mx-auto">
+          {[
+            { name: "فلل فاخرة بمسبح", icon: "🏡", count: "25+ عقار" },
+            { name: "شقق مودرن", icon: "🏢", count: "90+ عقار" },
+            { name: "بنتهاوس كورنيش", icon: "🏙️", count: "15+ عقار" },
+            { name: "استوديوهات رجال الأعمال", icon: "🏨", count: "40+ عقار" },
+            { name: "إقامات محروسة", icon: "🏘️", count: "30+ عقار" }
+          ].map((type, idx) => (
+            <Link key={idx} href={`/search?type=property&category=${type.name}`}>
+              <div className="bg-slate-50 hover:bg-[#E57C23] hover:text-white text-[#0B3C5D] border border-slate-200 hover:border-[#E57C23] px-6 py-3.5 rounded-2xl shadow-sm transition-all duration-300 flex items-center gap-3 cursor-pointer group min-w-[170px] justify-center">
+                <span className="text-2xl group-hover:scale-110 transition-transform">{type.icon}</span>
+                <div className="text-right">
+                  <h4 className="font-black text-sm">{type.name}</h4>
+                  <span className="text-[10px] text-slate-500 group-hover:text-slate-100">{type.count}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Bento Grid Section (Separating Cars and Properties cleanly) */}
       <section className="py-16 px-4 container mx-auto max-w-6xl">
         <div className="text-center space-y-3 mb-12">

@@ -17,3 +17,4 @@
 - [x] Reviews & Ratings backend and frontend integration for cars and agencies
 - [x] إنشاء صفحة حل النزاعات (Dispute Resolution Center) للعملاء والشركاء
 - [x] ربط الصفحة في نظام التوجيه (App.tsx) وإضافتها للقوائم والتذييل
+- [x] إضافة خاصية رفع المرفقات والأدلة (الصور وملفات PDF) عند تقديم طلب النزاع

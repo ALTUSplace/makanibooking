@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Database, Download, RefreshCw, CheckCircle2, HardDrive, Clock, FileSpreadsheet } from 'lucide-react';
+import { ShieldAlert, Database, Download, RefreshCw, CheckCircle2, HardDrive, Clock, FileSpreadsheet, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const DisasterRecoveryTab: React.FC = () => {
@@ -12,6 +12,8 @@ export const DisasterRecoveryTab: React.FC = () => {
   ]);
   const [isCreating, setIsCreating] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleCreateBackup = () => {
     setIsCreating(true);
@@ -38,18 +40,24 @@ export const DisasterRecoveryTab: React.FC = () => {
     }, 2000);
   };
 
-  const handleExportCSV = () => {
-    const headers = ['ID', 'Backup Name', 'Type', 'Size', 'Time', 'Status'];
-    const rows = backups.map(b => [b.id, b.name, b.type, b.size, b.time, b.status]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `b2rent_backup_logs_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('تم تصدير سجلات النسخ الاحتياطي بصيغة CSV بنجاح.');
+  const confirmExportCSV = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      const headers = ['ID', 'Backup Name', 'Type', 'Size', 'Time', 'Status'];
+      const rows = backups.map(b => [b.id, b.name, b.type, b.size, b.time, b.status]);
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `b2rent_backup_logs_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setIsExporting(false);
+      setIsExportModalOpen(false);
+      toast.success('تم تصدير سجلات النسخ الاحتياطي بصيغة CSV بنجاح.');
+    }, 1200);
   };
 
   return (
@@ -66,7 +74,7 @@ export const DisasterRecoveryTab: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <Button
-            onClick={handleExportCSV}
+            onClick={() => setIsExportModalOpen(true)}
             variant="outline"
             className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700"
           >
@@ -193,6 +201,62 @@ export const DisasterRecoveryTab: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Export Confirmation Modal */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl text-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+                <FileSpreadsheet className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-100">تأكيد تصدير السجلات</h3>
+                <p className="text-xs text-slate-400">هل ترغب في تصدير سجلات النسخ الاحتياطي الحالية بصيغة CSV؟</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2 text-slate-300">
+              <div className="flex justify-between">
+                <span className="text-slate-400">عدد السجلات المشمولة:</span>
+                <span className="font-bold text-amber-400">{backups.length} نسخ مسجلة</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">صيغة الملف:</span>
+                <span className="font-mono text-emerald-400">.csv (Excel Compatible)</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
+                onClick={() => setIsExportModalOpen(false)}
+                disabled={isExporting}
+              >
+                إلغاء
+              </Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                onClick={confirmExportCSV}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري التصدير...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 ml-2" />
+                    تأكيد وتحميل الملف
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

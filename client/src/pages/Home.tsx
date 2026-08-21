@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
+import { FAQSection } from '@/components/FAQSection';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -472,6 +473,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       {/* Trust & Features Banner */}
       <section className="py-16 bg-[#0B3C5D] text-white mt-0">

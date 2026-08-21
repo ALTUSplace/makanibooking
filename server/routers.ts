@@ -121,40 +121,7 @@ export const appRouter = router({
       }),
   }),
 
-  reviews: router({
-    list: publicProcedure
-      .input(z.object({ listingId: z.number().optional() }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) return [];
-        if (input.listingId) {
-          return await db.select().from(reviews).where(eq(reviews.listingId, input.listingId)).orderBy(desc(reviews.createdAt));
-        }
-        return await db.select().from(reviews).orderBy(desc(reviews.createdAt));
-      }),
 
-    create: protectedProcedure
-      .input(
-        z.object({
-          bookingId: z.number(),
-          listingId: z.number(),
-          rating: z.number().min(1).max(5),
-          comment: z.string(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const db = await getDb();
-        if (!db) throw new Error("Database unavailable");
-        await db.insert(reviews).values({
-          bookingId: input.bookingId,
-          listingId: input.listingId,
-          userId: ctx.user.id,
-          rating: input.rating,
-          comment: input.comment,
-        });
-        return { success: true };
-      }),
-  }),
 
   bookings: router({
     list: protectedProcedure.query(async ({ ctx }) => {
@@ -233,6 +200,50 @@ export const appRouter = router({
           .update(bookings)
           .set({ status: input.status })
           .where(eq(bookings.id, input.bookingId));
+        return { success: true };
+      }),
+  }),
+
+  reviews: router({
+    listByListing: publicProcedure
+      .input(z.object({ listingId: z.number() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const result = await db
+          .select({
+            id: reviews.id,
+            rating: reviews.rating,
+            comment: reviews.comment,
+            createdAt: reviews.createdAt,
+            userName: users.name,
+          })
+          .from(reviews)
+          .innerJoin(users, eq(reviews.userId, users.id))
+          .where(eq(reviews.listingId, input.listingId))
+          .orderBy(desc(reviews.createdAt));
+        return result;
+      }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          listingId: z.number(),
+          bookingId: z.number().optional().default(1),
+          rating: z.number().min(1).max(5),
+          comment: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        await db.insert(reviews).values({
+          userId: ctx.user.id,
+          listingId: input.listingId,
+          bookingId: input.bookingId,
+          rating: input.rating,
+          comment: input.comment,
+        });
         return { success: true };
       }),
   }),

@@ -14,3 +14,4 @@
 - [x] Partner Wallet & Payouts management dashboard
 - [x] Automatic Gold Partner Certificate generator & Email dispatch
 - [x] Instant Tier Upgrade notifications via WhatsApp & Email
+- [x] Reviews & Ratings backend and frontend integration for cars and agencies

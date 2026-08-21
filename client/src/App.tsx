@@ -16,6 +16,12 @@ import { lazy, Suspense } from "react";
 import Home from "./pages/Home";
 import RenterDashboard from "./pages/RenterDashboard";
 import PartnerDashboard from "./pages/PartnerDashboard";
+import AddCar from "./pages/AddCar";
+import MyBookings from "./pages/MyBookings";
+import Help from "./pages/Help";
+import Favorites from "./pages/Favorites";
+import About from "./pages/About";
+
 const SearchPage = lazy(() => import("./pages/Search"));
 const CarDetailsPage = lazy(() => import("./pages/CarDetails"));
 const BookingPage = lazy(() => import("./pages/Booking"));
@@ -68,30 +74,16 @@ function Router() {
           </Suspense>
         )}
       </Route>
-      <Route path={"/dashboard"}>
-        {() => (
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل لوحة التحكم...</div></div>}>
-            <DashboardPage />
-          </Suspense>
-        )}
-      </Route>
-      <Route path={"/admin"}>
-        {() => (
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل لوحة المشرف العام...</div></div>}>
-            <AdminDashboardPage />
-          </Suspense>
-        )}
-      </Route>
-      <Route path={"/profile"}>
-        {() => (
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل الملف الشخصي...</div></div>}>
-            <ProfilePage />
-          </Suspense>
-        )}
-      </Route>
-      <Route path={"/"} component={Home} />
+      <Route path={"/dashboard"} component={DashboardPage} />
+      <Route path={"/admin"} component={AdminDashboardPage} />
+      <Route path={"/profile"} component={ProfilePage} />
       <Route path={"/renter-dashboard"} component={RenterDashboard} />
       <Route path={"/partner-dashboard"} component={PartnerDashboard} />
+      <Route path={"/add-car"} component={AddCar} />
+      <Route path={"/my-bookings"} component={MyBookings} />
+      <Route path={"/help"} component={Help} />
+      <Route path={"/favorites"} component={Favorites} />
+      <Route path={"/about"} component={About} />
       <Route component={NotFound} />
     </Switch>
   );

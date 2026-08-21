@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, FileText, CheckCircle2, Clock, AlertTriangle, Send, MessageSquare, PlusCircle, Paperclip, Upload, X } from 'lucide-react';
+import { ShieldAlert, FileText, CheckCircle2, Clock, AlertTriangle, Send, MessageSquare, PlusCircle, Paperclip, Upload, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,7 @@ export default function DisputeResolution() {
       bookingRef: 'BK-2026-8841',
       type: 'مشكلة في تسليم السيارة (تأخير)',
       status: 'قيد المراجعة',
+      step: 2, // 1: تقديم, 2: مراجعة الوسيط, 3: فحص الأدلة, 4: التسوية والحل
       date: '2026-08-15',
       description: 'تم تأخير تسليم السيارة لمدة ساعتين عن الموعد المحدد في مطار محمد الخامس.',
       party: 'وكالة الأناقة للسيارات',
@@ -26,6 +27,7 @@ export default function DisputeResolution() {
       bookingRef: 'BK-2026-7210',
       type: 'طلب استرداد تأمين العقار',
       status: 'تم الحل',
+      step: 4,
       date: '2026-08-10',
       description: 'تم حل النزاع وإعادة مبلغ الضمان بالكامل للزبون بعد فحص الشقة.',
       party: 'خالد العقاري',
@@ -64,6 +66,7 @@ export default function DisputeResolution() {
       bookingRef: newBookingRef,
       type: newType,
       status: 'جديد قيد المعالجة',
+      step: 1,
       date: new Date().toISOString().split('T')[0],
       description: newDescription,
       party: 'الطرف الثاني (الوكالة/المستأجر)',
@@ -77,6 +80,13 @@ export default function DisputeResolution() {
     setSelectedFiles([]);
     toast.success('تم فتح النزاع بنجاح مع إرفاق الأدلة وتعيينه للجنة الوساطة القانونية');
   };
+
+  const stages = [
+    { label: 'تقديم الشكوى', desc: 'تم استلام الطلب' },
+    { label: 'مراجعة الوسيط', desc: 'تدقيق المستندات' },
+    { label: 'فحص الأدلة', desc: 'دراسة المرفقات' },
+    { label: 'التسوية النهائية', desc: 'إغلاق النزاع' }
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -198,95 +208,76 @@ export default function DisputeResolution() {
           </Dialog>
         </div>
 
-        {/* FAQ / Info Banner */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="border-l-4 border-l-blue-600 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-slate-800 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                سرعة الاستجابة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-600">
-                يتم الرد على البلاغات والنزاعات خلال 12 ساعة عمل مع تجميد المدفوعات مؤقتاً لحين التسوية.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-amber-500 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-slate-800 flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-amber-500" />
-                حيادية تامة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-600">
-                فريق قانوني مستقل يقوم بمراجعة العقود الرقمية وصور الاستلام والتسليم الموثقة لضمان العدالة.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-emerald-600 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-slate-800 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                تسوية مضمونة
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-600">
-                أكثر من 98% من النزاعات تم حلها وودياً وإعادة المستحقات لأصحابها عبر المحفظة أو الحسابات البنكية.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Disputes List */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
           <h2 className="text-xl font-bold text-slate-900 border-b pb-3">سجل النزاعات والطلبات النشطة</h2>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             {disputes.map((disp) => (
-              <div key={disp.id} className="p-5 rounded-xl border border-slate-200 hover:border-slate-300 transition-all bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-slate-900 text-sm bg-slate-200 px-2.5 py-1 rounded-md">{disp.id}</span>
-                    <span className="text-sm text-slate-500 font-medium">الحجز: {disp.bookingRef}</span>
-                    <Badge variant={disp.status === 'تم الحل' ? 'default' : 'secondary'} className={disp.status === 'تم الحل' ? 'bg-emerald-600' : 'bg-amber-500 text-white'}>
-                      {disp.status}
-                    </Badge>
-                  </div>
-                  <h3 className="text-base font-semibold text-slate-800">{disp.type}</h3>
-                  <p className="text-sm text-slate-600 max-w-2xl">{disp.description}</p>
-                  
-                  {/* Attached files preview badge */}
-                  {disp.attachments && disp.attachments.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
-                        <Paperclip className="w-3.5 h-3.5" /> المرفقات والأدلة:
-                      </span>
-                      {disp.attachments.map((file, i) => (
-                        <span key={i} className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md font-mono">
-                          {file}
-                        </span>
-                      ))}
+              <div key={disp.id} className="p-6 rounded-2xl border border-slate-200 hover:border-slate-300 transition-all bg-slate-50/50 space-y-5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-bold text-slate-900 text-sm bg-slate-200 px-2.5 py-1 rounded-md">{disp.id}</span>
+                      <span className="text-sm text-slate-500 font-medium">الحجز: {disp.bookingRef}</span>
+                      <Badge variant={disp.status === 'تم الحل' ? 'default' : 'secondary'} className={disp.status === 'تم الحل' ? 'bg-emerald-600' : 'bg-amber-500 text-white'}>
+                        {disp.status}
+                      </Badge>
                     </div>
-                  )}
-
-                  <div className="text-xs text-slate-500 flex items-center gap-4 pt-1">
-                    <span>الطرف المقابل: <strong>{disp.party}</strong></span>
-                    <span>تاريخ التقديم: {disp.date}</span>
+                    <h3 className="text-base font-semibold text-slate-800">{disp.type}</h3>
+                    <p className="text-sm text-slate-600">{disp.description}</p>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 self-start md:self-center">
-                  <Button variant="outline" size="sm" className="gap-1.5 text-slate-700" onClick={() => toast.info(`فتح تفاصيل النزاع ${disp.id} وغرفة الدردشة الوسيطة`)}>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-slate-700 self-start md:self-center" onClick={() => toast.info(`فتح تفاصيل النزاع ${disp.id} وغرفة الدردشة الوسيطة`)}>
                     <MessageSquare className="w-4 h-4 text-blue-600" />
                     متابعة التحقيق
                   </Button>
                 </div>
+
+                {/* NEW: Visual Progress Bar */}
+                <div className="bg-white p-4 rounded-xl border border-slate-200/80 space-y-3">
+                  <div className="flex justify-between items-center text-xs font-semibold text-slate-700">
+                    <span>مراحل معالجة النزاع والوساطة</span>
+                    <span className="text-amber-600 font-bold">المرحلة {disp.step} من 4</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {stages.map((stage, idx) => {
+                      const stepNum = idx + 1;
+                      const isCompleted = stepNum < disp.step;
+                      const isCurrent = stepNum === disp.step;
+                      return (
+                        <div key={idx} className="relative flex flex-col items-center text-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1.5 transition-all ${
+                            isCompleted ? 'bg-emerald-600 text-white shadow-sm' :
+                            isCurrent ? 'bg-amber-500 text-white ring-4 ring-amber-100 shadow-md animate-pulse' :
+                            'bg-slate-200 text-slate-500'
+                          }`}>
+                            {isCompleted ? <Check className="w-4 h-4" /> : stepNum}
+                          </div>
+                          <span className={`text-xs font-bold ${isCurrent ? 'text-amber-700' : isCompleted ? 'text-emerald-700' : 'text-slate-600'}`}>
+                            {stage.label}
+                          </span>
+                          <span className="text-[10px] text-slate-400">{stage.desc}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Attached files preview */}
+                {disp.attachments && disp.attachments.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200/60">
+                    <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+                      <Paperclip className="w-3.5 h-3.5" /> المرفقات والأدلة:
+                    </span>
+                    {disp.attachments.map((file, i) => (
+                      <span key={i} className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md font-mono">
+                        {file}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

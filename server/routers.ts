@@ -395,10 +395,10 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) return [];
-        const allListings = await db.select().from(listings).where(inArray(listings.status, ['Approved', 'Available'])).orderBy(desc(listings.createdAt));
+        const allListings = await db.select({ listing: listings, ownerName: users.name }).from(listings).leftJoin(users, eq(listings.ownerId, users.id)).where(inArray(listings.status, ['Approved', 'Available'])).orderBy(desc(listings.createdAt));
 
         // Dynamic Pricing Engine calculation
-        return allListings.map(item => {
+        return allListings.map(({ listing: item, ownerName }) => {
           let adjustedPrice = item.pricePerDay;
           if (input?.startDate && input?.endDate) {
             const start = new Date(input.startDate);
@@ -420,6 +420,7 @@ export const appRouter = router({
           }
           return {
             ...item,
+            ownerName: ownerName ?? null,
             dynamicPricePerDay: adjustedPrice,
           };
         });
@@ -561,6 +562,37 @@ export const appRouter = router({
       }
       return await db.select().from(bookings).where(eq(bookings.renterId, ctx.user!.id));
     }),
+
+    getById: protectedProcedure
+      .input(z.object({ bookingId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const rows = await db.select({
+          id: bookings.id,
+          renterId: bookings.renterId,
+          listingId: bookings.listingId,
+          startDate: bookings.startDate,
+          endDate: bookings.endDate,
+          totalPrice: bookings.totalPrice,
+          commissionFee: bookings.commissionFee,
+          netProfit: bookings.netProfit,
+          status: bookings.status,
+          createdAt: bookings.createdAt,
+          listingTitle: listings.title,
+          listingCity: listings.city,
+          listingCategory: listings.category,
+          ownerName: users.name,
+        }).from(bookings)
+          .innerJoin(listings, eq(bookings.listingId, listings.id))
+          .leftJoin(users, eq(listings.ownerId, users.id))
+          .where(eq(bookings.id, input.bookingId)).limit(1);
+        const booking = rows[0];
+        if (!booking || (ctx.user!.role !== "admin" && booking.renterId !== ctx.user!.id)) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "الحجز غير موجود أو لا يخص حسابك." });
+        }
+        return booking;
+      }),
 
     create: protectedProcedure
       .input(

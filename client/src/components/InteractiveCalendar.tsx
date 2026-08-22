@@ -56,7 +56,7 @@ export default function InteractiveCalendar({ listingId, bookedDates = [], onDat
         }
 
         setEndDate(dateStr);
-        toast.success(`تم اختيار الفترة بنجاح: من ${startDate} إلى ${dateStr}`);
+              toast.success(`تم اختيار الفترة: من ${startDate} إلى ${dateStr}`);
         if (onDateSelect) {
           onDateSelect(startDate, dateStr);
         }
@@ -123,17 +123,18 @@ export default function InteractiveCalendar({ listingId, bookedDates = [], onDat
             <span className="font-bold text-primary">{startDate}</span>
             {endDate && <span className="font-bold text-primary"> إلى {endDate}</span>}
           </div>
-          <Button 
-            size="sm" 
+            <Button
+            size="sm"
             onClick={() => {
               if (!endDate) {
                 toast.error('يرجى تحديد تاريخ النهاية أيضاً');
                 return;
               }
-              toast.success(`تم قفل التواريخ بنجاح للفترة من ${startDate} إلى ${endDate}!`);
+              onDateSelect?.(startDate, endDate);
+              toast.info('تم تجهيز الفترة. راجع السعر ثم تابع إلى صفحة الحجز.');
             }}
           >
-            تأكيد وقفل التواريخ
+            متابعة إلى الحجز
           </Button>
         </div>
       )}

@@ -34,7 +34,7 @@ export default function PrivacyPolicy() {
             <span className="text-sm font-bold">B2-Rent | الثقة أولاً</span>
           </div>
           <h1 className="text-3xl font-black sm:text-4xl">سياسة الخصوصية</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75">توضح هذه الصفحة بشكل مبسط كيف نتعامل مع بيانات مستخدمي منصة B2-Rent عند تصفح العروض أو إنشاء الحجوزات.</p>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/90">توضح هذه الصفحة بشكل مبسط كيف نتعامل مع بيانات مستخدمي منصة B2-Rent عند تصفح العروض أو إنشاء الحجوزات.</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -49,7 +49,7 @@ export default function PrivacyPolicy() {
           ))}
         </div>
 
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-100 p-5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-slate-300 bg-slate-100 p-5 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100">
           <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
           <p className="leading-7">لمزيد من التفاصيل حول شروط الحجز والضمان والعمولات، راجع <Link href="/terms" className="font-bold text-amber-700 underline dark:text-amber-300">شروط الاستخدام</Link> أو تواصل مع <Link href="/support-tickets" className="font-bold text-amber-700 underline dark:text-amber-300">الدعم الفني</Link>.</p>
         </div>

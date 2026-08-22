@@ -41,8 +41,9 @@ describe("support and dispute audit contracts", () => {
 
   it("requires a confirmed booking before contract generation and keeps review content server-backed", () => {
     expect(routerSource).toMatch(/commercialLeaseContracts:[\s\S]*?booking\[0\]\.status !== "Confirmed"/);
-    expect(successPage).toMatch(/const isPending = bookingStatus !== ['"]Confirmed['"]/);
-    expect(successPage).toMatch(/if \(!bookingId \|\| !contractType \|\| isPending\) return/);
+    expect(successPage).toMatch(/trpc\.bookings\.getById\.useQuery/);
+    expect(successPage).toMatch(/const isPending = !booking \|\| bookingStatus !== ['"]Confirmed['"]/);
+    expect(successPage).not.toMatch(/const bookingStatus = searchParams\.get\(['"]bookingStatus/);
     expect(successPage).toMatch(/if \(isPending\) \{/);
     expect(carPage).not.toMatch(/reviews:\s*\[/);
     expect(carPage).not.toMatch(/ratingValue:\s*[0-9]/);

@@ -1,6 +1,6 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check, Stamp, FileCheck, X, Receipt } from 'lucide-react';
+import { CheckCircle2, Home, Download, Edit3, Eraser, Check, Stamp, FileCheck, X, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRef, useState, useEffect } from 'react';
 import { playSuccessSound } from '@/lib/sound';
@@ -10,38 +10,35 @@ import { generateInvoicePdf } from '@/lib/invoicePdf';
 export default function Success() {
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-
   const bookingId = Number(searchParams.get('bookingId') || 0);
-  const bookingRef = searchParams.get('reference') || (bookingId > 0 ? `B2R-${bookingId}` : 'B2R-PENDING');
-  const name = searchParams.get('name') || 'المستأجر';
-  const phone = searchParams.get('phone') || 'غير متوفر';
-  const urlTotal = searchParams.get('total') || '0';
-  const start = searchParams.get('start') || searchParams.get('startDate') || 'غير محدد';
-  const end = searchParams.get('end') || searchParams.get('endDate') || 'غير محدد';
-  const startTimestamp = start !== 'غير محدد' ? new Date(`${start}T12:00:00`).getTime() : Number.NaN;
-  const endTimestamp = end !== 'غير محدد' ? new Date(`${end}T12:00:00`).getTime() : Number.NaN;
+  const contractType = searchParams.get('contractType') as 'commercial' | 'professional' | null;
+  const language = searchParams.get('language') === 'ar' ? 'ar' : 'fr';
+  const bookingQuery = trpc.bookings.getById.useQuery(
+    { bookingId },
+    { enabled: bookingId > 0, retry: false, refetchInterval: bookingId > 0 ? 15000 : false },
+  );
+  const booking = bookingQuery.data;
+  const bookingRef = booking ? `B2R-${booking.id}` : (bookingId > 0 ? `B2R-${bookingId}` : 'B2R-PENDING');
+  const name = 'المستأجر';
+  const phone = 'غير متوفر';
+  const bookingStatus = booking?.status ?? 'Pending';
+  const isPending = !booking || bookingStatus !== 'Confirmed';
+  const start = booking ? new Date(booking.startDate).toISOString().slice(0, 10) : 'غير محدد';
+  const end = booking ? new Date(booking.endDate).toISOString().slice(0, 10) : 'غير محدد';
+  const startTimestamp = booking ? new Date(booking.startDate).getTime() : Number.NaN;
+  const endTimestamp = booking ? new Date(booking.endDate).getTime() : Number.NaN;
   const calculatedDays = Number.isFinite(startTimestamp) && Number.isFinite(endTimestamp) && endTimestamp > startTimestamp
     ? Math.ceil((endTimestamp - startTimestamp) / (1000 * 60 * 60 * 24))
     : 0;
-  const days = searchParams.get('days') || String(calculatedDays || 0);
-  const bookingStatus = searchParams.get('bookingStatus') || 'Pending';
-  const isPending = bookingStatus !== 'Confirmed';
-  const contractType = searchParams.get('contractType') as 'commercial' | 'professional' | null;
-  const premises = searchParams.get('premises') || searchParams.get('title') || 'المحل موضوع الحجز';
-  const city = searchParams.get('city') || 'المغرب';
-  const landlordName = searchParams.get('landlordName') || 'المالك / الشركة المؤجرة';
-  const monthlyRent = Number(searchParams.get('monthlyRent') || urlTotal);
-  const language = searchParams.get('language') === 'ar' ? 'ar' : 'fr';
-  const agencyWhatsapp = (searchParams.get('agencyWhatsapp') || '').replace(/\D/g, '');
-  const canContactAgency = bookingId > 0 && agencyWhatsapp.length >= 8;
-  const whatsappMessage = `مرحباً، أود متابعة الحجز ${bookingRef} عبر منصة B2-Rent.`;
+  const days = String(calculatedDays || 0);
+  const premises = booking?.listingTitle || 'المحل موضوع الحجز';
+  const city = booking?.listingCity || 'المغرب';
+  const landlordName = booking?.ownerName || 'المالك / الشركة المؤجرة';
+  const monthlyRent = booking?.totalPrice || 0;
+  const canContactAgency = false;
 
   const handleWhatsappContact = () => {
-    if (!canContactAgency) {
-      toast.info('لا يتوفر رقم واتساب مؤكد للوكالة في بيانات هذا الحجز.');
-      return;
-    }
-    window.open(`https://wa.me/${agencyWhatsapp}?text=${encodeURIComponent(whatsappMessage)}`, '_blank', 'noopener,noreferrer');
+    toast.info('لا يتوفر رقم واتساب مؤكد للوكالة في بيانات هذا الحجز.');
   };
 
   const handleEmailContact = () => {
@@ -113,7 +110,7 @@ export default function Success() {
       },
     });
     return () => { active = false; };
-  }, [bookingId, contractType, isPending]);
+  }, [bookingId, contractType, isPending, booking?.status]);
 
 
   useEffect(() => {
@@ -324,7 +321,7 @@ export default function Success() {
                 <div className="grid grid-cols-2 gap-3 text-xs"><div><span className="text-slate-400 block">رقم الفاتورة</span><strong className="text-white">{invoice.invoiceNumber}</strong></div><div><span className="text-slate-400 block">حالة الدفع</span><strong className="text-white">{invoice.paymentStatus}</strong></div><div><span className="text-slate-400 block">TVA</span><strong className="text-white">{invoice.vatAmount} {invoice.currency}</strong></div><div><span className="text-slate-400 block">الإجمالي الخادمي</span><strong className="text-amber-300">{invoice.total} {invoice.currency}</strong></div></div>
                 <Button type="button" onClick={handleInvoiceDownload} className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold"><Download className="w-4 h-4 ml-2" /> تنزيل الفاتورة PDF</Button>
               </>
-            ) : <p className="text-xs text-slate-400">{invoiceQuery.isError ? 'تعذر التحقق من الفاتورة لهذا الحجز. يمكنك مراجعة صفحة حجوزاتك.' : `تم تسجيل الدفع، رقم المبلغ المرجعي ${urlTotal} درهم، وسيظهر المستند بعد اكتمال الحفظ.`}</p>}
+            ) : <p className="text-xs text-slate-400">{invoiceQuery.isError ? 'تعذر التحقق من الفاتورة لهذا الحجز. يمكنك مراجعة صفحة حجوزاتك.' : `تم تسجيل الدفع، رقم المبلغ المرجعي ${booking?.totalPrice ?? 0} درهم، وسيظهر المستند بعد اكتمال الحفظ.`}</p>}
           </div>
 
           {!isPending && (
@@ -458,16 +455,15 @@ export default function Success() {
               )}
             </Button>
 
-            <Button
-              type="button"
-              onClick={handleWhatsappContact}
-              disabled={!canContactAgency}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-              title={!canContactAgency ? 'سيظهر التواصل بعد توفر رقم واتساب مؤكد للحجز' : undefined}
-            >
-              <Phone className="w-4 h-4" />
-              <span>{canContactAgency ? 'التواصل مع الوكالة عبر واتساب' : 'واتساب الوكالة غير متوفر لهذا الحجز'}</span>
-            </Button>
+            {canContactAgency && (
+              <Button
+                type="button"
+                onClick={handleWhatsappContact}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-xs"
+              >
+                <span>التواصل مع الوكالة عبر واتساب</span>
+              </Button>
+            )}
 
             <Button
               onClick={handleEmailContact}
@@ -526,14 +522,15 @@ export default function Success() {
               >
                 حسناً، متابعة التصفح
               </Button>
-              <Button
-                type="button"
-                onClick={handleWhatsappContact}
-                disabled={!canContactAgency}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Phone className="w-4 h-4" /> {canContactAgency ? 'التواصل مع الوكالة عبر واتساب' : 'واتساب الوكالة غير متوفر لهذا الحجز'}
-              </Button>
+              {canContactAgency && (
+                <Button
+                  type="button"
+                  onClick={handleWhatsappContact}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs"
+                >
+                  التواصل مع الوكالة عبر واتساب
+                </Button>
+              )}
             </div>
           </div>
         </div>

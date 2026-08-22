@@ -42,8 +42,10 @@ describe("invoice and profile audit contracts", () => {
   });
 
   it("does not generate the lease contract before owner approval", () => {
-    expect(successPage).toMatch(/const isPending = bookingStatus !== ['"]Confirmed['"]/);
-    expect(successPage).toMatch(/if \(!bookingId \|\| !contractType \|\| isPending\) return/);
+    expect(routerSource).toMatch(/getById:\s*protectedProcedure[\s\S]*?booking\.renterId !== ctx\.user!\.id/);
+    expect(successPage).toMatch(/trpc\.bookings\.getById\.useQuery/);
+    expect(successPage).toMatch(/const isPending = !booking \|\| bookingStatus !== ['"]Confirmed['"]/);
+    expect(successPage).not.toMatch(/const bookingStatus = searchParams\.get\(['"]bookingStatus/);
     expect(routerSource).toMatch(/commercialLeaseContracts:[\s\S]*?booking\[0\]\.status !== "Confirmed"/);
   });
 });

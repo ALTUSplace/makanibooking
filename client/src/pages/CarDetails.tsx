@@ -31,8 +31,16 @@ export default function CarDetails() {
     agency: { name: 'المؤجر على B2-Rent', address: listing.city, whatsapp: '' },
   } : null;
 
-  const [startDate, setStartDate] = useState('2026-08-20');
-  const [endDate, setEndDate] = useState('2026-08-25');
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return date.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 6);
+    return date.toISOString().slice(0, 10);
+  });
   const [includeInsurance, setIncludeInsurance] = useState(true);
   const [includeBabySeat, setIncludeBabySeat] = useState(false);
 
@@ -320,7 +328,6 @@ export default function CarDetails() {
                       onDateSelect={(start, end) => {
                         setStartDate(start);
                         setEndDate(end);
-                        toast.success(`تم اختيار وتأكيد قفل الفترة: من ${start} إلى ${end}`);
                       }}
                     />
                   )}
@@ -396,11 +403,11 @@ export default function CarDetails() {
                 onClick={handleProceedBooking}
                 className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black py-4 rounded-2xl text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
               >
-                تأكيد حجز السيارة فوراً
+                المتابعة إلى الحجز والدفع
               </Button>
 
               <div className="text-center text-[10px] text-slate-500">
-                الدفع عند الاستلام مع إمكانية الإلغاء المجاني قبل 24 ساعة
+                سيُرسل الطلب للموافقة قبل اعتبار الحجز نهائياً. الدفع محاكاة داخل المنصة.
               </div>
 
             </div>

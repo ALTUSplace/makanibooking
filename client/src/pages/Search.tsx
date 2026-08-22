@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { LISTINGS, ListingItem } from '@/data/b2rent';
+import { ListingItem } from '@/data/b2rent';
+import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, MapPin, Scale, X, Eye, Home, Map } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,6 +22,74 @@ const AMENITY_OPTIONS = ['fiber', 'air_conditioning', 'reception', 'parking', 's
 
 const listingRoute = (item: ListingItem) => item.type === 'car' ? `/car/${item.id}` : `/property/${item.id}`;
 
+const parseArrayField = (value: string | null | undefined): string[] => {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter((entry): entry is string => typeof entry === 'string');
+  } catch {
+    // Legacy rows may contain comma-separated amenities.
+  }
+  return value.split(',').map((entry) => entry.trim()).filter(Boolean);
+};
+
+const toListingItem = (item: {
+  id: number;
+  ownerId: number;
+  title: string;
+  description: string | null;
+  category: string;
+  pricePerDay: number;
+  imageUrl: string | null;
+  city: string;
+  fuelType: string | null;
+  transmission: string | null;
+  rooms: number | null;
+  officeType: string | null;
+  rentalPeriod: 'daily' | 'monthly' | 'yearly' | null;
+  amenities: string | null;
+  dynamicPricePerDay?: number;
+  ownerName?: string | null;
+}): ListingItem => {
+  const normalizedCategory = item.category.toLowerCase();
+  const type: ListingItem['type'] = normalizedCategory.includes('car') || normalizedCategory.includes('سيارة')
+    ? 'car'
+    : item.officeType || normalizedCategory.includes('office') || normalizedCategory.includes('مكتب')
+      ? 'office'
+      : 'property';
+  const amenities = parseArrayField(item.amenities).filter((entry): entry is NonNullable<ListingItem['amenities']>[number] =>
+    ['fiber', 'air_conditioning', 'reception', 'parking', 'security'].includes(entry),
+  );
+  const unitLabel = type === 'office'
+    ? item.rentalPeriod === 'monthly' ? 'درهم / شهر' : item.rentalPeriod === 'yearly' ? 'درهم / سنة' : 'درهم / يوم'
+    : type === 'car' ? 'درهم / يوم' : 'درهم / ليلة';
+  return {
+    id: String(item.id),
+    providerId: String(item.ownerId),
+    providerName: item.ownerName || `مالك الإعلان #${item.ownerId}`,
+    type,
+    title: item.title,
+    category: item.category,
+    city: item.city,
+    pricePerUnit: item.dynamicPricePerDay ?? item.pricePerDay,
+    unitLabel,
+    image: item.imageUrl || '',
+    images: item.imageUrl ? [item.imageUrl] : [],
+    features: [item.fuelType, item.transmission, ...amenities].filter((value): value is string => Boolean(value)),
+    description: item.description || '',
+    officeType: type === 'office' && ['private', 'coworking', 'meeting_room', 'company_headquarters'].includes(item.officeType || '')
+      ? item.officeType as ListingItem['officeType']
+      : undefined,
+    amenities: amenities.length ? amenities : undefined,
+    rentalTerms: item.rentalPeriod ? [item.rentalPeriod] : undefined,
+    specs: {
+      transmission: item.transmission || undefined,
+      fuel: item.fuelType || undefined,
+      rooms: item.rooms ? String(item.rooms) : undefined,
+    },
+  };
+};
+
 const cityMap: Record<string, string> = {
   agadir: 'أغادير',
   marrakech: 'مراكش',
@@ -40,6 +109,8 @@ export default function Search() {
   const naturalQuery = searchParams.get('q') || '';
   const brandParam = searchParams.get('brand') || '';
   const categoryParam = searchParams.get('category') || '';
+  const startDateParam = searchParams.get('startDate') || undefined;
+  const endDateParam = searchParams.get('endDate') || undefined;
   const [cityFilter, setCityFilter] = useState(resolvedCity);
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
   const [searchQuery, setSearchQuery] = useState(naturalQuery);
@@ -49,6 +120,9 @@ export default function Search() {
   const [officeTypeFilter, setOfficeTypeFilter] = useState<string>('all');
   const [amenityFilters, setAmenityFilters] = useState<string[]>([]);
   const [rentalTermFilter, setRentalTermFilter] = useState<string>('all');
+  const listingInput = useMemo(() => ({ startDate: startDateParam, endDate: endDateParam }), [startDateParam, endDateParam]);
+  const listingsQuery = trpc.listings.list.useQuery(listingInput);
+  const serverListings = useMemo(() => (listingsQuery.data ?? []).map(toListingItem), [listingsQuery.data]);
 
   const toggleAmenity = (amenity: string) => {
     setAmenityFilters((current) => current.includes(amenity)
@@ -81,7 +155,7 @@ export default function Search() {
   };
 
   const filteredListings = useMemo(() => {
-    return LISTINGS.filter((item) => {
+    return serverListings.filter((item: ListingItem) => {
       if (cityFilter !== 'all' && item.city !== cityFilter) return false;
       if (typeFilter !== 'all' && item.type !== typeFilter) return false;
       if (typeFilter === 'office' && officeTypeFilter !== 'all' && item.officeType !== officeTypeFilter) return false;
@@ -106,12 +180,12 @@ export default function Search() {
         if (!matches) return false;
       }
       return true;
-    }).sort((a, b) => {
+    }).sort((a: ListingItem, b: ListingItem) => {
       if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
       if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
       return 0;
     });
-  }, [cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
+  }, [serverListings, cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
 
   const [isSearching, setIsSearching] = useState(false);
   const cityLabel = (city: string) => language === 'fr' ? ({ 'جميع المدن': 'Toutes les villes', 'مراكش': 'Marrakech', 'أغادير': 'Agadir', 'الدار البيضاء': 'Casablanca', 'طنجة': 'Tanger', 'الرباط': 'Rabat' }[city] ?? city) : city;
@@ -307,6 +381,24 @@ export default function Search() {
               </div>
             </div>
 
+            {listingsQuery.isLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6" aria-live="polite">
+                {[1, 2, 3, 4].map((skeleton) => (
+                  <div key={skeleton} className="min-h-80 rounded-3xl bg-slate-950 border border-slate-800 animate-pulse" aria-label="جاري تحميل العروض" />
+                ))}
+              </div>
+            )}
+            {listingsQuery.error && (
+              <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-6 text-red-200" role="alert">
+                تعذر تحميل العروض حالياً. يرجى المحاولة مرة أخرى بعد قليل.
+              </div>
+            )}
+            {!listingsQuery.isLoading && !listingsQuery.error && filteredListings.length === 0 && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-8 text-center text-slate-300" aria-live="polite">
+                لا توجد عروض مطابقة للفلاتر الحالية. جرّب توسيع المدينة أو السعر أو نوع المكتب.
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredListings.map((item) => {
                 const isCompared = compareList.some(c => c.id === item.id);
@@ -316,17 +408,23 @@ export default function Search() {
                     className="b2-card b2-touch-card bg-slate-950 border-slate-800 shadow-xl hover:border-amber-500 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col group relative"
                   >
                     <div className="relative h-56 overflow-hidden">
-                      <img
-                        src={item.image}
-                        srcSet={`${item.image} 800w`}
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        alt={item.title}
-                        loading="lazy"
-                        decoding="async"
-                        width={800}
-                        height={448}
-                        className="b2-responsive-media group-hover:scale-110 transition-transform duration-700 ease-out"
-                      />
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          srcSet={`${item.image} 800w`}
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          alt={item.title}
+                          loading="lazy"
+                          decoding="async"
+                          width={800}
+                          height={448}
+                          className="b2-responsive-media group-hover:scale-110 transition-transform duration-700 ease-out"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center" aria-label="لا توجد صورة للإعلان">
+                          <Home className="w-12 h-12 text-slate-600" />
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
                       
                       <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
@@ -356,7 +454,7 @@ export default function Search() {
                         <div className="text-xs text-slate-400 font-medium flex items-center gap-1">
                           <span>{item.providerName}</span>
                           <span className="text-[10px] bg-slate-900 px-2 py-0.5 rounded text-amber-400">
-                            {item.type === 'car' ? 'سيارة' : 'عقار'}
+                            {item.type === 'car' ? 'سيارة' : item.type === 'office' ? 'مكتب' : 'عقار'}
                           </span>
                         </div>
                         <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">

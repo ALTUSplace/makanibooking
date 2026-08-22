@@ -38,6 +38,14 @@ describe('Admin authorization boundary', () => {
     await expect(caller.admin.users()).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
+  it('keeps admin and host boundaries isolated in one cross-panel flow', async () => {
+    const renterCaller = appRouter.createCaller(context('renter'));
+    const ownerCaller = appRouter.createCaller(context('owner'));
+    await expect(renterCaller.admin.overview()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(ownerCaller.admin.users()).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(renterCaller.listings.setAvailability({ listingId: 1, blockedRanges: [] })).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
   it('allows an admin to access the overview even when the database is unavailable', async () => {
     const caller = appRouter.createCaller(context('admin'));
     const result = await caller.admin.overview();

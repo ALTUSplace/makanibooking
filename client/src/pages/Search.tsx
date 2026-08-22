@@ -230,7 +230,7 @@ export default function Search() {
             onClick={() => setShowMap(!showMap)}
             className="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 border border-amber-500/30 shadow-lg"
           >
-            <Map className="w-4 h-4" /> {showMap ? 'إخفاء الخريطة التفاعلية' : 'عرض الخريطة التفاعلية'}
+            <Map className="w-4 h-4" /> {showMap ? t('hideMap') : t('showMap')}
           </Button>
         </div>
 
@@ -365,18 +365,18 @@ export default function Search() {
           <div className="lg:col-span-3 space-y-6">
             <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-slate-300">
-                تم العثور على <span className="text-amber-400 font-bold">{filteredListings.length}</span> عرض متاح
+                {t('offersFoundPrefix')} <span className="text-amber-400 font-bold">{filteredListings.length}</span> {t('availableOffers')}
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <ArrowUpDown className="w-4 h-4 text-amber-400" />
-                <span className="text-xs text-slate-400">الترتيب حسب:</span>
+                <span className="text-xs text-slate-400">{t('sortBy')}:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
-                  <option value="price-asc">السعر: من الأرخص للأغلى</option>
-                  <option value="price-desc">السعر: من الأغلى للأرخص</option>
+                  <option value="price-asc">{t('lowestPrice')}</option>
+                  <option value="price-desc">{t('highestPrice')}</option>
                 </select>
               </div>
             </div>
@@ -384,18 +384,18 @@ export default function Search() {
             {listingsQuery.isLoading && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6" aria-live="polite">
                 {[1, 2, 3, 4].map((skeleton) => (
-                  <div key={skeleton} className="min-h-80 rounded-3xl bg-slate-950 border border-slate-800 animate-pulse" aria-label="جاري تحميل العروض" />
+                  <div key={skeleton} className="min-h-80 rounded-3xl bg-slate-950 border border-slate-800 animate-pulse" aria-label={t('loadingListings')} />
                 ))}
               </div>
             )}
             {listingsQuery.error && (
               <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-6 text-red-200" role="alert">
-                تعذر تحميل العروض حالياً. يرجى المحاولة مرة أخرى بعد قليل.
+                {t('listingsLoadError')}
               </div>
             )}
             {!listingsQuery.isLoading && !listingsQuery.error && filteredListings.length === 0 && (
               <div className="rounded-2xl border border-slate-800 bg-slate-950 p-8 text-center text-slate-300" aria-live="polite">
-                لا توجد عروض مطابقة للفلاتر الحالية. جرّب توسيع المدينة أو السعر أو نوع المكتب.
+                {t('noMatchingListings')}
               </div>
             )}
 

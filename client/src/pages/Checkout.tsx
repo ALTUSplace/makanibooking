@@ -29,6 +29,11 @@ export default function CheckoutPage() {
   const premises = searchParams.get('premises') || title;
   const city = searchParams.get('city') || 'المغرب';
   const landlordName = searchParams.get('landlordName') || 'المالك / الشركة المؤجرة';
+  const formatDate = (value: string) => {
+    if (!value) return 'غير محدد';
+    const date = new Date(`${value}T12:00:00`);
+    return Number.isNaN(date.getTime()) ? 'غير محدد' : new Intl.DateTimeFormat('ar-MA', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+  };
 
   const [paymentMethod, setPaymentMethod] = useState<'cmi_card' | 'bank_transfer'>('cmi_card');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -200,7 +205,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Invoice Summary & Commission Details */}
-          <div className="space-y-6">
+          <div className="space-y-6 md:sticky md:top-6 md:self-start">
             <Card className="border-border shadow-md h-fit">
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -210,7 +215,18 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                 <div className="p-3 bg-muted/40 rounded-xl">
                   <span className="text-xs text-muted-foreground block">العنصر المحجوز</span>
-                  <span className="font-bold text-sm">{title}</span>
+                  <span className="font-bold text-sm break-words">{title}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2" aria-label="ملخص تواريخ الحجز">
+                  <div className="rounded-xl border border-border bg-background p-3 min-w-0">
+                    <span className="text-[11px] text-muted-foreground block">الوصول</span>
+                    <span className="font-bold text-sm block truncate" title={formatDate(startDateParam)}>{formatDate(startDateParam)}</span>
+                  </div>
+                  <div className="rounded-xl border border-border bg-background p-3 min-w-0">
+                    <span className="text-[11px] text-muted-foreground block">المغادرة</span>
+                    <span className="font-bold text-sm block truncate" title={formatDate(endDateParam)}>{formatDate(endDateParam)}</span>
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-sm">
@@ -233,9 +249,9 @@ export default function CheckoutPage() {
                   <p className="text-[11px] text-muted-foreground bg-amber-500/5 p-2 rounded-lg border border-amber-500/20 leading-relaxed">سيحسب الخادم العمولة وTVA والإجمالي النهائي من الإعلان والإعدادات المحفوظة، وستظهر القيم المعتمدة في الفاتورة بعد التسجيل.</p>
                 </div>
 
-                <div className="pt-4 border-t border-border flex justify-between items-center text-lg font-extrabold">
+                <div className="pt-4 border-t border-border flex justify-between items-center text-lg font-extrabold gap-3" aria-live="polite">
                   <span>الإجمالي النهائي:</span>
-                  <span className="text-amber-500">يحدده الخادم</span>
+                  <span className="text-amber-500 text-right">يحدده الخادم</span>
                 </div>
 
                 <Button

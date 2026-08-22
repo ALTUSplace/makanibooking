@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Download, FileText, Mail, Moon, Receipt, Save, ShieldCheck, Sun, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +22,16 @@ export default function Profile() {
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<"info" | "bookings" | "invoices">("info");
   const [name, setName] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [commercialRegister, setCommercialRegister] = useState("");
+  const profileMutation = trpc.auth.updateProfile.useMutation();
+
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name || "");
+    setWhatsappPhone(user.whatsappPhone || "");
+    setCommercialRegister(user.commercialRegister || "");
+  }, [user]);
 
   const bookingsQuery = trpc.bookings.list.useQuery(undefined, { enabled: isAuthenticated });
   const invoicesQuery = trpc.invoices.list.useQuery(undefined, { enabled: isAuthenticated });
@@ -32,10 +42,13 @@ export default function Profile() {
 
   const saveProfile = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!name.trim()) {
-      setName(user?.name || "");
-    }
-    toast.success("تم حفظ الاسم المعروض في هذه الجلسة. تحديث بيانات الحساب الدائمة غير متاح في هذا الإصدار.");
+    profileMutation.mutate({
+      whatsappPhone: whatsappPhone.trim() || null,
+      commercialRegister: commercialRegister.trim() || null,
+    }, {
+      onSuccess: () => toast.success("تم حفظ بيانات التواصل والسجل التجاري في حسابك."),
+      onError: (error) => toast.error(error.message || "تعذر حفظ بيانات الحساب."),
+    });
   };
 
   const downloadInvoice = (invoice: Parameters<typeof generateInvoicePdf>[0]) => {
@@ -98,8 +111,18 @@ export default function Profile() {
                 <span className="font-bold">البريد الإلكتروني</span>
                 <input value={user.email || ""} readOnly className="w-full rounded-xl border border-border bg-muted px-3 py-3 text-muted-foreground" />
               </label>
+              <label className="space-y-2 text-sm">
+                <span className="font-bold">رقم واتساب للمؤجر</span>
+                <input value={whatsappPhone} onChange={event => setWhatsappPhone(event.target.value)} inputMode="tel" dir="ltr" className="w-full rounded-xl border border-border bg-background px-3 py-3" placeholder="2126XXXXXXXX" />
+                <span className="text-xs text-muted-foreground">يظهر للمستأجر فقط بعد تأكيد الحجز.</span>
+              </label>
+              <label className="space-y-2 text-sm">
+                <span className="font-bold">السجل التجاري (RC)</span>
+                <input value={commercialRegister} onChange={event => setCommercialRegister(event.target.value)} dir="ltr" className="w-full rounded-xl border border-border bg-background px-3 py-3" placeholder="RC ..." />
+                <span className="text-xs text-muted-foreground">يُدرج في عقد الكراء عند إنشاء العقد.</span>
+              </label>
               <div className="md:col-span-2 flex justify-end">
-                <Button type="submit" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold"><Save className="w-4 h-4 ml-2" /> حفظ الاسم المعروض</Button>
+                <Button type="submit" disabled={profileMutation.isPending} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold"><Save className="w-4 h-4 ml-2" /> {profileMutation.isPending ? "جارٍ الحفظ..." : "حفظ بيانات الحساب"}</Button>
               </div>
             </form>
             <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

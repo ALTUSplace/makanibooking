@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 export type CommercialLeaseInput = {
   reference: string;
   landlordName: string;
+  landlordRc?: string | null;
   tenantName: string;
   premises: string;
   city: string;
@@ -28,6 +29,7 @@ export function buildCommercialLeaseText(input: CommercialLeaseInput): string[] 
     legalNotice,
     "1. تعريف الأطراف",
     `المكري: ${input.landlordName || "يستكمل"}`,
+    `السجل التجاري (RC): ${input.landlordRc || "يستكمل من طرف المكري"}`,
     `المكتري: ${input.tenantName || "يستكمل"}`,
     "2. تعيين المحل والغرض من الكراء",
     `المحل موضوع العقد: ${input.premises || "يستكمل"}، ${input.city || "المغرب"}. ويخصص للاستعمال ${purpose} دون أي نشاط غير مرخص أو مخالف للقوانين الجاري بها العمل.`,
@@ -50,6 +52,7 @@ export function buildCommercialLeaseText(input: CommercialLeaseInput): string[] 
     legalNotice,
     "1. IDENTIFICATION DES PARTIES",
     `Le Bailleur : ${input.landlordName || "À compléter"}.`,
+    `Registre de commerce (RC) du Bailleur : ${input.landlordRc || "À compléter par le Bailleur"}.`,
     `Le Preneur : ${input.tenantName || "À compléter"}.`,
     "2. DÉSIGNATION ET DESTINATION DES LOCAUX",
     `Les locaux sont situés à ${input.premises || "À compléter"}, ${input.city || "Maroc"}. Ils sont destinés à un usage ${purpose}, à l'exclusion de toute activité non autorisée ou contraire à la réglementation applicable.`,

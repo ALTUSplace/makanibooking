@@ -20,7 +20,7 @@ export default function Success() {
   const booking = bookingQuery.data;
   const bookingRef = booking ? `B2R-${booking.id}` : (bookingId > 0 ? `B2R-${bookingId}` : 'B2R-PENDING');
   const name = 'المستأجر';
-  const phone = 'غير متوفر';
+  const phone = booking?.ownerWhatsApp || 'غير متوفر';
   const bookingStatus = booking?.status ?? 'Pending';
   const isPending = !booking || bookingStatus !== 'Confirmed';
   const start = booking ? new Date(booking.startDate).toISOString().slice(0, 10) : 'غير محدد';
@@ -35,10 +35,17 @@ export default function Success() {
   const city = booking?.listingCity || 'المغرب';
   const landlordName = booking?.ownerName || 'المالك / الشركة المؤجرة';
   const monthlyRent = booking?.totalPrice || 0;
-  const canContactAgency = false;
+  const canContactAgency = bookingStatus === 'Confirmed' && Boolean(booking?.ownerWhatsApp);
 
   const handleWhatsappContact = () => {
-    toast.info('لا يتوفر رقم واتساب مؤكد للوكالة في بيانات هذا الحجز.');
+    if (!canContactAgency || !booking?.ownerWhatsApp) {
+      toast.info('لا يتوفر رقم واتساب مؤكد للوكالة في بيانات هذا الحجز.');
+      return;
+    }
+    const message = language === 'ar'
+      ? `مرحباً، أود التواصل بخصوص الحجز ${bookingRef} — ${premises}.`
+      : `Bonjour, je souhaite échanger au sujet de la réservation ${bookingRef} — ${premises}.`;
+    window.open(`https://wa.me/${booking.ownerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleEmailContact = () => {

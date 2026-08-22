@@ -64,6 +64,20 @@
       "when": 1787416021149,
       "tag": "0008_burly_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1787424694926,
+      "tag": "0009_gray_the_executioner",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787424725322,
+      "tag": "0010_lowly_paper_doll",
+      "breakpoints": true
     }
   ]
 }

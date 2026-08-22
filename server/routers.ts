@@ -26,10 +26,27 @@ export const appRouter = router({
         openId: user.openId,
         name: user.name,
         email: user.email,
+        whatsappPhone: user.whatsappPhone,
+        commercialRegister: user.commercialRegister,
         loginMethod: user.loginMethod,
         role: user.role,
       };
     }),
+    updateProfile: protectedProcedure
+      .input(z.object({
+        whatsappPhone: z.string().trim().max(32).optional().nullable(),
+        commercialRegister: z.string().trim().max(120).optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const normalize = (value?: string | null) => value?.trim() || null;
+        await db.update(users).set({
+          whatsappPhone: normalize(input.whatsappPhone),
+          commercialRegister: normalize(input.commercialRegister),
+        }).where(eq(users.id, ctx.user!.id));
+        return { success: true as const };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -583,6 +600,7 @@ export const appRouter = router({
           listingCity: listings.city,
           listingCategory: listings.category,
           ownerName: users.name,
+          ownerWhatsApp: users.whatsappPhone,
         }).from(bookings)
           .innerJoin(listings, eq(bookings.listingId, listings.id))
           .leftJoin(users, eq(listings.ownerId, users.id))
@@ -967,8 +985,9 @@ export const appRouter = router({
         }
         const listing = await db.select().from(listings).where(eq(listings.id, booking[0].listingId)).limit(1);
         if (!listing[0]) throw new Error("الإعلان المرتبط بالحجز غير موجود.");
-        const landlord = await db.select({ name: users.name }).from(users).where(eq(users.id, listing[0].ownerId)).limit(1);
+        const landlord = await db.select({ name: users.name, commercialRegister: users.commercialRegister }).from(users).where(eq(users.id, listing[0].ownerId)).limit(1);
         const canonicalLandlordName = landlord[0]?.name || "المالك / الشركة المؤجرة";
+        const canonicalLandlordRc = landlord[0]?.commercialRegister || null;
         const canonicalTenantName = ctx.user!.name || "المستأجر";
         const canonicalStartDate = new Date(booking[0].startDate);
         const canonicalEndDate = new Date(booking[0].endDate);
@@ -980,6 +999,7 @@ export const appRouter = router({
         const pdfBuffer = generateServerCommercialLeasePdf({
           reference,
           landlordName: canonicalLandlordName,
+          landlordRc: canonicalLandlordRc,
           tenantName: canonicalTenantName,
           premises: listing[0].title,
           city: listing[0].city,
@@ -998,6 +1018,7 @@ export const appRouter = router({
           reference,
           leaseType: input.leaseType,
           landlordName: canonicalLandlordName,
+          landlordRc: canonicalLandlordRc,
           tenantName: canonicalTenantName,
           premises: listing[0].title,
           city: listing[0].city,

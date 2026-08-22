@@ -2,10 +2,10 @@ import { COOKIE_NAME } from "@shared/const";
 import { parse as parseCookie } from "cookie";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { listings, bookings, reviews, users, commercialLeaseContracts, notifications } from "../drizzle/schema";
-import { eq, and, lte, gte, desc, count, isNull } from "drizzle-orm";
+import { eq, and, lte, gte, desc, count, isNull, inArray } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
 import { storageGet, storagePut } from "./storage";
@@ -31,7 +31,7 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) return [];
-        const filters = [eq(notifications.userId, ctx.user.id)];
+        const filters = [eq(notifications.userId, ctx.user!.id)];
         if (input.unreadOnly) filters.push(isNull(notifications.readAt));
         return db.select().from(notifications)
           .where(and(...filters))
@@ -43,7 +43,7 @@ export const appRouter = router({
       const db = await getDb();
       if (!db) return 0;
       const result = await db.select({ value: count() }).from(notifications)
-        .where(and(eq(notifications.userId, ctx.user.id), isNull(notifications.readAt)));
+        .where(and(eq(notifications.userId, ctx.user!.id), isNull(notifications.readAt)));
       return Number(result[0]?.value ?? 0);
     }),
 
@@ -54,7 +54,7 @@ export const appRouter = router({
         if (!db) throw new Error("Database unavailable");
         await db.update(notifications)
           .set({ readAt: new Date() })
-          .where(and(eq(notifications.id, input.notificationId), eq(notifications.userId, ctx.user.id)));
+          .where(and(eq(notifications.id, input.notificationId), eq(notifications.userId, ctx.user!.id)));
         return { success: true };
       }),
 
@@ -63,9 +63,71 @@ export const appRouter = router({
       if (!db) throw new Error("Database unavailable");
       await db.update(notifications)
         .set({ readAt: new Date() })
-        .where(and(eq(notifications.userId, ctx.user.id), isNull(notifications.readAt)));
+        .where(and(eq(notifications.userId, ctx.user!.id), isNull(notifications.readAt)));
       return { success: true };
     }),
+  }),
+
+  admin: router({
+    overview: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return { users: 0, owners: 0, renters: 0, listings: 0, pendingListings: 0, bookings: 0, grossRevenue: 0, platformFees: 0 };
+      const [userRows, ownerRows, renterRows, listingRows, pendingRows, bookingRows, revenueRows] = await Promise.all([
+        db.select({ value: count() }).from(users),
+        db.select({ value: count() }).from(users).where(eq(users.role, 'owner')),
+        db.select({ value: count() }).from(users).where(eq(users.role, 'renter')),
+        db.select({ value: count() }).from(listings),
+        db.select({ value: count() }).from(listings).where(eq(listings.status, 'Pending')),
+        db.select({ value: count() }).from(bookings),
+        db.select({ gross: bookings.totalPrice, fees: bookings.commissionFee }).from(bookings).where(eq(bookings.status, 'Confirmed')),
+      ]);
+      return {
+        users: Number(userRows[0]?.value ?? 0), owners: Number(ownerRows[0]?.value ?? 0), renters: Number(renterRows[0]?.value ?? 0),
+        listings: Number(listingRows[0]?.value ?? 0), pendingListings: Number(pendingRows[0]?.value ?? 0), bookings: Number(bookingRows[0]?.value ?? 0),
+        grossRevenue: revenueRows.reduce((sum, row) => sum + row.gross, 0), platformFees: revenueRows.reduce((sum, row) => sum + row.fees, 0),
+      };
+    }),
+    users: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt)).limit(200);
+    }),
+    updateUserRole: adminProcedure
+      .input(z.object({ userId: z.number().int().positive(), role: z.enum(['renter', 'owner', 'admin', 'user']) }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
+        return { success: true };
+      }),
+    bookings: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: bookings.id, status: bookings.status, totalPrice: bookings.totalPrice, commissionFee: bookings.commissionFee, startDate: bookings.startDate, endDate: bookings.endDate, listingTitle: listings.title, renterName: users.name })
+        .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id)).leftJoin(users, eq(bookings.renterId, users.id)).orderBy(desc(bookings.createdAt)).limit(200);
+    }),
+    cancelBooking: adminProcedure
+      .input(z.object({ bookingId: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        await db.update(bookings).set({ status: 'Cancelled' }).where(eq(bookings.id, input.bookingId));
+        return { success: true };
+      }),
+    listings: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: listings.id, title: listings.title, category: listings.category, status: listings.status, pricePerDay: listings.pricePerDay, ownerId: listings.ownerId, ownerName: users.name, createdAt: listings.createdAt })
+        .from(listings).leftJoin(users, eq(listings.ownerId, users.id)).orderBy(desc(listings.createdAt)).limit(200);
+    }),
+    moderateListing: adminProcedure
+      .input(z.object({ listingId: z.number().int().positive(), status: z.enum(['Approved', 'Rejected']) }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        await db.update(listings).set({ status: input.status }).where(eq(listings.id, input.listingId));
+        return { success: true };
+      }),
   }),
 
   listings: router({
@@ -79,7 +141,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) return [];
-        const allListings = await db.select().from(listings).orderBy(desc(listings.createdAt));
+        const allListings = await db.select().from(listings).where(inArray(listings.status, ['Approved', 'Available'])).orderBy(desc(listings.createdAt));
 
         // Dynamic Pricing Engine calculation
         return allListings.map(item => {
@@ -114,7 +176,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) return null;
-        const result = await db.select().from(listings).where(eq(listings.id, input.id)).limit(1);
+        const result = await db.select().from(listings).where(and(eq(listings.id, input.id), inArray(listings.status, ['Approved', 'Available']))).limit(1);
         return result[0] || null;
       }),
 
@@ -141,7 +203,24 @@ export const appRouter = router({
         }));
       }),
 
-    create: protectedProcedure
+    setAvailability: ownerProcedure
+      .input(z.object({ listingId: z.number().int().positive(), blockedRanges: z.array(z.object({ start: z.string(), end: z.string() })).max(100) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const listing = await db.select({ id: listings.id }).from(listings).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!listing[0]) throw new Error('لا يمكنك تعديل توفر إعلان لا تملكه');
+        const normalized = input.blockedRanges.map(range => {
+          const start = new Date(range.start);
+          const end = new Date(range.end);
+          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) throw new Error('فترة التوفر غير صالحة');
+          return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+        });
+        await db.update(listings).set({ availability: JSON.stringify(normalized) }).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id)));
+        return { success: true, blockedRanges: normalized };
+      }),
+
+    create: ownerProcedure
       .input(
         z.object({
           title: z.string(),
@@ -159,7 +238,7 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
         await db.insert(listings).values({
-          ownerId: ctx.user.id,
+          ownerId: ctx.user!.id,
           title: input.title,
           description: input.description,
           category: input.category,
@@ -169,16 +248,51 @@ export const appRouter = router({
           officeType: input.officeType,
           rentalPeriod: input.rentalPeriod,
           amenities: input.amenities?.join(',') || null,
-          status: "Available",
+          status: "Pending",
         });
         return { success: true };
       }),
 
-    mine: protectedProcedure.query(async ({ ctx }) => {
+    update: ownerProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        title: z.string().min(2).optional(),
+        description: z.string().optional(),
+        pricePerDay: z.number().int().nonnegative().optional(),
+        city: z.string().min(2).optional(),
+        imageUrl: z.string().optional(),
+        officeType: z.string().optional(),
+        rentalPeriod: z.enum(['daily', 'monthly', 'yearly']).optional(),
+        amenities: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const { id, amenities, ...fields } = input;
+        const owned = await db.select({ id: listings.id }).from(listings)
+          .where(and(eq(listings.id, id), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!owned[0]) throw new Error('الإعلان غير موجود ضمن ممتلكاتك.');
+        await db.update(listings).set({ ...fields, ...(amenities ? { amenities: amenities.join(',') } : {}), status: 'Pending' }).where(eq(listings.id, id));
+        return { success: true };
+      }),
+
+    remove: ownerProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const owned = await db.select({ id: listings.id }).from(listings)
+          .where(and(eq(listings.id, input.id), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!owned[0]) throw new Error('الإعلان غير موجود ضمن ممتلكاتك.');
+        await db.delete(listings).where(eq(listings.id, input.id));
+        return { success: true };
+      }),
+
+    mine: ownerProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      if (!['owner', 'admin'].includes(ctx.user.role)) throw new Error('هذه الصفحة مخصصة للملاك.');
-      return db.select().from(listings).where(eq(listings.ownerId, ctx.user.id)).orderBy(desc(listings.createdAt));
+      if (!['owner', 'admin'].includes(ctx.user!.role)) throw new Error('هذه الصفحة مخصصة للملاك.');
+      return db.select().from(listings).where(eq(listings.ownerId, ctx.user!.id)).orderBy(desc(listings.createdAt));
     }),
   }),
 
@@ -188,10 +302,10 @@ export const appRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      if (ctx.user.role === 'admin') {
+      if (ctx.user!.role === 'admin') {
         return await db.select().from(bookings).orderBy(desc(bookings.createdAt));
       }
-      return await db.select().from(bookings).where(eq(bookings.renterId, ctx.user.id));
+      return await db.select().from(bookings).where(eq(bookings.renterId, ctx.user!.id));
     }),
 
     create: protectedProcedure
@@ -235,7 +349,7 @@ export const appRouter = router({
         const netProfit = input.totalPrice - commissionFee;
 
         const [inserted] = await db.insert(bookings).values({
-          renterId: ctx.user.id,
+          renterId: ctx.user!.id,
           listingId: input.listingId,
           startDate: start,
           endDate: end,
@@ -263,14 +377,14 @@ export const appRouter = router({
         const acceptedTitle = "تم تأكيد الحجز / Réservation confirmée";
         const acceptedMessage = `تم تأكيد حجزك لـ «${listing[0].title}» من ${dateLabel}.\nVotre réservation pour «${listing[0].title}» est confirmée.`;
         await safeNotifyUser({
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           type: "booking_accepted",
           title: acceptedTitle,
           message: acceptedMessage,
           href: "/my-bookings",
           entityType: "booking",
           entityId: bookingId,
-          email: ctx.user.email ? { to: ctx.user.email, subject: acceptedTitle, ...buildEmailContent(acceptedTitle, acceptedMessage, "/my-bookings") } : undefined,
+          email: ctx.user!.email ? { to: ctx.user!.email, subject: acceptedTitle, ...buildEmailContent(acceptedTitle, acceptedMessage, "/my-bookings") } : undefined,
         });
 
         return { success: true, bookingId };
@@ -286,7 +400,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
-        if (ctx.user.role !== 'admin') {
+        if (ctx.user!.role !== 'admin') {
           throw new Error("عذراً، هذه العملية مخصصة لمدير المنصة والمشرفين فقط.");
         }
         await db
@@ -296,10 +410,10 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    ownerList: protectedProcedure.query(async ({ ctx }) => {
+    ownerList: ownerProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      if (!['owner', 'admin'].includes(ctx.user.role)) throw new Error('هذه العملية مخصصة للملاك.');
+      if (!['owner', 'admin'].includes(ctx.user!.role)) throw new Error('هذه العملية مخصصة للملاك.');
       const rows = await db.select({
         id: bookings.id,
         renterId: bookings.renterId,
@@ -316,20 +430,20 @@ export const appRouter = router({
       }).from(bookings)
         .innerJoin(listings, eq(bookings.listingId, listings.id))
         .leftJoin(users, eq(bookings.renterId, users.id))
-        .where(eq(listings.ownerId, ctx.user.id))
+        .where(eq(listings.ownerId, ctx.user!.id))
         .orderBy(desc(bookings.createdAt));
       return rows;
     }),
 
-    ownerUpdateStatus: protectedProcedure
+    ownerUpdateStatus: ownerProcedure
       .input(z.object({ bookingId: z.number(), status: z.enum(['Confirmed', 'Cancelled']) }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error('Database unavailable');
-        if (!['owner', 'admin'].includes(ctx.user.role)) throw new Error('هذه العملية مخصصة للملاك.');
+        if (!['owner', 'admin'].includes(ctx.user!.role)) throw new Error('هذه العملية مخصصة للملاك.');
         const owned = await db.select({ id: bookings.id }).from(bookings)
           .innerJoin(listings, eq(bookings.listingId, listings.id))
-          .where(and(eq(bookings.id, input.bookingId), eq(listings.ownerId, ctx.user.id)))
+          .where(and(eq(bookings.id, input.bookingId), eq(listings.ownerId, ctx.user!.id)))
           .limit(1);
         if (!owned[0]) throw new Error('الحجز غير موجود ضمن إعلاناتك.');
         const bookingDetails = await db.select({
@@ -384,7 +498,7 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
         const booking = await db.select().from(bookings).where(eq(bookings.id, input.bookingId)).limit(1);
-        if (!booking[0] || booking[0].renterId !== ctx.user.id) {
+        if (!booking[0] || booking[0].renterId !== ctx.user!.id) {
           throw new Error("لا يمكن إنشاء عقد لهذا الحجز.");
         }
         const existing = await db.select().from(commercialLeaseContracts).where(eq(commercialLeaseContracts.bookingId, input.bookingId)).limit(1);
@@ -415,7 +529,7 @@ export const appRouter = router({
         const [inserted] = await db.insert(commercialLeaseContracts).values({
           bookingId: input.bookingId,
           landlordId: listing[0].ownerId,
-          tenantId: ctx.user.id,
+          tenantId: ctx.user!.id,
           reference,
           leaseType: input.leaseType,
           landlordName: input.landlordName,
@@ -456,7 +570,7 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) return null;
         const result = await db.select().from(commercialLeaseContracts)
-          .where(and(eq(commercialLeaseContracts.bookingId, input.bookingId), eq(commercialLeaseContracts.tenantId, ctx.user.id)))
+          .where(and(eq(commercialLeaseContracts.bookingId, input.bookingId), eq(commercialLeaseContracts.tenantId, ctx.user!.id)))
           .limit(1);
         if (!result[0]) return null;
         const stored = result[0].pdfKey ? await storageGet(result[0].pdfKey) : null;
@@ -498,7 +612,7 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
         await db.insert(reviews).values({
-          userId: ctx.user.id,
+          userId: ctx.user!.id,
           listingId: input.listingId,
           bookingId: input.bookingId,
           rating: input.rating,

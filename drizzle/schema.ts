@@ -29,6 +29,7 @@ export const listings = mysqlTable("listings", {
   officeType: varchar("office_type", { length: 64 }),
   rentalPeriod: mysqlEnum("rental_period", ["daily", "monthly", "yearly"]),
   amenities: text("amenities"),
+  availability: text("availability"), // JSON array of blocked date ranges managed by the owner
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

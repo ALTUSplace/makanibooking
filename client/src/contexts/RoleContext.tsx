@@ -1,36 +1,29 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useAuth } from '@/_core/hooks/useAuth';
 
 export type UserRole = 'super_admin' | 'agency_manager';
 
 interface RoleContextType {
   role: UserRole;
+  /** Display-only compatibility helper; authorization is enforced by the server. */
   setRole: (role: UserRole) => void;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<UserRole>(() => {
-    const stored = localStorage.getItem('b2rent_user_role');
-    return (stored as UserRole) || 'super_admin';
-  });
+  const { user } = useAuth();
+  const role: UserRole = user?.role === 'admin' ? 'super_admin' : 'agency_manager';
 
-  const setRole = (newRole: UserRole) => {
-    setRoleState(newRole);
-    localStorage.setItem('b2rent_user_role', newRole);
-  };
+  // Kept for backwards-compatible UI consumers. It intentionally cannot alter
+  // the authenticated role or persist an impersonated role in the browser.
+  const setRole = (_newRole: UserRole) => undefined;
 
-  return (
-    <RoleContext.Provider value={{ role, setRole }}>
-      {children}
-    </RoleContext.Provider>
-  );
+  return <RoleContext.Provider value={{ role, setRole }}>{children}</RoleContext.Provider>;
 }
 
 export function useRole() {
   const context = useContext(RoleContext);
-  if (!context) {
-    throw new Error('useRole must be used within a RoleProvider');
-  }
+  if (!context) throw new Error('useRole must be used within a RoleProvider');
   return context;
 }

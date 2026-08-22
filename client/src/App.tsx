@@ -12,6 +12,9 @@ import BottomNavigationBar from "./components/BottomNavigationBar";
 import BreadcrumbNav from "./components/BreadcrumbNav";
 import { PageTransition } from "./components/PageTransition";
 import { lazy, Suspense } from "react";
+import { useAuth } from "./_core/hooks/useAuth";
+import { startLogin } from "./const";
+import { Button } from "@/components/ui/button";
 
 // Lazy-loaded pages for performance optimization & code splitting
 import Home from "./pages/Home";
@@ -41,6 +44,15 @@ const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboard"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
 const CheckoutPage = lazy(() => import("./pages/Checkout"));
+
+function AccessGuard({ area, children }: { area: 'admin' | 'host'; children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-[50vh] flex items-center justify-center">جاري التحقق من الصلاحيات...</div>;
+  if (!user) return <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4 p-6 text-center"><h1 className="text-2xl font-bold">يلزم تسجيل الدخول</h1><p className="text-muted-foreground">سجّل الدخول للوصول إلى هذه اللوحة.</p><Button onClick={() => startLogin()}>تسجيل الدخول</Button></div>;
+  const allowed = area === 'admin' ? user.role === 'admin' : user.role === 'owner' || user.role === 'admin';
+  if (!allowed) return <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 p-6 text-center"><h1 className="text-2xl font-bold">403 — الوصول غير مسموح</h1><p className="text-muted-foreground">ليس لديك الصلاحية لفتح هذه اللوحة.</p></div>;
+  return <>{children}</>;
+}
 
 function Router() {
   return (
@@ -80,12 +92,12 @@ function Router() {
         )}
       </Route>
       <Route path={"/dashboard"} component={DashboardPage} />
-      <Route path="/admin" component={AdminDashboardPage} />
+      <Route path="/admin">{() => <AccessGuard area="admin"><Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center">جاري تحميل لوحة الإدارة...</div>}><AdminDashboardPage /></Suspense></AccessGuard>}</Route>
           <Route path="/dispute-resolution" component={DisputeResolution} />
           <Route path="/terms" component={TermsOfService} />
       <Route path="/privacy" component={PrivacyPolicy} />
-      <Route path="/host" component={HostDashboard} />
-      <Route path="/host-dashboard" component={HostDashboard} />
+      <Route path="/host">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
+      <Route path="/host-dashboard">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
       <Route path="/partner" component={PartnerDashboard} />
       <Route path={"/partner-dashboard"} component={PartnerDashboard} />
       <Route path={"/add-car"} component={AddCar} />

@@ -41,6 +41,7 @@ const AdminDashboardPage = lazy(() => import("./pages/AdminDashboard"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
 const CheckoutPage = lazy(() => import("./pages/Checkout"));
 const KycVerificationPage = lazy(() => import("./pages/KycVerification"));
+const VoucherPage = lazy(() => import("./pages/Voucher"));
 
 function AccessGuard({ area, children }: { area: 'admin' | 'host'; children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -102,6 +103,7 @@ function Router() {
       <Route path={"/profile"} component={ProfilePage} />
       <Route path={"/checkout"} component={CheckoutPage} />
       <Route path={"/kyc"}>{() => <Suspense fallback={<div className="min-h-screen grid place-items-center">جاري تحميل التحقق...</div>}><KycVerificationPage /></Suspense>}</Route>
+      <Route path="/voucher/:code">{() => <Suspense fallback={<div className="min-h-screen grid place-items-center">جاري تحميل التذكرة...</div>}><VoucherPage /></Suspense>}</Route>
       <Route path={"/help"}>{() => <Redirect to="/support-tickets" replace />}</Route>
       <Route path={"/support-tickets"} component={SupportTicketsPage} />
       <Route path={"/notifications"} component={NotificationsPage} />

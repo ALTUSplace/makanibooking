@@ -112,7 +112,7 @@ export const commercialLeaseContracts = mysqlTable("commercial_lease_contracts",
 export const notifications = mysqlTable("notifications", {
   id: int("notification_id").autoincrement().primaryKey(),
   userId: int("user_id").notNull(),
-  type: mysqlEnum("type", ["booking_new", "booking_accepted", "booking_rejected", "lease_expiring", "system"]).notNull(),
+  type: mysqlEnum("type", ["booking_new", "booking_accepted", "booking_rejected", "lease_expiring", "voucher_issued", "system"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
   href: varchar("href", { length: 512 }),
@@ -146,6 +146,16 @@ export const payoutRequests = mysqlTable("payout_requests", {
   reviewedBy: int("reviewed_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   reviewedAt: timestamp("reviewed_at"),
+});
+
+export const bookingVouchers = mysqlTable("booking_vouchers", {
+  id: int("voucher_id").autoincrement().primaryKey(),
+  bookingId: int("booking_id").notNull().unique(),
+  renterId: int("renter_id").notNull(),
+  code: varchar("code", { length: 80 }).notNull().unique(),
+  qrPayload: text("qr_payload").notNull(),
+  status: mysqlEnum("status", ["Issued", "Revoked"]).default("Issued").notNull(),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
 });
 
 export const invoices = mysqlTable("invoices", {
@@ -218,6 +228,8 @@ export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = typeof platformSettings.$inferInsert;
 export type PayoutRequest = typeof payoutRequests.$inferSelect;
 export type InsertPayoutRequest = typeof payoutRequests.$inferInsert;
+export type BookingVoucher = typeof bookingVouchers.$inferSelect;
+export type InsertBookingVoucher = typeof bookingVouchers.$inferInsert;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type CommercialLeaseContract = typeof commercialLeaseContracts.$inferSelect;

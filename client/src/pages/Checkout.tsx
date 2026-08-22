@@ -65,6 +65,7 @@ export default function CheckoutPage() {
             bookingStatus: 'Pending',
           });
           if (contractType) params.set('contractType', contractType);
+          if (paymentResult.voucher?.code) params.set('voucherCode', paymentResult.voucher.code);
           setLocation(`/success?${params.toString()}`);
         },
         onError: (err) => {

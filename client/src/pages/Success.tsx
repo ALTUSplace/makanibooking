@@ -11,6 +11,7 @@ export default function Success() {
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const bookingId = Number(searchParams.get('bookingId') || 0);
+  const voucherCode = searchParams.get('voucherCode') || '';
   const contractType = searchParams.get('contractType') as 'commercial' | 'professional' | null;
   const language = searchParams.get('language') === 'ar' ? 'ar' : 'fr';
   const bookingQuery = trpc.bookings.getById.useQuery(
@@ -287,6 +288,14 @@ export default function Success() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12 px-4 relative">
+      {voucherCode && !isPending && (
+        <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-right shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="font-bold text-emerald-900">تذكرة الوصول الذكي جاهزة</p><p className="mt-1 text-sm text-emerald-800">تم إصدار Voucher برمز QR بعد نجاح الدفع. احتفظ به لإبراز تفاصيل الحجز عند الوصول.</p><p className="mt-2 font-mono text-sm font-bold text-emerald-900">{voucherCode}</p></div>
+            <Button onClick={() => setLocation(`/voucher/${voucherCode}`)} className="bg-emerald-700 text-white hover:bg-emerald-800">فتح التذكرة الذكية</Button>
+          </div>
+        </div>
+      )}
       <div className="container mx-auto px-4 max-w-2xl text-center space-y-8">
         <div className="bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
           <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto text-emerald-400">

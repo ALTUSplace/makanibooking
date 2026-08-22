@@ -1,12 +1,13 @@
 import { COOKIE_NAME } from "@shared/const";
 import { randomUUID } from "node:crypto";
+import QRCode from "qrcode";
 import { TRPCError } from "@trpc/server";
 import { parse as parseCookie } from "cookie";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions } from "../drizzle/schema";
+import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers } from "../drizzle/schema";
 import { eq, and, lte, gte, desc, count, isNull, inArray, ne } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
@@ -14,6 +15,7 @@ import { storageGet, storagePut } from "./storage";
 import { generateServerCommercialLeasePdf } from "./commercialLeasePdf";
 import { createHeartbeatJob } from "./_core/heartbeat";
 import { calculateInvoiceTotals, createInvoiceNumber, getSimulatedPaymentStatus } from "./billing";
+import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUrl, createVoucherCode } from "../shared/voucher";
 
 export const appRouter = router({
   system: systemRouter,
@@ -823,6 +825,9 @@ export const appRouter = router({
         const bookingRows = await db.select({
           id: bookings.id,
           renterId: bookings.renterId,
+          listingId: bookings.listingId,
+          startDate: bookings.startDate,
+          endDate: bookings.endDate,
           totalPrice: bookings.totalPrice,
           commissionFee: bookings.commissionFee,
           status: bookings.status,
@@ -886,7 +891,108 @@ export const appRouter = router({
         const createdInvoice = await db.select().from(invoices).where(eq(invoices.id, invoiceId)).limit(1);
         const createdPayment = await db.select().from(payments).where(eq(payments.id, paymentId)).limit(1);
         if (!createdInvoice[0] || !createdPayment[0]) throw new Error("تعذر حفظ تفاصيل الفاتورة.");
-        return { payment: createdPayment[0], invoice: createdInvoice[0] };
+
+        let voucher: typeof bookingVouchers.$inferSelect | null = null;
+        const requestOrigin = `${ctx.req.protocol}://${ctx.req.get("host")}`;
+        if (paymentStatus === "Succeeded") {
+          const existingVoucher = await db.select().from(bookingVouchers)
+            .where(eq(bookingVouchers.bookingId, booking.id)).limit(1);
+          if (existingVoucher[0]) {
+            voucher = existingVoucher[0];
+          } else {
+            const code = createVoucherCode(booking.id);
+            const voucherUrl = `${requestOrigin}/voucher/${code}`;
+            const [voucherInsert] = await db.insert(bookingVouchers).values({
+              bookingId: booking.id,
+              renterId: booking.renterId,
+              code,
+              qrPayload: voucherUrl,
+              status: "Issued",
+            });
+            const voucherRows = await db.select().from(bookingVouchers)
+              .where(eq(bookingVouchers.id, Number(voucherInsert.insertId))).limit(1);
+            voucher = voucherRows[0] ?? null;
+          }
+
+          const details = await db.select({
+            listingTitle: listings.title,
+            listingCity: listings.city,
+            ownerId: listings.ownerId,
+            ownerName: users.name,
+            ownerEmail: users.email,
+            ownerWhatsApp: users.whatsappPhone,
+            renterName: users.name,
+          }).from(listings)
+            .leftJoin(users, eq(listings.ownerId, users.id))
+            .where(eq(listings.id, booking.listingId)).limit(1);
+          const detail = details[0];
+          if (voucher && detail) {
+            const voucherUrl = voucher.qrPayload;
+            const renterMessage = buildVoucherRenterMessage(booking.id, detail.listingTitle, voucher.code, voucherUrl);
+            const ownerMessage = buildVoucherOwnerMessage(booking.id, detail.listingTitle, booking.startDate, booking.endDate);
+            await safeNotifyUser({
+              userId: booking.renterId,
+              type: "voucher_issued",
+              title: "تذكرة الوصول الذكي جاهزة / Voucher prêt",
+              message: renterMessage,
+              href: `/voucher/${voucher.code}`,
+              entityType: "voucher",
+              entityId: voucher.id,
+              email: ctx.user!.email ? { to: ctx.user!.email, subject: "B2-Rent — تذكرة الوصول الذكي", ...buildEmailContent("تذكرة الوصول الذكي جاهزة / Voucher prêt", renterMessage, voucherUrl) } : undefined,
+            });
+            if (detail.ownerId !== booking.renterId) {
+              await safeNotifyUser({
+                userId: detail.ownerId,
+                type: "voucher_issued",
+                title: "دفع جديد وتجهيز الخدمة / Paiement reçu",
+                message: ownerMessage,
+                href: "/host",
+                entityType: "booking",
+                entityId: booking.id,
+                email: detail.ownerEmail ? { to: detail.ownerEmail, subject: "B2-Rent — دفع حجز جديد", ...buildEmailContent("دفع جديد وتجهيز الخدمة / Paiement reçu", ownerMessage, `${requestOrigin}/host`) } : undefined,
+              });
+            }
+          }
+        }
+        return { payment: createdPayment[0], invoice: createdInvoice[0], voucher };
+      }),
+  }),
+
+  vouchers: router({
+    getByCode: protectedProcedure
+      .input(z.object({ code: z.string().min(8).max(80) }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const rows = await db.select({
+          voucher: bookingVouchers,
+          bookingId: bookings.id,
+          renterId: bookings.renterId,
+          startDate: bookings.startDate,
+          endDate: bookings.endDate,
+          totalPrice: bookings.totalPrice,
+          bookingStatus: bookings.status,
+          listingId: listings.id,
+          listingTitle: listings.title,
+          listingCategory: listings.category,
+          listingCity: listings.city,
+          listingImageUrl: listings.imageUrl,
+          ownerId: listings.ownerId,
+          ownerName: users.name,
+          ownerEmail: users.email,
+          ownerWhatsApp: users.whatsappPhone,
+        }).from(bookingVouchers)
+          .innerJoin(bookings, eq(bookingVouchers.bookingId, bookings.id))
+          .innerJoin(listings, eq(bookings.listingId, listings.id))
+          .leftJoin(users, eq(listings.ownerId, users.id))
+          .where(eq(bookingVouchers.code, input.code)).limit(1);
+        const result = rows[0];
+        if (!result || result.voucher.status !== "Issued" || result.bookingStatus === "Cancelled" || (ctx.user!.role !== "admin" && result.renterId !== ctx.user!.id && result.ownerId !== ctx.user!.id)) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "تذكرة الوصول غير موجودة أو لا تخص حسابك." });
+        }
+        const qrCodeDataUrl = await QRCode.toDataURL(result.voucher.qrPayload, { width: 320, margin: 2 });
+        const mapsUrl = createMapsSearchUrl(result.listingTitle, result.listingCity);
+        return { ...result, qrCodeDataUrl, mapsUrl };
       }),
   }),
 

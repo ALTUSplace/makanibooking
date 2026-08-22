@@ -7,6 +7,7 @@ export type NotificationType =
   | "booking_accepted"
   | "booking_rejected"
   | "lease_expiring"
+  | "voucher_issued"
   | "system";
 
 type EmailInput = {

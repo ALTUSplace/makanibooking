@@ -42,6 +42,7 @@ const ProfilePage = lazy(() => import("./pages/Profile"));
 const CheckoutPage = lazy(() => import("./pages/Checkout"));
 const KycVerificationPage = lazy(() => import("./pages/KycVerification"));
 const VoucherPage = lazy(() => import("./pages/Voucher"));
+const RegisterPage = lazy(() => import("./pages/Register"));
 
 function AccessGuard({ area, children }: { area: 'admin' | 'host'; children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -93,6 +94,7 @@ function Router() {
       <Route path="/admin">{() => <AccessGuard area="admin"><Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center">جاري تحميل لوحة الإدارة...</div>}><AdminDashboardPage /></Suspense></AccessGuard>}</Route>
       <Route path="/dispute-resolution" component={DisputeResolutionPage} />
       <Route path="/terms" component={TermsPage} />
+      <Route path="/register">{() => <Suspense fallback={<div className="min-h-[50vh] grid place-items-center">جاري تحميل التسجيل...</div>}><RegisterPage /></Suspense>}</Route>
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/host">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
       <Route path="/host-dashboard">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>

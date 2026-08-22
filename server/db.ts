@@ -48,6 +48,14 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
     }
+    if (user.legalConsentVersion !== undefined) {
+      values.legalConsentVersion = user.legalConsentVersion;
+      updateSet.legalConsentVersion = user.legalConsentVersion;
+    }
+    if (user.legalConsentAt !== undefined) {
+      values.legalConsentAt = user.legalConsentAt;
+      updateSet.legalConsentAt = user.legalConsentAt;
+    }
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;

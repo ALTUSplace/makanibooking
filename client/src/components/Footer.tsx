@@ -93,6 +93,12 @@ export default function Footer() {
           </div>
         </div>
 
+        <div className="mb-8 rounded-2xl border border-amber-500/30 bg-slate-800/70 p-5 text-xs leading-6 text-slate-300" role="note" aria-label="بنود حماية المنصة">
+          <h3 className="mb-2 font-black text-amber-300">بنود حماية منصة B2-Rent</h3>
+          <p>المنصة وسيط تقني وإعلاني فقط ولا تملك أو تدير السيارات أو العقارات. يتحمل الشريك مسؤولية الحالة الميكانيكية والسلامة والنظافة ومطابقة الأصل للوصف، وتخضع العلاقة النهائية للعقد المكتوب عند الاستلام. تظهر شروط الرسوم والإلغاء قبل الدفع، وتُراجع حالات إخلال الشريك عبر مركز النزاعات وفق القانون المغربي.</p>
+          <Link href="/register" className="mt-2 inline-flex font-bold text-amber-300 hover:text-white">قراءة البنود والموافقة قبل التسجيل</Link>
+        </div>
+
         <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <p>© 2026 B2-Rent. جميع الحقوق محفوظة. منصة تأجير السيارات والعقارات الأولى في المغرب.</p>
           <div className="flex items-center gap-6">

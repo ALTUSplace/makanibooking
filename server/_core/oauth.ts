@@ -24,12 +24,19 @@ export function registerOAuthRoutes(app: Express) {
     // startLogin set in the browser that began this login. An attacker can
     // forge `state`, but cannot plant this cookie in the victim's browser.
     const { nonce } = decodeOAuthState(state);
-    const expectedNonce = parseCookieHeader(req.headers.cookie ?? "")[OAUTH_STATE_COOKIE];
+    const cookies = parseCookieHeader(req.headers.cookie ?? "");
+    const legalConsent = cookies.b2_legal_consent;
+    if (legalConsent !== "platform-protection-v1") {
+      res.status(428).json({ error: "legal consent required" });
+      return;
+    }
+    const expectedNonce = cookies[OAUTH_STATE_COOKIE];
     if (!nonce || nonce !== expectedNonce) {
       res.status(403).json({ error: "invalid oauth state" });
       return;
     }
-    res.clearCookie(OAUTH_STATE_COOKIE, { path: "/", secure: true, sameSite: "none" });
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: "/", secure: true, sameSite: "none" });
+      res.clearCookie("b2_legal_consent", { path: "/", secure: true, sameSite: "lax" });
 
     try {
       const tokenResponse = await sdk.exchangeCodeForToken(code, state);
@@ -46,6 +53,8 @@ export function registerOAuthRoutes(app: Express) {
         email: userInfo.email ?? null,
         loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
         lastSignedIn: new Date(),
+        legalConsentVersion: legalConsent,
+        legalConsentAt: new Date(),
       });
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {

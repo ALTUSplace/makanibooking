@@ -13,6 +13,8 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  legalConsentVersion: varchar("legal_consent_version", { length: 80 }),
+  legalConsentAt: timestamp("legal_consent_at"),
 });
 
 export const listings = mysqlTable("listings", {

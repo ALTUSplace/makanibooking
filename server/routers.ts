@@ -8,7 +8,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers } from "../drizzle/schema";
-import { eq, and, lte, gte, desc, count, isNull, inArray, ne } from "drizzle-orm";
+import { eq, and, lte, gte, lt, gt, desc, count, isNull, inArray, ne, sql } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
 import { storageGet, storagePut } from "./storage";
@@ -16,6 +16,8 @@ import { generateServerCommercialLeasePdf } from "./commercialLeasePdf";
 import { createHeartbeatJob } from "./_core/heartbeat";
 import { calculateInvoiceTotals, createInvoiceNumber, getSimulatedPaymentStatus } from "./billing";
 import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUrl, createVoucherCode } from "../shared/voucher";
+import { escapeIcal, parseIcalEvents, validateIcalImportUrl } from "../shared/ical";
+import { syncListingIcal } from "./ical";
 
 export const appRouter = router({
   system: systemRouter,
@@ -459,22 +461,17 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) return [];
-        const res = await db
-          .select({
-            start: bookings.startDate,
-            end: bookings.endDate,
-          })
-          .from(bookings)
-          .where(
-            and(
-              eq(bookings.listingId, input.listingId),
-              eq(bookings.status, "Confirmed")
-            )
-          );
-        return res.map(b => ({
-          start: new Date(b.start).toISOString().split('T')[0],
-          end: new Date(b.end).toISOString().split('T')[0],
-        }));
+        const res = await db.select({ start: bookings.startDate, end: bookings.endDate }).from(bookings).where(and(eq(bookings.listingId, input.listingId), eq(bookings.status, "Confirmed")));
+        const listingRows = await db.select({ availability: listings.availability, icalImportedRanges: listings.icalImportedRanges }).from(listings).where(eq(listings.id, input.listingId)).limit(1);
+        const parseRanges = (value: string | null | undefined, source: "manual" | "ical") => {
+          if (!value) return [];
+          try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed.filter((range) => typeof range?.start === "string" && typeof range?.end === "string").map((range) => ({ start: range.start, end: range.end, source })) : []; } catch { return []; }
+        };
+        return [
+          ...res.map(b => ({ start: new Date(b.start).toISOString().split('T')[0], end: new Date(b.end).toISOString().split('T')[0], source: "booking" as const })),
+          ...parseRanges(listingRows[0]?.availability, "manual"),
+          ...parseRanges(listingRows[0]?.icalImportedRanges, "ical"),
+        ];
       }),
 
     setAvailability: ownerProcedure
@@ -492,6 +489,39 @@ export const appRouter = router({
         });
         await db.update(listings).set({ availability: JSON.stringify(normalized) }).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id)));
         return { success: true, blockedRanges: normalized };
+      }),
+
+    getIcalSettings: ownerProcedure
+      .input(z.object({ listingId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const rows = await db.select({ id: listings.id, icalImportUrl: listings.icalImportUrl, icalExportToken: listings.icalExportToken, icalLastSyncedAt: listings.icalLastSyncedAt, icalSyncStatus: listings.icalSyncStatus, icalSyncError: listings.icalSyncError }).from(listings).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!rows[0]) throw new Error("الإعلان غير موجود ضمن ممتلكاتك.");
+        return { ...rows[0], exportPath: rows[0].icalExportToken ? `/api/ical/export/${rows[0].icalExportToken}` : null };
+      }),
+
+    saveIcalSettings: ownerProcedure
+      .input(z.object({ listingId: z.number().int().positive(), importUrl: z.string().trim().url().max(2000).nullable().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const owned = await db.select({ id: listings.id, icalExportToken: listings.icalExportToken }).from(listings).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!owned[0]) throw new Error("الإعلان غير موجود ضمن ممتلكاتك.");
+        const importUrl = input.importUrl ? validateIcalImportUrl(input.importUrl) : null;
+        const token = owned[0].icalExportToken ?? randomUUID().replace(/-/g, "") + randomUUID().replace(/-/g, "");
+        await db.update(listings).set({ icalImportUrl: importUrl, icalExportToken: token, icalImportedRanges: null, icalLastSyncedAt: null, icalSyncStatus: importUrl ? "never" : "never", icalSyncError: null }).where(eq(listings.id, input.listingId));
+        return { success: true, exportPath: `/api/ical/export/${token}`, importConfigured: Boolean(importUrl) };
+      }),
+
+    syncIcalNow: ownerProcedure
+      .input(z.object({ listingId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const owned = await db.select({ id: listings.id }).from(listings).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!owned[0]) throw new Error("الإعلان غير موجود ضمن ممتلكاتك.");
+        return syncListingIcal(input.listingId);
       }),
 
     create: ownerProcedure
@@ -636,45 +666,17 @@ export const appRouter = router({
         const owner = await db.select({ id: users.id, name: users.name, email: users.email })
           .from(users).where(eq(users.id, listing[0].ownerId)).limit(1);
 
-        // Check availability conflict
-        const conflicts = await db
-          .select()
-          .from(bookings)
-          .where(
-            and(
-              eq(bookings.listingId, input.listingId),
-              eq(bookings.status, "Confirmed"),
-              lte(bookings.startDate, end),
-              gte(bookings.endDate, start)
-            )
-          );
-
-        if (conflicts.length > 0) {
-          throw new Error("عذراً، المركبة أو العقار محجوز بالكامل في هذا النطاق الزمني.");
-        }
-
         const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-        if (!Number.isInteger(durationDays) || durationDays <= 0) {
-          throw new Error("مدة الحجز غير صالحة.");
-        }
+        if (!Number.isInteger(durationDays) || durationDays <= 0) throw new Error("مدة الحجز غير صالحة.");
         const subtotal = listing[0].pricePerDay * durationDays;
-        const settings = await db.select({ commissionRateBasisPoints: platformSettings.commissionRateBasisPoints })
-          .from(platformSettings).limit(1);
+        const settings = await db.select({ commissionRateBasisPoints: platformSettings.commissionRateBasisPoints }).from(platformSettings).limit(1);
         const commissionRateBasisPoints = settings[0]?.commissionRateBasisPoints ?? 1_000;
         const commissionFee = Math.round(subtotal * commissionRateBasisPoints / 10_000);
         const netProfit = subtotal - commissionFee;
 
-        const [inserted] = await db.insert(bookings).values({
-          renterId: ctx.user!.id,
-          listingId: input.listingId,
-          startDate: start,
-          endDate: end,
-          totalPrice: subtotal,
-          commissionFee,
-          netProfit,
-          status: "Pending", // Owner approval is required before the booking becomes confirmed
-        });
-
+        // Pending requests may overlap while awaiting approval. The owner/admin confirmation path below
+        // takes the same row lock and performs the authoritative confirmed-overlap check.
+        const [inserted] = await db.insert(bookings).values({ renterId: ctx.user!.id, listingId: input.listingId, startDate: start, endDate: end, totalPrice: subtotal, commissionFee, netProfit, status: "Pending" });
         const bookingId = Number(inserted.insertId);
         const dateLabel = `${start.toLocaleDateString("fr-MA")} → ${end.toLocaleDateString("fr-MA")}`;
         const ownerTitle = "حجز جديد / Nouvelle réservation";
@@ -768,30 +770,25 @@ export const appRouter = router({
           throw new Error("لا يمكن تغيير حالة هذا الحجز بعد حسمه.");
         }
 
-        if (input.status === "Confirmed") {
-          const start = new Date(booking.startDate);
-          const end = new Date(booking.endDate);
-          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
-            throw new Error("تواريخ الحجز غير صالحة.");
+        const updated = await db.transaction(async (tx) => {
+          if (input.status === "Confirmed") {
+            const start = new Date(booking.startDate);
+            const end = new Date(booking.endDate);
+            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) throw new Error("تواريخ الحجز غير صالحة.");
+            // MySQL row lock serializes confirmations for the same listing.
+            await tx.execute(sql`SELECT listing_id FROM listings WHERE listing_id = ${booking.listingId} FOR UPDATE`);
+            const overlapping = await tx.select({ id: bookings.id }).from(bookings).where(and(
+              eq(bookings.listingId, booking.listingId),
+              eq(bookings.status, "Confirmed"),
+              ne(bookings.id, booking.bookingId),
+              lt(bookings.startDate, end),
+              gt(bookings.endDate, start),
+            )).limit(1);
+            if (overlapping[0]) throw new Error("لا يمكن قبول الحجز لأن الفترة أصبحت محجوزة.");
           }
-          const overlapping = await db.select({ id: bookings.id }).from(bookings).where(and(
-            eq(bookings.listingId, booking.listingId),
-            eq(bookings.status, "Confirmed"),
-            ne(bookings.id, booking.bookingId),
-            lte(bookings.startDate, end),
-            gte(bookings.endDate, start),
-          )).limit(1);
-          if (overlapping[0]) {
-            throw new Error("لا يمكن قبول الحجز لأن الفترة أصبحت محجوزة.");
-          }
-        }
-
-        const updated = await db.update(bookings)
-          .set({ status: input.status })
-          .where(and(eq(bookings.id, input.bookingId), eq(bookings.status, "Pending")));
-        if (Number(updated[0]?.affectedRows ?? 0) === 0) {
-          throw new Error("تم تحديث الحجز من مستخدم آخر؛ أعد تحميل الصفحة.");
-        }
+          return tx.update(bookings).set({ status: input.status }).where(and(eq(bookings.id, input.bookingId), eq(bookings.status, "Pending")));
+        });
+        if (Number(updated[0]?.affectedRows ?? 0) === 0) throw new Error("تم تحديث الحجز من مستخدم آخر؛ أعد تحميل الصفحة.");
 
         const accepted = input.status === "Confirmed";
         const title = accepted ? "تم قبول الحجز / Réservation acceptée" : "تم رفض الحجز / Réservation refusée";

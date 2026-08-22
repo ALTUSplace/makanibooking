@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { leaseEndReminderHandler } from "../leaseReminder";
+import { icalExportHandler, icalSyncHandler } from "../ical";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,6 +40,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // tRPC API
   app.post("/api/scheduled/lease-end-reminder", leaseEndReminderHandler);
+  app.post("/api/scheduled/ical-sync", icalSyncHandler);
+  app.get("/api/ical/export/:token", icalExportHandler);
   app.use(
     "/api/trpc",
     createExpressMiddleware({

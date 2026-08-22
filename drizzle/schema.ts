@@ -32,6 +32,12 @@ export const listings = mysqlTable("listings", {
   rentalPeriod: mysqlEnum("rental_period", ["daily", "monthly", "yearly"]),
   amenities: text("amenities"),
   availability: text("availability"), // JSON array of blocked date ranges managed by the owner
+  icalImportUrl: text("ical_import_url"), // private external calendar URL, never returned by public listing queries
+  icalExportToken: varchar("ical_export_token", { length: 96 }).unique(),
+  icalImportedRanges: text("ical_imported_ranges"), // JSON array of normalized external blocked ranges
+  icalLastSyncedAt: timestamp("ical_last_synced_at"),
+  icalSyncStatus: mysqlEnum("ical_sync_status", ["never", "ok", "error"]).default("never").notNull(),
+  icalSyncError: varchar("ical_sync_error", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

@@ -18,6 +18,7 @@ import { calculateInvoiceTotals, createInvoiceNumber, getSimulatedPaymentStatus 
 import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUrl, createVoucherCode } from "../shared/voucher";
 import { escapeIcal, parseIcalEvents, validateIcalImportUrl } from "../shared/ical";
 import { syncListingIcal } from "./ical";
+import { CANCELLATION_POLICY_VERSION, CANCELLATION_POLICY_TEXT, CANCELLATION_POLICY_FINGERPRINT } from "../shared/cancellationPolicySnapshot";
 
 export const appRouter = router({
   system: systemRouter,
@@ -676,7 +677,22 @@ export const appRouter = router({
 
         // Pending requests may overlap while awaiting approval. The owner/admin confirmation path below
         // takes the same row lock and performs the authoritative confirmed-overlap check.
-        const [inserted] = await db.insert(bookings).values({ renterId: ctx.user!.id, listingId: input.listingId, startDate: start, endDate: end, totalPrice: subtotal, commissionFee, netProfit, status: "Pending" });
+        const policyAcceptedAt = new Date();
+        const [inserted] = await db.insert(bookings).values({
+          renterId: ctx.user!.id,
+          listingId: input.listingId,
+          startDate: start,
+          endDate: end,
+          totalPrice: subtotal,
+          commissionFee,
+          netProfit,
+          status: "Pending",
+          cancellationPolicyVersion: CANCELLATION_POLICY_VERSION,
+          cancellationPolicySnapshot: CANCELLATION_POLICY_TEXT,
+          cancellationPolicyFingerprint: CANCELLATION_POLICY_FINGERPRINT,
+          cancellationPolicyAcceptedAt: policyAcceptedAt,
+          cancellationPolicyAcceptedBy: ctx.user!.id,
+        });
         const bookingId = Number(inserted.insertId);
         const dateLabel = `${start.toLocaleDateString("fr-MA")} → ${end.toLocaleDateString("fr-MA")}`;
         const ownerTitle = "حجز جديد / Nouvelle réservation";
@@ -828,6 +844,11 @@ export const appRouter = router({
           totalPrice: bookings.totalPrice,
           commissionFee: bookings.commissionFee,
           status: bookings.status,
+          cancellationPolicyVersion: bookings.cancellationPolicyVersion,
+          cancellationPolicySnapshot: bookings.cancellationPolicySnapshot,
+          cancellationPolicyFingerprint: bookings.cancellationPolicyFingerprint,
+          cancellationPolicyAcceptedAt: bookings.cancellationPolicyAcceptedAt,
+          cancellationPolicyAcceptedBy: bookings.cancellationPolicyAcceptedBy,
         }).from(bookings).where(eq(bookings.id, input.bookingId)).limit(1);
         const booking = bookingRows[0];
         if (!booking) throw new Error("الحجز غير موجود.");
@@ -883,6 +904,11 @@ export const appRouter = router({
           total: totals.total,
           currency: totals.currency,
           status: paymentStatus === "Succeeded" ? "Issued" : "Pending",
+          cancellationPolicyVersion: booking.cancellationPolicyVersion ?? CANCELLATION_POLICY_VERSION,
+          cancellationPolicySnapshot: booking.cancellationPolicySnapshot ?? CANCELLATION_POLICY_TEXT,
+          cancellationPolicyFingerprint: booking.cancellationPolicyFingerprint ?? CANCELLATION_POLICY_FINGERPRINT,
+          cancellationPolicyAcceptedAt: booking.cancellationPolicyAcceptedAt ?? new Date(),
+          cancellationPolicyAcceptedBy: booking.cancellationPolicyAcceptedBy ?? booking.renterId,
         });
         const invoiceId = Number(invoiceInsert.insertId);
         const createdInvoice = await db.select().from(invoices).where(eq(invoices.id, invoiceId)).limit(1);
@@ -1010,6 +1036,11 @@ export const appRouter = router({
         currency: invoices.currency,
         status: invoices.status,
         issuedAt: invoices.issuedAt,
+        cancellationPolicyVersion: invoices.cancellationPolicyVersion,
+        cancellationPolicySnapshot: invoices.cancellationPolicySnapshot,
+        cancellationPolicyFingerprint: invoices.cancellationPolicyFingerprint,
+        cancellationPolicyAcceptedAt: invoices.cancellationPolicyAcceptedAt,
+        cancellationPolicyAcceptedBy: invoices.cancellationPolicyAcceptedBy,
         paymentId: invoices.paymentId,
         paymentMethod: payments.method,
         paymentStatus: payments.status,
@@ -1043,6 +1074,11 @@ export const appRouter = router({
           currency: invoices.currency,
           status: invoices.status,
           issuedAt: invoices.issuedAt,
+          cancellationPolicyVersion: invoices.cancellationPolicyVersion,
+          cancellationPolicySnapshot: invoices.cancellationPolicySnapshot,
+          cancellationPolicyFingerprint: invoices.cancellationPolicyFingerprint,
+          cancellationPolicyAcceptedAt: invoices.cancellationPolicyAcceptedAt,
+          cancellationPolicyAcceptedBy: invoices.cancellationPolicyAcceptedBy,
           paymentId: invoices.paymentId,
           paymentMethod: payments.method,
           paymentStatus: payments.status,

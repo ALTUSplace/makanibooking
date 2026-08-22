@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, FileText, Headphones, Car, Building2, CheckCircle2, Clock, XCircle, Download, Send } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
+import { generateInvoicePdf } from '@/lib/invoicePdf';
 
 export default function RenterDashboard() {
   const { data: user } = trpc.auth.me.useQuery();
   const { data: bookings = [], isLoading } = trpc.bookings.list.useQuery();
+  const { data: invoices = [], isLoading: invoicesLoading } = trpc.invoices.list.useQuery();
   const [supportMessage, setSupportMessage] = useState('');
 
   const handleSendSupport = (e: React.FormEvent) => {
@@ -102,28 +103,57 @@ export default function RenterDashboard() {
             <h2 className="text-xl font-semibold">الفواتير وعقود الإيجار الرقمية</h2>
             <Card className="p-6">
               <div className="space-y-4">
-                {bookings.map((booking: any) => (
-                  <div key={booking.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl bg-muted/30 border border-border gap-4">
-                    <div>
-                      <h4 className="font-bold">فاتورة وعقد حجز #{booking.id}</h4>
-                      <p className="text-sm text-muted-foreground">تاريخ الإصدار: {new Date(booking.createdAt).toLocaleDateString('ar-MA')} | القيمة: {booking.totalPrice} د.م</p>
+                {invoicesLoading ? (
+                  <p className="text-muted-foreground">جاري تحميل الفواتير...</p>
+                ) : invoices.length === 0 ? (
+                  <p className="text-muted-foreground">لا توجد فواتير مؤكدة بعد.</p>
+                ) : invoices.map((invoice: any) => {
+                  const booking = bookings.find((item: any) => item.id === invoice.bookingId);
+                  return (
+                    <div key={invoice.id} className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                          <h4 className="font-bold">فاتورة حجز #{invoice.bookingId}</h4>
+                          <p className="text-sm text-muted-foreground">رقم الفاتورة: {invoice.invoiceNumber} | الإصدار: {new Date(invoice.issuedAt).toLocaleDateString('ar-MA')}</p>
+                          <p className="text-sm font-semibold">القيمة الإجمالية: {invoice.total} {invoice.currency}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                          const blob = generateInvoicePdf({
+                            invoiceNumber: invoice.invoiceNumber,
+                            bookingId: invoice.bookingId,
+                            subtotal: Number(invoice.subtotal),
+                            commissionFee: Number(invoice.commissionFee),
+                            vatRateBasisPoints: invoice.vatRateBasisPoints,
+                            vatAmount: Number(invoice.vatAmount),
+                            total: Number(invoice.total),
+                            currency: invoice.currency,
+                            status: invoice.status,
+                            issuedAt: invoice.issuedAt,
+                            startDate: booking?.startDate,
+                            endDate: booking?.endDate,
+                            cancellationPolicyVersion: invoice.cancellationPolicyVersion,
+                            cancellationPolicyFingerprint: invoice.cancellationPolicyFingerprint,
+                            cancellationPolicyAcceptedAt: invoice.cancellationPolicyAcceptedAt,
+                          });
+                          const url = URL.createObjectURL(blob);
+                          const anchor = document.createElement('a');
+                          anchor.href = url;
+                          anchor.download = `invoice-${invoice.invoiceNumber}.pdf`;
+                          anchor.click();
+                          URL.revokeObjectURL(url);
+                          toast.success('تم تحميل الفاتورة مع نسخة السياسة المقبولة');
+                        }}>
+                          <Download className="w-4 h-4" /> تحميل الفاتورة PDF
+                        </Button>
+                      </div>
+                      <div className="border-t border-border pt-3 text-xs text-muted-foreground">
+                        <p>سياسة الإلغاء المحفوظة: الإصدار {invoice.cancellationPolicyVersion || 'غير متوفر'}</p>
+                        <p>تاريخ القبول: {invoice.cancellationPolicyAcceptedAt ? new Date(invoice.cancellationPolicyAcceptedAt).toLocaleString('ar-MA') : 'غير متوفر'}</p>
+                        <p className="break-all">بصمة السياسة: {invoice.cancellationPolicyFingerprint || 'غير متوفر'}</p>
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                      const doc = new jsPDF();
-                      doc.setFont("helvetica", "bold");
-                      doc.text("B2-Rent Platform - Booking Invoice", 20, 20);
-                      doc.setFont("helvetica", "normal");
-                      doc.text(`Booking ID: #${booking.id}`, 20, 30);
-                      doc.text(`Date: ${new Date(booking.createdAt).toLocaleDateString()}`, 20, 40);
-                      doc.text(`Total Price: ${booking.totalPrice} MAD`, 20, 50);
-                      doc.text(`Status: ${booking.status}`, 20, 60);
-                      doc.save(`invoice-${booking.id}.pdf`);
-                      toast.success('تم تحميل الفاتورة بصيغة PDF بنجاح');
-                    }}>
-                      <Download className="w-4 h-4" /> تحميل الفاتورة PDF
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           </TabsContent>

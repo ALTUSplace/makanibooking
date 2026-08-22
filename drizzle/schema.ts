@@ -54,6 +54,11 @@ export const bookings = mysqlTable("bookings", {
   commissionFee: int("commission_fee").notNull(), // 10% عمولة المنصة
   netProfit: int("net_profit").notNull(), // صافي ربح الشريك
   status: mysqlEnum("status", ["Pending", "Confirmed", "Cancelled"]).default("Pending").notNull(),
+  cancellationPolicyVersion: varchar("cancellation_policy_version", { length: 80 }),
+  cancellationPolicySnapshot: text("cancellation_policy_snapshot"),
+  cancellationPolicyFingerprint: varchar("cancellation_policy_fingerprint", { length: 80 }),
+  cancellationPolicyAcceptedAt: timestamp("cancellation_policy_accepted_at"),
+  cancellationPolicyAcceptedBy: int("cancellation_policy_accepted_by"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -179,6 +184,11 @@ export const invoices = mysqlTable("invoices", {
   total: int("total").notNull(),
   currency: varchar("currency", { length: 3 }).default("MAD").notNull(),
   status: mysqlEnum("status", ["Pending", "Issued"]).default("Issued").notNull(),
+  cancellationPolicyVersion: varchar("cancellation_policy_version", { length: 80 }),
+  cancellationPolicySnapshot: text("cancellation_policy_snapshot"),
+  cancellationPolicyFingerprint: varchar("cancellation_policy_fingerprint", { length: 80 }),
+  cancellationPolicyAcceptedAt: timestamp("cancellation_policy_accepted_at"),
+  cancellationPolicyAcceptedBy: int("cancellation_policy_accepted_by"),
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
 });
 

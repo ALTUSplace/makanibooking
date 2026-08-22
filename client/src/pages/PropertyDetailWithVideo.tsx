@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { Play, Video, MapPin, Building2, Bed, Bath, ShieldCheck, Star, Calendar, Check, ArrowRight, Share2, Heart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,8 +35,37 @@ export default function PropertyDetailWithVideo() {
     amenities: ['إطلالة بحرية مباشرة', 'مكيف هواء مركزي', 'موقف سيارات خاص', 'أمن 24/7', 'واي فاي فائق السرعة', 'مصعد كهربائي حديث']
   };
 
+  const propertySchema = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    "name": property.title,
+    "description": property.description,
+    "image": property.images,
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": property.address,
+      "addressLocality": property.city,
+      "addressCountry": "MA"
+    },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "MAD",
+      "price": property.price,
+      "availability": "https://schema.org/InStock"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": property.rating,
+      "reviewCount": property.reviewsCount
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(propertySchema) }}
+      />
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Breadcrumb & Navigation */}

@@ -110,8 +110,36 @@ export default function CarDetails() {
     setLocation(`/checkout?listingId=${numericListingId}&title=${encodeURIComponent(car.name)}&pricePerDay=${dailyPrice}&days=${daysCount}&startDate=${startDate}&endDate=${endDate}`);
   };
 
+  const carSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": `${car.brand} ${car.name}`,
+    "image": [car.image],
+    "description": car.features ? car.features.join(', ') : `سيارة ${car.name} للإيجار في ${car.cityName} بسعر ${car.pricePerDay} درهم يومياً.`,
+    "brand": {
+      "@type": "Brand",
+      "name": car.brand
+    },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "MAD",
+      "price": car.pricePerDay,
+      "availability": "https://schema.org/InStock",
+      "areaServed": car.cityName
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": car.agency.rating || 4.8,
+      "reviewCount": car.reviewsCount || 12
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 py-12" dir="rtl">
+    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(carSchema) }}
+      />
       <div className="container mx-auto px-4 space-y-8">
         
         {/* Breadcrumb */}

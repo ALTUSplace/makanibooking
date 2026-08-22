@@ -8,6 +8,10 @@ import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { FAQSection } from '@/components/FAQSection';
 import { toast } from 'sonner';
 
+function getListingPath(item: { id: string; type: string }) {
+  return item.type === 'property' ? `/property/${item.id}` : `/car/${item.id}`;
+}
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<'cars' | 'properties'>('cars');
@@ -336,9 +340,15 @@ export default function Home() {
               </div>
             </div>
             <div className="mt-6">
-              <img 
-                src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" 
-                alt="Properties" 
+              <img
+                src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=70&w=800"
+                srcSet="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=65&w=480 480w, https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=70&w=800 800w"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                alt="Properties"
+                loading="lazy"
+                decoding="async"
+                width={800}
+                height={320}
                 className="rounded-2xl shadow-lg object-cover h-40 w-full group-hover:scale-105 transition-transform duration-500"
               />
             </div>
@@ -363,14 +373,20 @@ export default function Home() {
         </div>
 
         {/* Listing Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {activeListings.slice(0, 6).map((item) => (
-            <div key={item.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-md hover:-translate-y-2 hover:shadow-2xl hover:border-[#E57C23]/60 transition-all duration-300 flex flex-col group">
+            <article key={item.id} className="b2-card b2-touch-card shadow-md hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col group">
               <div className="relative h-56 overflow-hidden">
-                <img 
-                  src={item.image} 
-                  alt={item.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  loading="lazy"
+                  decoding="async"
+                  width={800}
+                  height={448}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  srcSet={`${item.image} 800w`}
+                  className="b2-responsive-media group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute top-3 right-3 bg-[#0B3C5D]/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full shadow">
                   {item.category}
@@ -399,15 +415,15 @@ export default function Home() {
                     <span className="text-lg font-black text-[#E57C23]">{item.pricePerUnit} درهم</span>
                   </div>
                   <div className="flex gap-2">
-                    <Link href={`/listing/${item.id}`}>
-                      <Button className="bg-[#0B3C5D] hover:bg-[#062940] text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md cursor-pointer">
+                    <Link href={getListingPath(item)}>
+                      <Button className="b2-card-action bg-[#0B3C5D] hover:bg-[#062940] text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md cursor-pointer">
                         احجز الآن
                       </Button>
                     </Link>
                   </div>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </section>

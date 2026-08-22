@@ -1,15 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
-import { INITIAL_BOOKINGS, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { BookmarkCheck, Calendar, Car, ShieldCheck, Phone, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
+import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download } from 'lucide-react';
+
+const formatDate = (value: string | Date) => new Date(value).toLocaleDateString('fr-MA');
+const formatMoney = (value: number) => new Intl.NumberFormat('fr-MA').format(value);
 
 export default function MyBookings() {
   const [, setLocation] = useLocation();
-  const [bookings] = useState<Booking[]>(INITIAL_BOOKINGS);
+  const { data: dbBookings = [], isLoading: bookingsLoading } = trpc.bookings.list.useQuery();
+  const { data: listings = [] } = trpc.listings.list.useQuery();
+  const [contractBookingId, setContractBookingId] = useState<number | null>(null);
+  const contractQuery = trpc.commercialLeaseContracts.getByBooking.useQuery(
+    { bookingId: contractBookingId ?? 0 },
+    { enabled: contractBookingId !== null },
+  );
+  const listingById = useMemo(() => new Map(listings.map((listing) => [listing.id, listing])), [listings]);
+
+  useEffect(() => {
+    if (contractQuery.data?.pdfUrl) {
+      window.open(contractQuery.data.pdfUrl, '_blank', 'noopener,noreferrer');
+      setContractBookingId(null);
+    } else if (contractQuery.isError) {
+      toast.error('تعذر الوصول إلى عقد هذا الحجز.');
+      setContractBookingId(null);
+    }
+  }, [contractQuery.data, contractQuery.isError]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 py-12">
+    <div className="min-h-screen bg-slate-900 text-slate-100 py-12" dir="rtl">
       <div className="container mx-auto px-4 max-w-4xl space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-950 border border-slate-800 p-8 rounded-3xl shadow-xl">
           <div className="flex items-center gap-4">
@@ -21,58 +42,62 @@ export default function MyBookings() {
               <h1 className="text-2xl md:text-3xl font-extrabold text-white">حجوزاتي السابقة والحالية</h1>
             </div>
           </div>
-          <Button
-            onClick={() => setLocation('/search')}
-            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20"
-          >
-            حجز سيارة جديدة
+          <Button onClick={() => setLocation('/search')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-3 rounded-xl">
+            حجز جديد
           </Button>
         </div>
 
-        <div className="space-y-6">
-          {bookings.map((booking: Booking) => (
-            <div key={booking.id} className="bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center gap-6">
-              <div className="w-full md:w-48 h-32 rounded-2xl overflow-hidden border border-slate-800 shrink-0">
-                <img src={booking.carImage} alt={booking.carName} className="w-full h-full object-cover" />
-              </div>
-
-              <div className="flex-1 space-y-2 text-right w-full">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-400">{booking.id}</span>
-                  {booking.status === 'confirmed' ? (
-                    <span className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold">
-                      <CheckCircle className="w-3.5 h-3.5" /> مؤكد
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-400 px-3 py-1 rounded-full text-xs font-semibold">
-                      <Clock className="w-3.5 h-3.5" /> قيد التأكيد
-                    </span>
-                  )}
+        {bookingsLoading ? (
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-10 text-center text-slate-400">جاري تحميل الحجوزات...</div>
+        ) : dbBookings.length === 0 ? (
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-10 text-center text-slate-400">لا توجد حجوزات مرتبطة بحسابك حالياً.</div>
+        ) : (
+          <div className="space-y-6">
+            {dbBookings.map((booking) => {
+              const listing = listingById.get(booking.listingId);
+              const isContractLoading = contractBookingId === booking.id && contractQuery.isFetching;
+              return (
+                <div key={booking.id} className="bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center gap-6">
+                  <div className="w-full md:w-48 h-32 rounded-2xl overflow-hidden border border-slate-800 shrink-0 bg-slate-900">
+                    {listing?.imageUrl && <img src={listing.imageUrl} alt={listing.title} loading="lazy" decoding="async" width={640} height={320} sizes="(max-width: 768px) 100vw, 192px" className="w-full h-full object-cover" />}
+                  </div>
+                  <div className="flex-1 space-y-3 text-right w-full">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-bold text-amber-400">#{booking.id}</span>
+                      {booking.status === 'Confirmed' ? (
+                        <span className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold"><CheckCircle className="w-3.5 h-3.5" /> مؤكد</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/30 text-amber-400 px-3 py-1 rounded-full text-xs font-semibold"><Clock className="w-3.5 h-3.5" /> {booking.status}</span>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-bold text-white">{listing?.title || `الإعلان رقم ${booking.listingId}`}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                      <div className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-amber-400" /> {formatDate(booking.startDate)} — {formatDate(booking.endDate)}</div>
+                      <div>المدينة: <span className="font-semibold text-white">{listing?.city || 'المغرب'}</span></div>
+                      <div>المجموع: <span className="font-semibold text-amber-400">{formatMoney(booking.totalPrice)} MAD</span></div>
+                    </div>
+                  </div>
+                  <div className="w-full md:w-auto flex md:flex-col gap-2 shrink-0">
+                    {(booking.status === 'Confirmed' || booking.status === 'Cancelled') && (
+                      <Button
+                        disabled={isContractLoading}
+                        onClick={() => setContractBookingId(booking.id)}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-bold"
+                      >
+                        {isContractLoading ? <span>جاري التحضير...</span> : <><Download className="w-4 h-4" /> عقد الكراء</>}
+                      </Button>
+                    )}
+                    <a href="/help" className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold">
+                      <Phone className="w-4 h-4" /> الدعم
+                    </a>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                <h3 className="text-lg font-bold text-white">{booking.carName}</h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-300 pt-2 border-t border-slate-800">
-                  <div>المدينة: <span className="font-semibold text-white">{booking.city}</span></div>
-                  <div>الفترة: <span className="font-semibold text-white">{booking.startDate} إلى {booking.endDate}</span></div>
-                  <div>المجموع: <span className="font-semibold text-amber-400">{booking.totalPrice} درهم</span></div>
-                </div>
-              </div>
-
-              <div className="w-full md:w-auto flex md:flex-col gap-2 shrink-0">
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-md transition-colors"
-                >
-                  <Phone className="w-4 h-4" />
-                  <span>تواصل مع الوكالة</span>
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-center text-[11px] text-slate-500">عقود الكراء نماذج تقنية يجب مراجعتها من طرف مهني قانوني مغربي قبل التوقيع.</p>
       </div>
     </div>
   );

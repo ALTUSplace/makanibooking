@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FAFAFA; color: #1A2639; }
+    .slide-container {
+      width: 1280px;
+      min-height: 720px;
+      background: #FAFAFA;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 60px;
+      padding-left: 80px;
+      padding-right: 80px;
+    }
+    .slide-header {
+      margin-bottom: 40px;
+    }
+    .category {
+      font-size: 14px;
+      font-weight: 700;
+      color: #E57C23;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 40px;
+      font-weight: 800;
+      color: #0A192F;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 30px;
+    }
+    .value-card {
+      background: #FFFFFF;
+      border-top: 4px solid #0B3C5D;
+      padding: 30px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .icon-box {
+      width: 60px;
+      height: 60px;
+      background: rgba(11, 60, 93, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      color: #0B3C5D;
+      font-size: 24px;
+    }
+    .value-card h3 {
+      font-size: 20px;
+      color: #0A192F;
+    }
+    .value-card p {
+      font-size: 15px;
+      color: #4A4A4A;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide-header">
+      <div class="category">الركائز الأساسية</div>
+      <h2>قيم العلامة التجارية لمنصة B2-Rent</h2>
+    </div>
+    <div class="grid-3">
+      <div class="value-card">
+        <div class="icon-box">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <h3>الموثوقية المطلقة</h3>
+        <p>نظام ضمان متكامل، التحقق من هوية الشركاء والعملاء، وعقود قانونية موثقة تضمن حقوق الطرفين بكل شفافية وأمان.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon-box">
+          <i class="fas fa-crown"></i>
+        </div>
+        <h3>الفخامة والحصرية</h3>
+        <p>عروض مختارة بعناية فائقة لتلبي تطلعات الزبائن الباحثين عن أعلى معايير الرفاهية في السيارات والعقارات الراقية.</p>
+      </div>
+      <div class="value-card">
+        <div class="icon-box">
+          <i class="fas fa-bolt"></i>
+        </div>
+        <h3>الكفاءة والسرعة</h3>
+        <p>حجز فوري، وتجربة مستخدم ذكية مدعومة بالذكاء الاصطناعي ومعاملات مالية رقمية سريعة ومحمية.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

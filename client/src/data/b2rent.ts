@@ -17,7 +17,7 @@ export interface ListingItem {
   id: string;
   providerId: string;
   providerName: string;
-  type: 'car' | 'property';
+  type: 'car' | 'property' | 'office';
   title: string;
   category: string; // e.g., "SUV / سيارة رباعية", "شقة فاخرة / Apartment", "فيلا مجهزة"
   city: string;
@@ -29,6 +29,9 @@ export interface ListingItem {
   reviewsCount: number;
   features: string[];
   description: string;
+  officeType?: 'private' | 'coworking' | 'meeting_room' | 'company_headquarters';
+  amenities?: ('fiber' | 'air_conditioning' | 'reception' | 'parking' | 'security')[];
+  rentalTerms?: ('daily' | 'monthly' | 'yearly')[];
   specs: {
     transmission?: string;
     seats?: string;
@@ -160,6 +163,90 @@ export const LISTINGS: ListingItem[] = [
     features: ['اقتصادية جداً في الوقود', 'حساسات وقوف', 'بلوتوث ونظام صوتي متطور', 'تكييف هواء'],
     description: 'السيارة الأكثر طلباً للتنقل الحضري في الدار البيضاء ومحطة قطار محمد الخامس والمطارات.',
     specs: { transmission: 'أوتوماتيك', seats: '5 مقاعد', fuel: 'بنزين / ديزل' }
+  },
+  {
+    id: 'l5',
+    providerId: 'p2',
+    providerName: 'مراكش القصر العقاري - Business Spaces',
+    type: 'office',
+    title: 'مكتب خاص راقٍ في مركز مراكش',
+    category: 'مكتب خاص / Bureau privé',
+    city: 'مراكش',
+    pricePerUnit: 1800,
+    unitLabel: 'درهم / شهر',
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80'],
+    rating: 4.8,
+    reviewsCount: 24,
+    features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'قاعة استقبال', 'مرآب سيارات'],
+    description: 'مكتب خاص مجهز للشركات الناشئة والمهنيين، بموقع مركزي وخدمات استقبال احترافية.',
+    officeType: 'private',
+    amenities: ['fiber', 'air_conditioning', 'reception', 'parking'],
+    rentalTerms: ['daily', 'monthly', 'yearly'],
+    specs: { area: '28 متر مربع' }
+  },
+  {
+    id: 'l6',
+    providerId: 'p3',
+    providerName: 'الدار البيضاء Business Hub',
+    type: 'office',
+    title: 'مساحة عمل مشتركة للشركات في كازا',
+    category: 'Coworking / مساحة مشتركة',
+    city: 'الدار البيضاء',
+    pricePerUnit: 120,
+    unitLabel: 'درهم / يوم',
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'],
+    rating: 4.7,
+    reviewsCount: 18,
+    features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'قاعة استقبال'],
+    description: 'Coworking مرن لرواد الأعمال والفرق الصغيرة مع إنترنت سريع ومرافق مشتركة.',
+    officeType: 'coworking',
+    amenities: ['fiber', 'air_conditioning', 'reception'],
+    rentalTerms: ['daily', 'monthly'],
+    specs: { area: '120 متر مربع' }
+  },
+  {
+    id: 'l7',
+    providerId: 'p2',
+    providerName: 'مراكش القصر العقاري - Business Spaces',
+    type: 'office',
+    title: 'قاعة اجتماعات مجهزة في جليز',
+    category: 'قاعة اجتماعات / Salle de réunion',
+    city: 'مراكش',
+    pricePerUnit: 650,
+    unitLabel: 'درهم / يوم',
+    image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80'],
+    rating: 4.9,
+    reviewsCount: 11,
+    features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'قاعة استقبال', 'حراسة'],
+    description: 'قاعة اجتماعات مهنية لاستقبال العملاء وتنظيم الاجتماعات والورشات في موقع مركزي.',
+    officeType: 'meeting_room',
+    amenities: ['fiber', 'air_conditioning', 'reception', 'security'],
+    rentalTerms: ['daily', 'monthly'],
+    specs: { area: '42 متر مربع' }
+  },
+  {
+    id: 'l8',
+    providerId: 'p3',
+    providerName: 'الدار البيضاء Business Hub',
+    type: 'office',
+    title: 'مقر شركة جاهز في المعاريف',
+    category: 'مقر شركة / Siège d’entreprise',
+    city: 'الدار البيضاء',
+    pricePerUnit: 9500,
+    unitLabel: 'درهم / شهر',
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80'],
+    rating: 4.75,
+    reviewsCount: 9,
+    features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'مرآب سيارات', 'حراسة'],
+    description: 'مقر مهني قابل للتخصيص للشركات مع استقبال وحراسة ومرافق مناسبة للتسجيل الإداري.',
+    officeType: 'company_headquarters',
+    amenities: ['fiber', 'air_conditioning', 'parking', 'security'],
+    rentalTerms: ['monthly', 'yearly'],
+    specs: { area: '180 متر مربع', rooms: '6 مكاتب' }
   },
   {
     id: 'l4',

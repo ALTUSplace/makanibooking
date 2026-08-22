@@ -3,9 +3,11 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users } from "../drizzle/schema";
+import { listings, bookings, reviews, users, commercialLeaseContracts } from "../drizzle/schema";
 import { eq, and, lte, gte, desc } from "drizzle-orm";
 import { z } from "zod";
+import { storageGet, storagePut } from "./storage";
+import { generateServerCommercialLeasePdf } from "./commercialLeasePdf";
 
 export const appRouter = router({
   system: systemRouter,
@@ -102,6 +104,9 @@ export const appRouter = router({
           pricePerDay: z.number(),
           imageUrl: z.string().optional(),
           city: z.string(),
+          officeType: z.string().optional(),
+          rentalPeriod: z.enum(['daily', 'monthly', 'yearly']).optional(),
+          amenities: z.array(z.string()).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -115,10 +120,20 @@ export const appRouter = router({
           pricePerDay: input.pricePerDay,
           imageUrl: input.imageUrl,
           city: input.city,
+          officeType: input.officeType,
+          rentalPeriod: input.rentalPeriod,
+          amenities: input.amenities?.join(',') || null,
           status: "Available",
         });
         return { success: true };
       }),
+
+    mine: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      if (!['owner', 'admin'].includes(ctx.user.role)) throw new Error('هذه الصفحة مخصصة للملاك.');
+      return db.select().from(listings).where(eq(listings.ownerId, ctx.user.id)).orderBy(desc(listings.createdAt));
+    }),
   }),
 
 
@@ -201,6 +216,128 @@ export const appRouter = router({
           .set({ status: input.status })
           .where(eq(bookings.id, input.bookingId));
         return { success: true };
+      }),
+
+    ownerList: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      if (!['owner', 'admin'].includes(ctx.user.role)) throw new Error('هذه العملية مخصصة للملاك.');
+      const rows = await db.select({
+        id: bookings.id,
+        renterId: bookings.renterId,
+        listingId: bookings.listingId,
+        startDate: bookings.startDate,
+        endDate: bookings.endDate,
+        totalPrice: bookings.totalPrice,
+        commissionFee: bookings.commissionFee,
+        netProfit: bookings.netProfit,
+        status: bookings.status,
+        createdAt: bookings.createdAt,
+        listingTitle: listings.title,
+        renterName: users.name,
+      }).from(bookings)
+        .innerJoin(listings, eq(bookings.listingId, listings.id))
+        .leftJoin(users, eq(bookings.renterId, users.id))
+        .where(eq(listings.ownerId, ctx.user.id))
+        .orderBy(desc(bookings.createdAt));
+      return rows;
+    }),
+
+    ownerUpdateStatus: protectedProcedure
+      .input(z.object({ bookingId: z.number(), status: z.enum(['Confirmed', 'Cancelled']) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        if (!['owner', 'admin'].includes(ctx.user.role)) throw new Error('هذه العملية مخصصة للملاك.');
+        const owned = await db.select({ id: bookings.id }).from(bookings)
+          .innerJoin(listings, eq(bookings.listingId, listings.id))
+          .where(and(eq(bookings.id, input.bookingId), eq(listings.ownerId, ctx.user.id)))
+          .limit(1);
+        if (!owned[0]) throw new Error('الحجز غير موجود ضمن إعلاناتك.');
+        await db.update(bookings).set({ status: input.status }).where(eq(bookings.id, input.bookingId));
+        return { success: true };
+      }),
+  }),
+
+  commercialLeaseContracts: router({
+    create: protectedProcedure
+      .input(z.object({
+        bookingId: z.number(),
+        leaseType: z.enum(["commercial", "professional"]),
+        landlordName: z.string().min(2),
+        tenantName: z.string().min(2),
+        premises: z.string().min(3),
+        city: z.string().min(2),
+        startDate: z.string(),
+        endDate: z.string(),
+        monthlyRent: z.number().int().nonnegative(),
+        deposit: z.number().int().nonnegative().default(0),
+        language: z.enum(["ar", "fr"]).default("fr"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const booking = await db.select().from(bookings).where(eq(bookings.id, input.bookingId)).limit(1);
+        if (!booking[0] || booking[0].renterId !== ctx.user.id) {
+          throw new Error("لا يمكن إنشاء عقد لهذا الحجز.");
+        }
+        const existing = await db.select().from(commercialLeaseContracts).where(eq(commercialLeaseContracts.bookingId, input.bookingId)).limit(1);
+        if (existing[0]) {
+          const stored = existing[0].pdfKey ? await storageGet(existing[0].pdfKey) : null;
+          return { success: true, contractId: existing[0].id, reference: existing[0].reference, pdfUrl: stored?.url || null };
+        }
+        const listing = await db.select().from(listings).where(eq(listings.id, booking[0].listingId)).limit(1);
+        if (!listing[0]) throw new Error("الإعلان المرتبط بالحجز غير موجود.");
+        const reference = `B2R-LEASE-${input.bookingId}-${Date.now().toString(36).toUpperCase()}`;
+        const legalNotice = input.language === "ar"
+          ? "تنبيه قانوني: هذا نموذج تقني عام، ويجب مراجعته واعتماده من طرف محامٍ أو موثق مغربي قبل التوقيع أو الاستعمال الفعلي."
+          : "Avertissement légal : ce modèle technique doit être validé par un avocat ou un notaire au Maroc avant toute signature ou utilisation réelle.";
+        const pdfBuffer = generateServerCommercialLeasePdf({
+          reference,
+          landlordName: input.landlordName,
+          tenantName: input.tenantName,
+          premises: input.premises,
+          city: input.city,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          monthlyRent: input.monthlyRent,
+          deposit: input.deposit,
+          purpose: input.leaseType,
+          language: input.language,
+        });
+        const storedPdf = await storagePut(`contracts/${reference}.pdf`, pdfBuffer, "application/pdf");
+        const [inserted] = await db.insert(commercialLeaseContracts).values({
+          bookingId: input.bookingId,
+          landlordId: listing[0].ownerId,
+          tenantId: ctx.user.id,
+          reference,
+          leaseType: input.leaseType,
+          landlordName: input.landlordName,
+          tenantName: input.tenantName,
+          premises: input.premises,
+          city: input.city,
+          startDate: new Date(input.startDate),
+          endDate: new Date(input.endDate),
+          monthlyRent: input.monthlyRent,
+          deposit: input.deposit,
+          legalNotice,
+          pdfKey: storedPdf.key,
+          status: "Generated",
+        });
+        return { success: true, contractId: inserted.insertId, reference, pdfUrl: storedPdf.url };
+      }),
+
+    getByBooking: protectedProcedure
+      .input(z.object({ bookingId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) return null;
+        const result = await db.select().from(commercialLeaseContracts)
+          .where(and(eq(commercialLeaseContracts.bookingId, input.bookingId), eq(commercialLeaseContracts.tenantId, ctx.user.id)))
+          .limit(1);
+        if (!result[0]) return null;
+        const stored = result[0].pdfKey ? await storageGet(result[0].pdfKey) : null;
+        return { ...result[0], pdfUrl: stored?.url || null };
       }),
   }),
 

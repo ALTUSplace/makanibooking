@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FAFAFA; color: #1A2639; }
+    .slide-container {
+      width: 1280px;
+      min-height: 720px;
+      background: #FAFAFA;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 60px;
+      padding-left: 80px;
+      padding-right: 80px;
+    }
+    .slide-header {
+      margin-bottom: 40px;
+    }
+    .category {
+      font-size: 14px;
+      font-weight: 700;
+      color: #E57C23;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 40px;
+      font-weight: 800;
+      color: #0A192F;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 30px;
+    }
+    .strategy-card {
+      background: #FFFFFF;
+      border-top: 4px solid #E57C23;
+      padding: 30px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .strategy-card h3 {
+      font-size: 20px;
+      color: #0A192F;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .strategy-card h3 i {
+      color: #E57C23;
+    }
+    .strategy-card p {
+      font-size: 15px;
+      color: #4A4A4A;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide-header">
+      <div class="category">الاستراتيجية التسويقية</div>
+      <h2>الحملات الرقمية والتواجد الشامل</h2>
+    </div>
+    <div class="grid-3">
+      <div class="strategy-card">
+        <h3><i class="fas fa-share-alt"></i> شبكات التواصل الاجتماعي</h3>
+        <p>استراتيجية محتوى مرئي فائقة الجودة على إنستغرام وفيسبوك، مع عروض فيديو ترويجية تبرز فخامة السيارات والعقارات.</p>
+      </div>
+      <div class="strategy-card">
+        <h3><i class="fas fa-handshake"></i> بوابات الشركاء</h3>
+        <p>شارات التميز والعضوية الذهبية للشركاء الأكثر نشاطاً، مع مكافآت تحفيزية لضمان استمرار تقديم أفضل الخدمات للعملاء.</p>
+      </div>
+      <div class="strategy-card">
+        <h3><i class="fas fa-search"></i> تحسين محركات البحث</h3>
+        <p>استهداف الكلمات الدلالية المحلية في المدن الكبرى (الدار البيضاء، مراكش، الرباط) مع بيانات منظمة لضمان الصدارة في نتائج Google.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

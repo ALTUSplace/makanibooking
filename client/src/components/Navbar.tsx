@@ -1,242 +1,395 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'wouter';
-import { Menu, X, PlusCircle, LayoutDashboard, ShieldAlert, BookmarkCheck, HelpCircle, Phone, Mail, Sun, Moon, ShieldCheck, UserCheck, Bell, Globe, CreditCard, MessageSquare, Shield, Coins, Car, Building2, BookOpen } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useRole } from '@/contexts/RoleContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useCurrency, Currency } from '@/contexts/CurrencyContext';
-import { CMIPaymentModal } from './CMIPaymentModal';
-import { WhatsAppNotificationModal } from './WhatsAppNotificationModal';
-import { TwoFactorAuthModal } from './TwoFactorAuthModal';
-import { toast } from 'sonner';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "wouter";
+import {
+  Bell,
+  BookOpen,
+  Building2,
+  Car,
+  Coins,
+  CreditCard,
+  Globe,
+  HelpCircle,
+  LayoutDashboard,
+  Menu,
+  Moon,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Sun,
+  UserCheck,
+  X,
+  BookmarkCheck,
+  MessageSquare,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useRole } from "@/contexts/RoleContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useCurrency, Currency } from "@/contexts/CurrencyContext";
+import { CMIPaymentModal } from "./CMIPaymentModal";
+import { WhatsAppNotificationModal } from "./WhatsAppNotificationModal";
+import { TwoFactorAuthModal } from "./TwoFactorAuthModal";
+import { toast } from "sonner";
+
+type NavLink = {
+  href: string;
+  label: string;
+  labelKey?: string;
+  icon?: typeof Car;
+};
+
+const navLinks: NavLink[] = [
+  { href: "/", label: "الرئيسية", labelKey: "home" },
+  { href: "/search?type=car", label: "تأجير السيارات", labelKey: "cars", icon: Car },
+  { href: "/search?type=property", label: "العقارات الفاخرة", labelKey: "properties", icon: Building2 },
+  { href: "/admin", label: "لوحة الإدارة", labelKey: "admin", icon: ShieldAlert },
+  { href: "/partner-dashboard", label: "لوحة الوكلاء", labelKey: "dashboard", icon: LayoutDashboard },
+  { href: "/my-bookings", label: "حجوزاتي", labelKey: "myBookings", icon: BookmarkCheck },
+  { href: "/help", label: "الدعم الفني", labelKey: "help", icon: HelpCircle },
+  { href: "/blog", label: "المدونة", labelKey: "blog", icon: BookOpen },
+];
+
+const notificationItems = [
+  {
+    id: "security",
+    title: "الأمان وحماية 2FA",
+    desc: "تم تفعيل المصادقة الثنائية لحسابك الإداري بنجاح.",
+    time: "منذ دقيقتين",
+    unread: true,
+  },
+  {
+    id: "payment",
+    title: "تأكيد الحجز CMI",
+    desc: "تم سداد مبلغ الحجز بنجاح عبر بوابة CMI المغربية.",
+    time: "منذ ساعة",
+    unread: true,
+  },
+  {
+    id: "whatsapp",
+    title: "إشعار واتساب آلي",
+    desc: "تم إرسال تفاصيل العقد ورقم الحجز إلى الواتساب.",
+    time: "منذ 3 ساعات",
+    unread: false,
+  },
+];
+
+function isActiveLink(currentLocation: string, href: string) {
+  const [currentPath, currentQuery = ""] = currentLocation.split("?");
+  const [targetPath, targetQuery = ""] = href.split("?");
+
+  if (targetPath === "/") return currentPath === "/";
+  if (currentPath !== targetPath) return false;
+  if (!targetQuery) return true;
+
+  const currentParams = new URLSearchParams(currentQuery);
+  const targetParams = new URLSearchParams(targetQuery);
+  return Array.from(targetParams.entries()).every(
+    ([key, value]) => currentParams.get(key) === value,
+  );
+}
 
 export default function Navbar() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState(notificationItems);
   const [cmiModalOpen, setCmiModalOpen] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [twoFaModalOpen, setTwoFaModalOpen] = useState(false);
-  
-  const [notifications, setNotifications] = useState([
-    { id: '1', title: 'الأمان وحماية 2FA', desc: 'تم تفعيل المصادقة الثنائية لحسابك الإداري بنجاح.', time: 'منذ دقيقتين', unread: true },
-    { id: '2', title: 'تأكيد الحجز CMI', desc: 'تم سداد مبلغ الحجز بنجاح عبر بوابة CMI المغربية.', time: 'منذ ساعة', unread: true },
-    { id: '3', title: 'إشعار واتساب آلي', desc: 'تم إرسال تفاصيل العقد ورقم الحجز إلى الواتساب.', time: 'منذ 3 ساعات', unread: false },
-  ]);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLElement>(null);
 
   const { theme, toggleTheme } = useTheme();
   const { role } = useRole();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, direction, setLanguage, t } = useLanguage();
   const { currency, setCurrency } = useCurrency();
+  const unreadCount = notifications.filter((item) => item.unread).length;
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const currentSection = useMemo(() => {
+    if (location.startsWith("/search")) return "search";
+    return location.split("?")[0];
+  }, [location]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setNotificationsOpen(false);
+  }, [location]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const menu = mobileMenuRef.current;
+    if (!menu) return;
+
+    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusable = Array.from(menu.querySelectorAll<HTMLElement>(focusableSelector));
+    focusable[0]?.focus();
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const currentFocusable = Array.from(menu.querySelectorAll<HTMLElement>(focusableSelector));
+      if (currentFocusable.length === 0) return;
+      const first = currentFocusable[0];
+      const last = currentFocusable[currentFocusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", trapFocus);
+    return () => document.removeEventListener("keydown", trapFocus);
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setNotificationsOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
-    toast.success('تم تحديد جميع الإشعارات كمقروءة');
+    setNotifications((items) => items.map((item) => ({ ...item, unread: false })));
+    toast.success("تم تحديد جميع الإشعارات كمقروءة");
   };
 
-  const navLinks = [
-    { href: '/', label: 'الرئيسية' },
-    { href: '/search?type=car', label: 'تأجير السيارات', icon: Car },
-    { href: '/search?type=property', label: 'العقارات الفاخرة', icon: Building2 },
-    { href: '/admin', label: 'لوحة الإدارة', icon: ShieldAlert },
-    { href: '/partner-dashboard', label: 'لوحة الوكلاء', icon: LayoutDashboard },
-    { href: '/my-bookings', label: 'حجوزاتي', icon: BookmarkCheck },
-    { href: '/help', label: 'الدعم الفني', icon: HelpCircle },
-    { href: '/blog', label: 'المدونة', icon: BookOpen },
-  ];
+  const selectCurrency = (nextCurrency: Currency) => {
+    setCurrency(nextCurrency);
+    toast.success(`تم تبديل العملة بنجاح إلى ${nextCurrency}`);
+  };
+
+  const selectLanguage = (nextLanguage: "ar" | "fr") => {
+    setLanguage(nextLanguage);
+    toast.success(
+      nextLanguage === "ar"
+        ? "تم التبديل إلى اللغة العربية"
+        : nextLanguage === "fr"
+          ? "Passé au Français avec succès"
+          : "Passé au Français avec succès",
+    );
+  };
+
+  const renderNavLinks = (mobile = false) =>
+    navLinks.map((link) => {
+      const Icon = link.icon;
+      const active = isActiveLink(location, link.href);
+      return (
+        <Link
+          key={link.href}
+          href={link.href}
+          onClick={() => setMobileMenuOpen(false)}
+          className={
+            mobile
+              ? `flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
+                  active
+                    ? "bg-amber-500 text-white shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`
+              : `flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-bold transition-colors ${
+                  active
+                    ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`
+          }
+          aria-current={active ? "page" : undefined}
+        >
+          {Icon && <Icon className={mobile ? "h-4 w-4" : "h-3.5 w-3.5"} />}
+          <span>{link.labelKey ? t(link.labelKey) : link.label}</span>
+        </Link>
+      );
+    });
 
   return (
     <>
-      <header className="sticky top-0 z-50 glass-header text-foreground transition-all duration-500 shadow-sm" dir="rtl">
-        <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-          
-          {/* الشعار */}
-          <Link href="/" className="flex items-center group">
-            <div className="h-14 w-36 overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105">
-              <img src="/manus-storage/35942_9a6ce071.png" alt="B2-Rent Logo" className="h-full w-full object-contain" />
-            </div>
+      <header
+        className="glass-header sticky top-0 z-50 border-b text-foreground shadow-sm"
+          dir={direction}
+        >
+        <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4">
+          <Link href="/" className="group flex shrink-0 items-center" aria-label="العودة إلى الصفحة الرئيسية">
+            <span className="flex h-14 w-32 items-center justify-center overflow-hidden transition-transform group-hover:scale-[1.03] sm:w-36">
+              <img
+                src="/manus-storage/35942_9a6ce071.png"
+                alt="شعار B2-Rent"
+                className="h-full w-full object-contain"
+              />
+            </span>
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-1.5">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = location === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-1 text-xs font-bold transition-all py-2 px-2.5 rounded-xl ${
-                    isActive
-                      ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30 shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                  }`}
-                >
-                  {Icon && <Icon className="w-3.5 h-3.5 text-amber-500" />}
-                  {link.label}
-                </Link>
-              );
-            })}
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex" aria-label="التنقل الرئيسي">
+            {renderNavLinks()}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
-            
-            {/* اختيار العملة بتصميم عصري فائق الوضوح */}
-            <div className="flex items-center bg-slate-900/90 dark:bg-slate-800/90 border border-amber-500/30 rounded-2xl p-1.5 text-xs font-bold shadow-inner">
-              <div className="flex items-center gap-1 px-2 text-amber-400 font-extrabold">
-                <Coins className="w-4 h-4 animate-pulse" />
-              </div>
-              {(['MAD', 'EUR', 'USD'] as Currency[]).map((curr) => (
+          <div className="hidden shrink-0 items-center gap-2 md:flex">
+            <div className="b2-segmented-control" aria-label="اختيار العملة">
+              <Coins className="mx-1 h-4 w-4 text-amber-600 dark:text-amber-300" aria-hidden="true" />
+              {(["MAD", "EUR", "USD"] as Currency[]).map((item) => (
                 <button
-                  key={curr}
-                  onClick={() => {
-                    setCurrency(curr);
-                    toast.success(`تم تبديل العملة بنجاح إلى ${curr}`);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl uppercase tracking-wider transition-all duration-200 transform active:scale-95 ${
-                    currency === curr
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  key={item}
+                  type="button"
+                  aria-pressed={currency === item}
+                  onClick={() => selectCurrency(item)}
+                  className={currency === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}
                 >
-                  {curr}
+                  {item}
                 </button>
               ))}
             </div>
 
-            {/* اختيار اللغة بتصميم عصري فائق الوضوح */}
-            <div className="flex items-center bg-slate-900/90 dark:bg-slate-800/90 border border-amber-500/30 rounded-2xl p-1.5 text-xs font-bold shadow-inner">
-              <div className="flex items-center gap-1 px-2 text-amber-400 font-extrabold">
-                <Globe className="w-4 h-4" />
-              </div>
-              {(['ar', 'fr', 'en'] as const).map((lang) => (
+            <div className="b2-segmented-control" aria-label="اختيار اللغة">
+              <Globe className="mx-1 h-4 w-4 text-amber-600 dark:text-amber-300" aria-hidden="true" />
+              {(["ar", "fr"] as const).map((item) => (
                 <button
-                  key={lang}
-                  onClick={() => {
-                    setLanguage(lang);
-                    toast.success(lang === 'ar' ? 'تم التبديل إلى اللغة العربية' : lang === 'fr' ? 'Passé au Français avec succès' : 'Switched to English successfully');
-                  }}
-                  className={`px-3 py-1.5 rounded-xl uppercase tracking-wider transition-all duration-200 transform active:scale-95 ${
-                    language === lang
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  key={item}
+                  type="button"
+                  aria-pressed={language === item}
+                  onClick={() => selectLanguage(item)}
+                  className={language === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}
                 >
-                  {lang === 'ar' ? 'عربي' : lang === 'fr' ? 'FR' : 'EN'}
+                  {item === "ar" ? "عربي" : "FR"}
                 </button>
               ))}
             </div>
 
-            {/* شارة الدور */}
-            <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-amber-500 dark:text-amber-400">
-              {role === 'super_admin' ? <ShieldCheck className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-              <span>{role === 'super_admin' ? 'مشرف عام' : 'مدير وكالة'}</span>
-            </div>
+            <span className="hidden items-center gap-1 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-[11px] font-bold text-amber-700 lg:flex dark:text-amber-300">
+              {role === "super_admin" ? <ShieldCheck className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+              {role === "super_admin" ? "مشرف عام" : "مدير وكالة"}
+            </span>
 
-            {/* زر تفعيل المصادقة الثنائية 2FA */}
             <button
+              type="button"
+              className="b2-icon-button border border-border bg-muted text-foreground hover:bg-background"
               onClick={() => setTwoFaModalOpen(true)}
-              className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 transition-colors border border-amber-500/30 flex items-center justify-center shadow-sm"
-              title="إدارة الأمان والمصادقة الثنائية (2FA)"
+              title="إدارة الأمان والمصادقة الثنائية"
+              aria-label="إدارة الأمان والمصادقة الثنائية"
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="h-4 w-4 text-amber-600 dark:text-amber-300" />
             </button>
-
-            {/* زر محاكاة دفع CMI */}
             <button
+              type="button"
+              className="b2-icon-button border border-border bg-muted text-foreground hover:bg-background"
               onClick={() => setCmiModalOpen(true)}
-              className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 transition-colors border border-amber-500/30 flex items-center justify-center shadow-sm"
               title="بوابة الدفع CMI"
+              aria-label="فتح بوابة الدفع CMI"
             >
-              <CreditCard className="w-4 h-4" />
+              <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-300" />
             </button>
-
-            {/* زر إشعار واتساب */}
             <button
+              type="button"
+              className="b2-icon-button border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
               onClick={() => setWhatsappModalOpen(true)}
-              className="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors border border-emerald-500/30 flex items-center justify-center shadow-sm"
               title="إشعار WhatsApp / SMS"
+              aria-label="فتح إشعار واتساب"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="h-4 w-4" />
             </button>
 
-            {/* إشعارات */}
-            <div className="relative">
-              <Link
-                href="/notifications"
-                className="relative p-2 rounded-xl bg-muted/80 border border-border text-foreground hover:bg-muted transition-all flex items-center justify-center"
-                title="الإشعارات المخصصة"
+            <div className="relative" ref={notificationRef}>
+              <button
+                type="button"
+                className="b2-icon-button relative border border-border bg-muted text-foreground hover:bg-background"
+                onClick={() => setNotificationsOpen((open) => !open)}
+                aria-expanded={notificationsOpen}
+                aria-haspopup="dialog"
+                aria-label={`الإشعارات${unreadCount ? `، ${unreadCount} غير مقروءة` : ""}`}
+                title="الإشعارات"
               >
-                <Bell className="w-4 h-4 text-amber-500" />
+                <Bell className="h-4 w-4 text-amber-600 dark:text-amber-300" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center animate-bounce">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white">
                     {unreadCount}
                   </span>
                 )}
-              </Link>
+              </button>
 
               {notificationsOpen && (
-                <div className="absolute left-0 mt-3 w-80 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 space-y-4 animate-in fade-in-50 text-right">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <Bell className="w-4 h-4 text-amber-400" /> الإشعارات والتحديثات
-                    </h4>
+                <div className="absolute left-0 mt-3 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-popover p-4 text-right text-popover-foreground shadow-xl" role="dialog" aria-label="قائمة الإشعارات">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
+                    <h2 className="flex items-center gap-1.5 text-xs font-bold">
+                      <Bell className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+                      الإشعارات والتحديثات
+                    </h2>
                     {unreadCount > 0 && (
-                      <button onClick={markAllAsRead} className="text-[10px] text-amber-400 hover:underline">
+                      <button type="button" onClick={markAllAsRead} className="text-[10px] font-bold text-amber-700 hover:underline dark:text-amber-300">
                         تحديد الكل كمقروء
                       </button>
                     )}
                   </div>
-
-                  <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                    {notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className={`p-3 rounded-xl border text-xs space-y-1 transition-colors ${
-                          n.unread ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-900 border-slate-800/80 text-slate-400'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between font-bold text-white">
-                          <span>{n.title}</span>
-                          <span className="text-[10px] text-slate-400">{n.time}</span>
+                  <div className="max-h-64 space-y-2.5 overflow-y-auto py-3">
+                    {notifications.map((item) => (
+                      <div key={item.id} className={`space-y-1 rounded-xl border p-3 text-xs ${item.unread ? "border-amber-500/30 bg-amber-500/10" : "border-border bg-muted"}`}>
+                        <div className="flex items-center justify-between gap-2 font-bold">
+                          <span>{item.title}</span>
+                          <span className="shrink-0 text-[10px] text-muted-foreground">{item.time}</span>
                         </div>
-                        <p className="text-[11px] text-slate-300">{n.desc}</p>
+                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
                       </div>
                     ))}
                   </div>
+                  <Link href="/notifications" className="block border-t border-border pt-3 text-center text-xs font-bold text-amber-700 hover:underline dark:text-amber-300">
+                    عرض كل الإشعارات
+                  </Link>
                 </div>
               )}
             </div>
 
-            {/* الوضع الليلي */}
             {toggleTheme && (
               <button
+                type="button"
+                className="b2-icon-button border border-border bg-muted text-foreground hover:bg-background"
                 onClick={() => {
                   toggleTheme();
-                  toast.success(theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي');
+                  toast.success(theme === "dark" ? "تم تفعيل الوضع النهاري" : "تم تفعيل الوضع الليلي");
                 }}
-                className="p-2.5 rounded-xl bg-muted/80 hover:bg-muted text-foreground transition-all border border-border flex items-center justify-center shadow-sm"
+                aria-label="تبديل الوضع الليلي"
+                title="تبديل الوضع الليلي"
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+                {theme === "dark" ? <Sun className="h-4 w-4 text-amber-600 dark:text-amber-300" /> : <Moon className="h-4 w-4 text-amber-600 dark:text-amber-300" />}
               </button>
             )}
 
-            <Link href="/add-car">
-              <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20">
-                {t('addCar')}
-              </Button>
+            <Link href="/add-car" className="inline-flex min-h-11 items-center rounded-xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-amber-600">
+              {t("addCar")}
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-2 md:hidden">
+            <Link href="/search" className={`b2-icon-button border border-border bg-muted text-foreground ${currentSection === "search" ? "text-amber-700 dark:text-amber-300" : ""}`} aria-label="فتح البحث" title="البحث">
+              <Car className="h-4 w-4" />
+            </Link>
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 transition-all shadow-sm"
-              aria-label="Toggle Mobile Menu"
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="b2-icon-button border border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
+              aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -248,126 +401,65 @@ export default function Navbar() {
         onSuccess={() => setCmiModalOpen(false)}
         amount={1500}
       />
-
       <WhatsAppNotificationModal
         isOpen={whatsappModalOpen}
         onClose={() => setWhatsappModalOpen(false)}
         bookingDetails={{
-          id: 'B2R-9942',
-          carName: 'Dacia Duster 2026',
-          customerName: 'محمد العلوي',
-          customerPhone: '',
+          id: "B2R-9942",
+          carName: "Dacia Duster 2026",
+          customerName: "محمد العلوي",
+          customerPhone: "",
           totalPrice: 1500,
         }}
       />
-
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed top-20 right-0 left-0 bg-slate-950/98 backdrop-blur-2xl border-b border-amber-500/30 p-6 shadow-2xl z-[9999] animate-in slide-in-from-top-4 duration-300 max-h-[calc(100vh-5rem)] overflow-y-auto">
-          <div className="flex flex-col gap-3">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = location === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 text-sm font-bold py-3 px-4 rounded-xl transition-all ${
-                    isActive
-                      ? 'bg-amber-500 text-slate-950 shadow-md'
-                      : 'text-slate-300 hover:bg-slate-900 hover:text-white'
-                  }`}
-                >
-                  {Icon && <Icon className="w-4 h-4" />}
-                  {link.label}
-                </Link>
-              );
-            })}
-
-            <div className="pt-4 border-t border-slate-800 flex flex-col gap-4">
-              
-              {/* قسم العملات للجوال */}
-              <div className="space-y-1.5">
-                <div className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                  <Coins className="w-3.5 h-3.5 text-amber-400" />
-                  <span>اختر العملة المفضلة:</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
-                  {(['MAD', 'EUR', 'USD'] as Currency[]).map((curr) => (
-                    <button
-                      key={curr}
-                      onClick={() => {
-                        setCurrency(curr);
-                        toast.success(`تم تبديل العملة إلى ${curr}`);
-                      }}
-                      className={`py-2 text-xs font-black rounded-xl uppercase transition-all ${
-                        currency === curr
-                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      {curr}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* قسم اللغات للجوال */}
-              <div className="space-y-1.5">
-                <div className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-amber-400" />
-                  <span>اختر لغة التصفح:</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
-                  {(['ar', 'fr', 'en'] as const).map((lang) => (
-                    <button
-                      key={lang}
-                      onClick={() => {
-                        setLanguage(lang);
-                        toast.success(lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English');
-                      }}
-                      className={`py-2 text-xs font-black rounded-xl uppercase transition-all ${
-                        language === lang
-                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      {lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-800/80">
-                <span className="text-xs text-slate-400 font-medium">الدور الحالي:</span>
-                <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg">
-                  {role === 'super_admin' ? 'مشرف عام' : 'مدير وكالة'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { setTwoFaModalOpen(true); setMobileMenuOpen(false); }}
-                  className="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2"
-                >
-                  <Shield className="w-3.5 h-3.5" /> 2FA أمان
-                </button>
-                <button
-                  onClick={() => { setCmiModalOpen(true); setMobileMenuOpen(false); }}
-                  className="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="w-3.5 h-3.5" /> CMI دفع
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <TwoFactorAuthModal
         isOpen={twoFaModalOpen}
         onClose={() => setTwoFaModalOpen(false)}
         onSuccess={() => setTwoFaModalOpen(false)}
       />
+
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[60] md:hidden" role="presentation">
+          <button type="button" className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" aria-label={t("close")} onClick={() => setMobileMenuOpen(false)} />
+          <aside ref={mobileMenuRef} id="mobile-navigation" className={`absolute top-0 flex h-full w-[min(88vw,22rem)] flex-col overflow-y-auto bg-background p-4 shadow-2xl ${direction === "rtl" ? "right-0" : "left-0"}`} dir={direction} aria-label={t("search")} aria-modal="true" role="dialog" tabIndex={-1}>
+          <div className="flex items-center justify-between border-b border-border pb-4"><span className="text-sm font-black">B2-Rent</span><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-border bg-muted" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
+          <div className="mx-auto flex w-full flex-1 flex-col gap-2 pt-4">
+            <nav className="space-y-1" aria-label="التنقل على الهاتف">
+              {renderNavLinks(true)}
+            </nav>
+
+            <div className="mt-3 space-y-4 border-t border-border pt-4">
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> العملة</p>
+                <div className="b2-segmented-control w-full">
+                  {(["MAD", "EUR", "USD"] as Currency[]).map((item) => (
+                    <button key={item} type="button" aria-pressed={currency === item} onClick={() => selectCurrency(item)} className={currency === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}>{item}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Globe className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> لغة التصفح</p>
+                <div className="b2-segmented-control w-full">
+                  {(["ar", "fr"] as const).map((item) => (
+                    <button key={item} type="button" aria-pressed={language === item} onClick={() => selectLanguage(item)} className={language === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}>{item === "ar" ? "العربية" : "Français"}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setTwoFaModalOpen(true); setMobileMenuOpen(false); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-xs font-bold text-foreground hover:bg-background"><Shield className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> أمان الحساب</button>
+                <button type="button" onClick={() => { setCmiModalOpen(true); setMobileMenuOpen(false); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-xs font-bold text-foreground hover:bg-background"><CreditCard className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> الدفع CMI</button>
+              </div>
+
+              <Link href="/add-car" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center justify-center rounded-xl bg-amber-500 px-4 py-3 text-sm font-extrabold text-white hover:bg-amber-600">
+                {t("addCar")}
+              </Link>
+            </div>
+          </div>
+          </aside>
+        </div>
+      )}
     </>
   );
 }

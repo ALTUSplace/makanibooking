@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, MapPin, Scale, X, Eye, Home, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { MapSearchView } from '@/components/MapSearchView';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const CITIES = [
   { id: 'all', name: 'جميع المدن' },
@@ -14,6 +15,11 @@ const CITIES = [
   { id: 'طنجة', name: 'طنجة' },
   { id: 'الرباط', name: 'الرباط' },
 ];
+
+const OFFICE_TYPES = ['private', 'coworking', 'meeting_room', 'company_headquarters'] as const;
+const AMENITY_OPTIONS = ['fiber', 'air_conditioning', 'reception', 'parking', 'security'] as const;
+
+const listingRoute = (item: ListingItem) => item.type === 'car' ? `/car/${item.id}` : `/property/${item.id}`;
 
 const cityMap: Record<string, string> = {
   agadir: 'أغادير',
@@ -25,6 +31,7 @@ const cityMap: Record<string, string> = {
 
 export default function Search() {
   const [, setLocation] = useLocation();
+  const { language, t } = useLanguage();
   const searchParams = new URLSearchParams(window.location.search);
 
   const rawCity = searchParams.get('city') || 'all';
@@ -39,6 +46,15 @@ export default function Search() {
   const [maxPrice, setMaxPrice] = useState(4000);
   const [excellenceOnly, setExcellenceOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('rating');
+  const [officeTypeFilter, setOfficeTypeFilter] = useState<string>('all');
+  const [amenityFilters, setAmenityFilters] = useState<string[]>([]);
+  const [rentalTermFilter, setRentalTermFilter] = useState<string>('all');
+
+  const toggleAmenity = (amenity: string) => {
+    setAmenityFilters((current) => current.includes(amenity)
+      ? current.filter((value) => value !== amenity)
+      : [...current, amenity]);
+  };
 
   // ميزة العرض السريع (Quick View Modal)
   const [quickViewItem, setQuickViewItem] = useState<ListingItem | null>(null);
@@ -68,6 +84,9 @@ export default function Search() {
     return LISTINGS.filter((item) => {
       if (cityFilter !== 'all' && item.city !== cityFilter) return false;
       if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+      if (typeFilter === 'office' && officeTypeFilter !== 'all' && item.officeType !== officeTypeFilter) return false;
+      if (typeFilter === 'office' && rentalTermFilter !== 'all' && !item.rentalTerms?.includes(rentalTermFilter as 'daily' | 'monthly' | 'yearly')) return false;
+      if (typeFilter === 'office' && amenityFilters.length > 0 && !amenityFilters.every((amenity) => item.amenities?.includes(amenity as NonNullable<ListingItem['amenities']>[number]))) return false;
       if (item.pricePerUnit > maxPrice) return false;
       if (brandParam) {
         const b = brandParam.toLowerCase();
@@ -93,9 +112,10 @@ export default function Search() {
       if (sortBy === 'rating') return b.rating - a.rating;
       return 0;
     });
-  }, [cityFilter, typeFilter, maxPrice, sortBy]);
+  }, [cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
 
   const [isSearching, setIsSearching] = useState(false);
+  const cityLabel = (city: string) => language === 'fr' ? ({ 'جميع المدن': 'Toutes les villes', 'مراكش': 'Marrakech', 'أغادير': 'Agadir', 'الدار البيضاء': 'Casablanca', 'طنجة': 'Tanger', 'الرباط': 'Rabat' }[city] ?? city) : city;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20" dir="rtl">
@@ -129,8 +149,8 @@ export default function Search() {
 
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-3xl font-extrabold text-white">دليل السيارات والعقارات المتاحة</h1>
-            <p className="text-slate-400 text-sm">استعرض أفضل العروض المعتمدة في المغرب مع خيارات المقارنة الفورية والعرض السريع والخريطة التفاعلية</p>
+            <h1 className="text-3xl font-extrabold text-white">{language === 'fr' ? 'Guide des voitures, biens et bureaux disponibles' : 'دليل السيارات والعقارات والمكاتب المتاحة'}</h1>
+            <p className="text-slate-400 text-sm">{language === 'fr' ? 'Découvrez les offres vérifiées au Maroc avec filtres professionnels et réservation simplifiée.' : 'استعرض أفضل العروض المعتمدة في المغرب مع فلاتر مهنية وحجز مبسط.'}</p>
           </div>
 
           <Button
@@ -161,7 +181,7 @@ export default function Search() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Filter className="w-5 h-5 text-amber-400" />
-                <span>تصفية متقدمة</span>
+                <span>{t('advancedFilters')}</span>
               </h2>
               <button
                 onClick={() => {
@@ -169,18 +189,21 @@ export default function Search() {
                   setTypeFilter('all');
                   setMaxPrice(4000);
                   setExcellenceOnly(false);
+                  setOfficeTypeFilter('all');
+                  setAmenityFilters([]);
+                  setRentalTermFilter('all');
                 }}
                 className="text-xs text-amber-400 hover:underline"
               >
-                إعادة ضبط
+                {t('resetFilters')}
               </button>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">بحث باللغة الطبيعية (ذكاء اصطناعي)</label>
+              <label className="text-xs font-semibold text-slate-300">{t('naturalSearch')}</label>
               <input
                 type="text"
-                placeholder="ابحث عما ترغب به..."
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
@@ -188,20 +211,54 @@ export default function Search() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">القطاع</label>
+              <label className="text-xs font-semibold text-slate-300">{t('sector')}</label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
               >
-                <option value="all">الكل (سيارات وعقارات)</option>
-                <option value="car">السيارات فقط</option>
-                <option value="property">العقارات فقط</option>
+                <option value="all">{t('allSectors')}</option>
+                <option value="car">{t('carsOnly')}</option>
+                <option value="property">{t('propertiesOnly')}</option>
+                <option value="office">{t('officeOnly')}</option>
               </select>
             </div>
 
+            {typeFilter === 'office' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300">{t('officeType')}</label>
+                  <select value={officeTypeFilter} onChange={(e) => setOfficeTypeFilter(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    <option value="all">{t('all')}</option>
+                    {OFFICE_TYPES.map((officeType) => (
+                      <option key={officeType} value={officeType}>{t({ private: 'privateOffice', coworking: 'coworking', meeting_room: 'meetingRoom', company_headquarters: 'companyHeadquarters' }[officeType])}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300">{t('rentalType')}</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['daily', 'monthly', 'yearly'] as const).map((term) => (
+                      <button key={term} type="button" onClick={() => setRentalTermFilter(rentalTermFilter === term ? 'all' : term)} className={`rounded-lg border px-2 py-2 text-[11px] ${rentalTermFilter === term ? 'border-amber-400 bg-amber-500/15 text-amber-300' : 'border-slate-700 bg-slate-900 text-slate-300'}`}>{t(term)}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-300">{t('amenities')}</label>
+                  <div className="space-y-2">
+                    {AMENITY_OPTIONS.map((amenity) => (
+                      <label key={amenity} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                        <input type="checkbox" checked={amenityFilters.includes(amenity)} onChange={() => toggleAmenity(amenity)} className="accent-amber-500" />
+                        {t(amenity === 'air_conditioning' ? 'airConditioning' : amenity)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">المدينة</label>
+              <label className="text-xs font-semibold text-slate-300">{t('city')}</label>
               <select
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
@@ -209,7 +266,7 @@ export default function Search() {
               >
                 {CITIES.map((c) => (
                   <option key={c.id} value={c.name}>
-                    {c.name}
+                    {cityLabel(c.name)}
                   </option>
                 ))}
               </select>
@@ -217,7 +274,7 @@ export default function Search() {
 
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-300">السعر الأقصى</span>
+                <span className="font-semibold text-slate-300">{t('maxPrice')}</span>
                 <span className="text-amber-400 font-bold">{maxPrice} درهم</span>
               </div>
               <input
@@ -258,13 +315,19 @@ export default function Search() {
                 return (
                   <div
                     key={item.id}
-                    className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col group relative"
+                    className="b2-card b2-touch-card bg-slate-950 border-slate-800 shadow-xl hover:border-amber-500 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300 flex flex-col group relative"
                   >
                     <div className="relative h-56 overflow-hidden">
                       <img
                         src={item.image}
+                        srcSet={`${item.image} 800w`}
+                        sizes="(max-width: 768px) 100vw, 50vw"
                         alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                        loading="lazy"
+                        decoding="async"
+                        width={800}
+                        height={448}
+                        className="b2-responsive-media group-hover:scale-110 transition-transform duration-700 ease-out"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
                       
@@ -280,7 +343,7 @@ export default function Search() {
                       {/* زر المقارنة */}
                       <button
                         onClick={() => toggleCompare(item)}
-                        className={`absolute bottom-4 left-4 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg ${isCompared ? 'bg-amber-500 text-slate-950' : 'bg-slate-950/80 text-white hover:bg-slate-900 border border-slate-700'}`}
+                        className={`absolute bottom-4 left-4 min-h-11 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg ${isCompared ? 'bg-amber-500 text-slate-950' : 'bg-slate-950/80 text-white hover:bg-slate-900 border border-slate-700'}`}
                       >
                         <Scale className="w-3.5 h-3.5" /> {isCompared ? 'مضاف للمقارنة' : 'مقارنة'}
                       </button>
@@ -288,7 +351,7 @@ export default function Search() {
                       {/* زر العرض السريع (Quick View) */}
                       <button
                         onClick={() => setQuickViewItem(item)}
-                        className="absolute bottom-4 right-4 bg-slate-950/90 hover:bg-slate-900 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg"
+                        className="absolute bottom-4 right-4 min-h-11 bg-slate-950/90 hover:bg-slate-900 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg"
                       >
                         <Eye className="w-3.5 h-3.5" /> عرض سريع
                       </button>
@@ -313,8 +376,8 @@ export default function Search() {
                           <span className="text-xs text-slate-400 mr-1">{item.unitLabel}</span>
                         </div>
                         <Button
-                          onClick={() => setLocation(`/car/${item.id}`)}
-                          className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20"
+                          onClick={() => setLocation(listingRoute(item))}
+                          className="b2-card-action min-h-11 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20"
                         >
                           التفاصيل والحجز
                         </Button>
@@ -340,7 +403,17 @@ export default function Search() {
             </button>
 
             <div className="relative h-64 rounded-2xl overflow-hidden">
-              <img src={quickViewItem.image} alt={quickViewItem.title} className="w-full h-full object-cover" />
+              <img
+                src={quickViewItem.image}
+                srcSet={`${quickViewItem.image} 800w`}
+                sizes="(max-width: 768px) 100vw, 672px"
+                alt={quickViewItem.title}
+                loading="lazy"
+                decoding="async"
+                width={800}
+                height={512}
+                className="w-full h-full object-cover"
+              />
               <div className="absolute top-4 right-4 bg-amber-500 text-slate-950 px-3 py-1 rounded-xl text-xs font-bold">
                 {quickViewItem.city}
               </div>
@@ -400,7 +473,7 @@ export default function Search() {
                   إغلاق
                 </Button>
                 <Button
-                  onClick={() => setLocation(`/car/${quickViewItem.id}`)}
+                  onClick={() => setLocation(listingRoute(quickViewItem))}
                   className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20"
                 >
                   الانتقال لصفحة الحجز الكاملة
@@ -429,7 +502,17 @@ export default function Search() {
             <div className="grid grid-cols-2 gap-6">
               {compareList.map(c => (
                 <div key={c.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                  <img src={c.image} alt={c.title} className="w-full h-40 object-cover rounded-xl" />
+                  <img
+                    src={c.image}
+                    srcSet={`${c.image} 640w`}
+                    sizes="(max-width: 768px) 100vw, 320px"
+                    alt={c.title}
+                    loading="lazy"
+                    decoding="async"
+                    width={640}
+                    height={256}
+                    className="w-full h-40 object-cover rounded-xl"
+                  />
                   <h3 className="text-lg font-bold text-white text-center">{c.title}</h3>
                   <div className="space-y-2 text-xs text-slate-300">
                     <div className="flex justify-between py-2 border-b border-slate-800">

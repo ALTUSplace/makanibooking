@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AGENCIES, MOCK_CARS, INITIAL_BOOKINGS, Car, Booking } from '@/data/cars';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet, Calendar, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Car as CarIcon, BookmarkCheck, DollarSign, Star, Plus, Phone, ShieldCheck, CheckCircle, XCircle, Clock, Edit3, MapPin, Filter, Download, FileSpreadsheet, Calendar, TrendingUp, FileText } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { MapView } from '@/components/Map';
@@ -12,6 +12,18 @@ export default function Dashboard() {
   const utils = trpc.useUtils();
   const { data: dbListings = [] } = trpc.listings.list.useQuery();
   const { data: dbBookings = [] } = trpc.bookings.list.useQuery();
+  const [contractBookingId, setContractBookingId] = useState<number | null>(null);
+  const contractQuery = trpc.commercialLeaseContracts.getByBooking.useQuery(
+    { bookingId: contractBookingId ?? 0 },
+    { enabled: contractBookingId !== null },
+  );
+
+  useEffect(() => {
+    if (contractQuery.data?.pdfUrl) {
+      window.open(contractQuery.data.pdfUrl, '_blank', 'noopener,noreferrer');
+      setContractBookingId(null);
+    }
+  }, [contractQuery.data]);
 
   const createListingMutation = trpc.listings.create.useMutation({
     onSuccess: () => {
@@ -461,7 +473,7 @@ export default function Dashboard() {
                     <tr key={b.id} className="hover:bg-slate-900/55 transition-colors">
                       <td className="py-4 px-4 font-bold text-amber-400">{b.id}</td>
                       <td className="py-4 px-4 font-semibold text-white flex items-center gap-2">
-                        <img src={b.carImage} alt={b.carName} className="w-10 h-10 object-cover rounded-xl border border-slate-700" />
+                        <img src={b.carImage} alt={b.carName} loading="lazy" decoding="async" width={40} height={40} sizes="40px" srcSet={`${b.carImage} 80w`} className="w-10 h-10 object-cover rounded-xl border border-slate-700" />
                         <span>{b.carName}</span>
                       </td>
                       <td className="py-4 px-4 text-slate-300">
@@ -530,6 +542,22 @@ export default function Dashboard() {
                               </button>
                             </>
                           )}
+                          {['confirmed', 'completed'].includes(b.status) && (
+                            <Button
+                              onClick={() => {
+                                const bookingId = Number(b.id);
+                                if (!Number.isFinite(bookingId)) {
+                                  toast.info('لا يتوفر عقد رقمي لهذا الحجز المحلي.');
+                                  return;
+                                }
+                                setContractBookingId(bookingId);
+                              }}
+                              className="bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/30 text-[10px] font-bold px-2.5 py-1.5 h-auto rounded-xl flex items-center gap-1"
+                              title="فتح عقد الكراء التجاري/المهني"
+                            >
+                              <FileText className="w-3.5 h-3.5" /> العقد
+                            </Button>
+                          )}
                           <a
                             href={`tel:${b.customerPhone}`}
                             className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 rounded-xl"
@@ -567,7 +595,7 @@ export default function Dashboard() {
               <div key={car.id} className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between">
                 <div>
                   <div className="relative h-44 overflow-hidden">
-                    <img src={car.image} alt={car.name} className="w-full h-full object-cover" />
+                    <img src={car.image} alt={car.name} loading="lazy" decoding="async" width={800} height={352} sizes="(max-width: 768px) 100vw, 50vw" srcSet={`${car.image} 800w`} className="w-full h-full object-cover" />
                     <div className="absolute top-3 right-3 bg-slate-950/80 text-amber-400 font-bold px-2.5 py-1 rounded-xl text-xs border border-amber-500/30">
                       {car.pricePerDay} درهم / يوم
                     </div>

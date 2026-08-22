@@ -5,6 +5,7 @@ import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useRef, useState, useEffect } from 'react';
 import { playSuccessSound } from '@/lib/sound';
+import { trpc } from '@/lib/trpc';
 
 export default function Success() {
   const [, setLocation] = useLocation();
@@ -17,6 +18,13 @@ export default function Success() {
   const days = searchParams.get('days') || '5';
   const start = searchParams.get('start') || '2026-08-15';
   const end = searchParams.get('end') || '2026-08-20';
+  const bookingId = Number(searchParams.get('bookingId') || 0);
+  const contractType = searchParams.get('contractType') as 'commercial' | 'professional' | null;
+  const premises = searchParams.get('premises') || searchParams.get('title') || 'المحل موضوع الحجز';
+  const city = searchParams.get('city') || 'المغرب';
+  const landlordName = searchParams.get('landlordName') || 'المالك / الشركة المؤجرة';
+  const monthlyRent = Number(searchParams.get('monthlyRent') || total);
+  const language = searchParams.get('language') === 'ar' ? 'ar' : 'fr';
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -25,6 +33,45 @@ export default function Success() {
   const [includeOfficialStamp, setIncludeOfficialStamp] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [commercialContractUrl, setCommercialContractUrl] = useState<string | null>(null);
+  const [commercialContractReference, setCommercialContractReference] = useState<string | null>(null);
+  const [isCommercialContractGenerating, setIsCommercialContractGenerating] = useState(false);
+  const createLeaseMutation = trpc.commercialLeaseContracts.create.useMutation();
+
+  useEffect(() => {
+    playSuccessSound();
+    if (!bookingId || !contractType) return;
+    let active = true;
+    setIsCommercialContractGenerating(true);
+    createLeaseMutation.mutate({
+      bookingId,
+      leaseType: contractType,
+      landlordName,
+      tenantName: name,
+      premises,
+      city,
+      startDate: start,
+      endDate: end,
+      monthlyRent,
+      deposit: 0,
+      language,
+    }, {
+      onSuccess: (result) => {
+        if (!active) return;
+        if (result.pdfUrl) setCommercialContractUrl(result.pdfUrl);
+        setCommercialContractReference(result.reference);
+        setIsCommercialContractGenerating(false);
+        toast.success('تم إنشاء عقد الكراء التجاري/المهني تلقائياً وهو جاهز للتحميل.');
+      },
+      onError: (error) => {
+        if (!active) return;
+        setIsCommercialContractGenerating(false);
+        toast.error(error.message || 'تعذر إنشاء عقد الكراء تلقائياً.');
+      },
+    });
+    return () => { active = false; };
+  }, [bookingId, contractType]);
+
 
   useEffect(() => {
     playSuccessSound();
@@ -283,6 +330,38 @@ export default function Success() {
               </button>
             </div>
           </div>
+
+          {contractType && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-right space-y-3">
+              <div className="flex items-center gap-3">
+                <FileCheck className="h-6 w-6 text-amber-400" />
+                <div>
+                  <h2 className="text-sm font-bold text-white">عقد الكراء {contractType === 'commercial' ? 'التجاري' : 'المهني'}</h2>
+                  <p className="text-[11px] text-slate-300">يتم توليد العقد تلقائياً بعد تأكيد الحجز، ويتضمن بيانات الطرفين والمحل والكراء والالتزامات.</p>
+                </div>
+              </div>
+              {isCommercialContractGenerating ? (
+                <div className="flex items-center gap-2 text-xs text-amber-200" role="status">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" />
+                  جاري تجهيز عقد PDF...
+                </div>
+              ) : commercialContractUrl ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[11px] text-emerald-300">جاهز للتحميل — المرجع: {commercialContractReference}</span>
+                  <a
+                    href={commercialContractUrl}
+                    download={`B2-Rent-${contractType}-lease-${commercialContractReference}.pdf`}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-amber-300"
+                  >
+                    <Download className="h-4 w-4" /> تحميل عقد الكراء PDF
+                  </a>
+                </div>
+              ) : (
+                <p className="text-xs text-rose-300">تعذر إنشاء العقد تلقائياً. يمكنك إعادة تحميل الصفحة للمحاولة مرة أخرى.</p>
+              )}
+              <p className="text-[10px] leading-5 text-slate-400">تنبيه: هذا قالب تقني يجب مراجعته واعتماده من طرف محامٍ أو موثق مغربي قبل التوقيع أو الاستعمال الفعلي.</p>
+            </div>
+          )}
 
           <div className="space-y-4 pt-2">
             <Button

@@ -20,6 +20,11 @@ export default function CheckoutPage() {
   const commission = Math.round(subtotal * 0.10); // 10% platform commission as requested
   const netEarnings = subtotal - commission; // Partner net earnings
   const total = subtotal;
+  const requestedContractType = searchParams.get('contractType');
+  const contractType = requestedContractType === 'commercial' || requestedContractType === 'professional' ? requestedContractType : null;
+  const premises = searchParams.get('premises') || title;
+  const city = searchParams.get('city') || 'المغرب';
+  const landlordName = searchParams.get('landlordName') || 'المالك / الشركة المؤجرة';
 
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet' | 'cod'>('card');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,9 +35,19 @@ export default function CheckoutPage() {
   const [agreeTerms, setAgreeTerms] = useState(false);
 
   const createBookingMutation = trpc.bookings.create.useMutation({
-    onSuccess: () => {
-      toast.success('تمت عملية الدفع بنجاح عبر بوابة CMI وتأكيد حجز العربون (Deposit)!');
-      setLocation(`/success?title=${encodeURIComponent(title)}&total=${total}`);
+    onSuccess: (data) => {
+      toast.success('تمت عملية الدفع بنجاح وتأكيد الحجز. سيتم تجهيز عقد الكراء تلقائياً.');
+      const params = new URLSearchParams({
+        title,
+        total: String(total),
+        bookingId: String(data.bookingId),
+        premises,
+        city,
+        landlordName,
+        monthlyRent: String(total),
+      });
+      if (contractType) params.set('contractType', contractType);
+      setLocation(`/success?${params.toString()}`);
     },
     onError: (err) => {
       toast.error(err.message || 'حدث خطأ أثناء معالجة الحجز والدفع.');

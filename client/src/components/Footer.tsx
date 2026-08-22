@@ -1,11 +1,11 @@
 import { Link } from 'wouter';
-import { Phone, Mail, MapPin, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { Mail, MapPin, ShieldCheck, ChevronLeft } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-900 text-slate-200 pt-16 pb-12 border-t border-slate-800 relative overflow-hidden" dir="rtl">
+    <footer className="relative overflow-hidden border-t border-[var(--brand-navy-deep)] bg-[var(--brand-navy-deep)] pb-12 pt-16 text-slate-200" dir="rtl">
       {/* تأثير إضاءة خلفية خفيفة */}
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="pointer-events-none absolute bottom-0 right-0 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl" />
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
@@ -96,9 +96,9 @@ export default function Footer() {
         <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <p>© 2026 B2-Rent. جميع الحقوق محفوظة. منصة تأجير السيارات والعقارات الأولى في المغرب.</p>
           <div className="flex items-center gap-6">
-            <Link href="/help" className="hover:text-amber-400 transition-colors py-1">شروط الاستخدام</Link>
-            <Link href="/help" className="hover:text-amber-400 transition-colors py-1">سياسة الخصوصية</Link>
-            <Link href="/help" className="hover:text-amber-400 transition-colors py-1">الدعم الفني</Link>
+            <Link href="/terms" className="py-1 transition-colors hover:text-amber-400">شروط الاستخدام</Link>
+            <Link href="/privacy" className="py-1 transition-colors hover:text-amber-400">سياسة الخصوصية</Link>
+            <Link href="/help" className="py-1 transition-colors hover:text-amber-400">الدعم الفني</Link>
           </div>
         </div>
       </div>

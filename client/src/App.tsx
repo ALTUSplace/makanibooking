@@ -18,8 +18,11 @@ import Home from "./pages/Home";
 import RenterDashboard from "./pages/RenterDashboard";
 // removed duplicate static import of AdminDashboard
 import PartnerDashboard from "@/pages/PartnerDashboard";
+import HostDashboard from "./pages/HostDashboard";
 import DisputeResolution from './pages/DisputeResolution';
 import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import PropertyDetailWithVideo from './pages/PropertyDetailWithVideo';
 import AIChatWidget from './components/AIChatWidget';
 import AddCar from "./pages/AddCar";
 import MyBookings from "./pages/MyBookings";
@@ -54,7 +57,8 @@ function Router() {
           </Suspense>
         )}
       </Route>
-      <Route path={"/car/:id"}>
+      <Route path="/property/:id" component={PropertyDetailWithVideo} />
+      <Route path="/car/:id">
         {params => (
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل التفاصيل...</div></div>}>
             <CarDetailsPage />
@@ -79,7 +83,10 @@ function Router() {
       <Route path="/admin" component={AdminDashboardPage} />
           <Route path="/dispute-resolution" component={DisputeResolution} />
           <Route path="/terms" component={TermsOfService} />
-      <Route path={"/partner"} component={PartnerDashboard} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/host" component={HostDashboard} />
+      <Route path="/host-dashboard" component={HostDashboard} />
+      <Route path="/partner" component={PartnerDashboard} />
       <Route path={"/partner-dashboard"} component={PartnerDashboard} />
       <Route path={"/add-car"} component={AddCar} />
       <Route path={"/my-bookings"} component={MyBookings} />

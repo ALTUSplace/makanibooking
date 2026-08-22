@@ -462,7 +462,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {listingsList.map(item => (
                   <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-                    <img src={item.image} alt={item.title} className="w-full h-40 object-cover rounded-xl" />
+                    <img src={item.image} alt={item.title} loading="lazy" decoding="async" width={800} height={320} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" srcSet={`${item.image} 800w`} className="w-full h-40 object-cover rounded-xl" />
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-bold text-white text-sm">{item.title}</h4>

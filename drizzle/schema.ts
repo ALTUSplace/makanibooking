@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -26,6 +26,9 @@ export const listings = mysqlTable("listings", {
   fuelType: varchar("fuel_type", { length: 32 }).default("ديزل"),
   transmission: varchar("transmission", { length: 32 }).default("أوتوماتيك"),
   rooms: int("rooms").default(0),
+  officeType: varchar("office_type", { length: 64 }),
+  rentalPeriod: mysqlEnum("rental_period", ["daily", "monthly", "yearly"]),
+  amenities: text("amenities"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -53,6 +56,70 @@ export const reviews = mysqlTable("reviews", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const kycSubmissions = mysqlTable("kyc_submissions", {
+  id: int("kyc_id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  applicantRole: mysqlEnum("applicant_role", ["renter", "owner", "company"]).default("renter").notNull(),
+  documentType: mysqlEnum("document_type", ["cni", "commercial_register"]).notNull(),
+  documentKey: varchar("document_key", { length: 512 }).notNull(),
+  originalFileName: varchar("original_file_name", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  status: mysqlEnum("status", ["Pending", "Approved", "Rejected"]).default("Pending").notNull(),
+  rejectionReason: text("rejection_reason"),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+export const payments = mysqlTable("payments", {
+  id: int("payment_id").autoincrement().primaryKey(),
+  bookingId: int("booking_id").notNull(),
+  payerId: int("payer_id").notNull(),
+  method: mysqlEnum("method", ["cmi_card", "bank_transfer"]).notNull(),
+  status: mysqlEnum("status", ["Pending", "Succeeded", "Failed"]).default("Pending").notNull(),
+  amount: int("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).default("MAD").notNull(),
+  providerReference: varchar("provider_reference", { length: 120 }).notNull(),
+  simulated: boolean("simulated").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const commercialLeaseContracts = mysqlTable("commercial_lease_contracts", {
+  id: int("contract_id").autoincrement().primaryKey(),
+  bookingId: int("booking_id").notNull().unique(),
+  landlordId: int("landlord_id").notNull(),
+  tenantId: int("tenant_id").notNull(),
+  reference: varchar("reference", { length: 80 }).notNull().unique(),
+  leaseType: mysqlEnum("lease_type", ["commercial", "professional"]).notNull(),
+  landlordName: varchar("landlord_name", { length: 255 }).notNull(),
+  tenantName: varchar("tenant_name", { length: 255 }).notNull(),
+  premises: text("premises").notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  monthlyRent: int("monthly_rent").notNull(),
+  deposit: int("deposit").default(0).notNull(),
+  pdfKey: varchar("pdf_key", { length: 512 }),
+  status: mysqlEnum("status", ["Draft", "Generated", "Signed"]).default("Generated").notNull(),
+  legalNotice: text("legal_notice").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const invoices = mysqlTable("invoices", {
+  id: int("invoice_id").autoincrement().primaryKey(),
+  invoiceNumber: varchar("invoice_number", { length: 80 }).notNull().unique(),
+  bookingId: int("booking_id").notNull(),
+  paymentId: int("payment_id").notNull(),
+  payerId: int("payer_id").notNull(),
+  subtotal: int("subtotal").notNull(),
+  commissionFee: int("commission_fee").notNull(),
+  vatRateBasisPoints: int("vat_rate_basis_points").default(2000).notNull(),
+  vatAmount: int("vat_amount").notNull(),
+  total: int("total").notNull(),
+  currency: varchar("currency", { length: 3 }).default("MAD").notNull(),
+  status: mysqlEnum("status", ["Pending", "Issued"]).default("Issued").notNull(),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Listing = typeof listings.$inferSelect;
@@ -61,3 +128,11 @@ export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = typeof bookings.$inferInsert;
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = typeof reviews.$inferInsert;
+export type KycSubmission = typeof kycSubmissions.$inferSelect;
+export type InsertKycSubmission = typeof kycSubmissions.$inferInsert;
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
+export type CommercialLeaseContract = typeof commercialLeaseContracts.$inferSelect;
+export type InsertCommercialLeaseContract = typeof commercialLeaseContracts.$inferInsert;

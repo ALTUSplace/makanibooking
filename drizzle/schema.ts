@@ -124,6 +124,27 @@ export const notifications = mysqlTable("notifications", {
   userUnreadIdx: index("notifications_user_unread_idx").on(table.userId, table.readAt),
 }));
 
+export const platformSettings = mysqlTable("platform_settings", {
+  id: int("setting_id").autoincrement().primaryKey(),
+  commissionRateBasisPoints: int("commission_rate_basis_points").default(1000).notNull(),
+  vatRateBasisPoints: int("vat_rate_basis_points").default(2000).notNull(),
+  updatedBy: int("updated_by"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const payoutRequests = mysqlTable("payout_requests", {
+  id: int("payout_id").autoincrement().primaryKey(),
+  ownerId: int("owner_id").notNull(),
+  amount: int("amount").notNull(),
+  method: mysqlEnum("method", ["bank_transfer", "cash_plus", "wafacash"]).notNull(),
+  status: mysqlEnum("status", ["Pending", "Approved", "Paid", "Rejected"]).default("Pending").notNull(),
+  reference: varchar("reference", { length: 120 }),
+  adminNote: text("admin_note"),
+  reviewedBy: int("reviewed_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
 export const invoices = mysqlTable("invoices", {
   id: int("invoice_id").autoincrement().primaryKey(),
   invoiceNumber: varchar("invoice_number", { length: 80 }).notNull().unique(),
@@ -154,6 +175,10 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+export type PlatformSetting = typeof platformSettings.$inferSelect;
+export type InsertPlatformSetting = typeof platformSettings.$inferInsert;
+export type PayoutRequest = typeof payoutRequests.$inferSelect;
+export type InsertPayoutRequest = typeof payoutRequests.$inferInsert;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type CommercialLeaseContract = typeof commercialLeaseContracts.$inferSelect;

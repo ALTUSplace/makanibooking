@@ -19,6 +19,11 @@ export default function AdminDashboard() {
   const users = trpc.admin.users.useQuery(undefined, { enabled: user?.role === 'admin' });
   const listings = trpc.admin.listings.useQuery(undefined, { enabled: user?.role === 'admin' });
   const adminBookings = trpc.admin.bookings.useQuery(undefined, { enabled: user?.role === 'admin' });
+  const commissionSettings = trpc.admin.commissionSettings.useQuery(undefined, { enabled: user?.role === 'admin' });
+  const payouts = trpc.admin.payouts.useQuery(undefined, { enabled: user?.role === 'admin' });
+  const [commissionRate, setCommissionRate] = useState('10');
+  const updateCommission = trpc.admin.updateCommission.useMutation({ onSuccess: async () => { toast.success('تم تحديث عمولة المنصة'); await commissionSettings.refetch(); }, onError: error => toast.error(error.message) });
+  const reviewPayout = trpc.admin.reviewPayout.useMutation({ onSuccess: async () => { toast.success('تم تحديث طلب السحب'); await payouts.refetch(); }, onError: error => toast.error(error.message) });
   const utils = trpc.useUtils();
   const cancelBooking = trpc.admin.cancelBooking.useMutation({ onSuccess: async () => { toast.success('تم إلغاء الحجز الطارئ'); await adminBookings.refetch(); }, onError: error => toast.error(error.message) });
   const moderate = trpc.admin.moderateListing.useMutation({
@@ -63,11 +68,12 @@ export default function AdminDashboard() {
         </section>
 
         <Tabs value={tab} onValueChange={setTab} dir="rtl">
-          <TabsList className="grid h-auto w-full grid-cols-4 bg-white p-1 shadow-sm">
-            <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-            <TabsTrigger value="listings">مراجعة الإعلانات</TabsTrigger>
-            <TabsTrigger value="users">المستخدمون</TabsTrigger>
-            <TabsTrigger value="bookings">الحجوزات</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-5">
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="overview">نظرة عامة</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="listings">مراجعة الإعلانات</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="users">المستخدمون</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="bookings">الحجوزات</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="finance">المالية</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><LayoutDashboard className="h-5 w-5 text-amber-600" />المؤشرات التشغيلية</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-3">
@@ -92,6 +98,10 @@ export default function AdminDashboard() {
               {users.data?.map(item => <div key={item.id} className="flex items-center justify-between border-b py-3 last:border-0"><div><p className="font-semibold">{item.name || 'بدون اسم'}</p><p className="text-xs text-slate-500">{item.email || 'بدون بريد'}</p></div><Badge variant="outline">{item.role}</Badge></div>)}
             </CardContent></Card>
           </TabsContent>
+          <TabsContent value="finance" className="mt-4 space-y-4">
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><WalletCards className="h-5 w-5 text-amber-600" />إعدادات العمولة والتسويات</CardTitle></CardHeader><CardContent className="space-y-5"><form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); const rate = Number(commissionRate); if (!Number.isFinite(rate) || rate < 0 || rate > 30) return toast.error('أدخل نسبة بين 0 و30'); updateCommission.mutate({ commissionRateBasisPoints: Math.round(rate * 100) }); }}><label className="flex-1 text-sm font-semibold">عمولة المنصة (%)<input className="mt-2 w-full rounded-xl border bg-background p-3" type="number" min="0" max="30" step="0.1" value={commissionRate} onChange={(event) => setCommissionRate(event.target.value)} /></label><Button type="submit" disabled={updateCommission.isPending}>حفظ النسبة الحالية {Number(commissionSettings.data?.commissionRateBasisPoints ?? 1000) / 100}%</Button></form><div className="grid gap-3 sm:grid-cols-3"><Stat label="عمولة المنصة" value={money(stats?.platformFees ?? 0)} icon={WalletCards} /><Stat label="إجمالي المعاملات" value={money(stats?.grossRevenue ?? 0)} icon={WalletCards} /><Stat label="طلبات السحب" value={String(payouts.data?.length ?? 0)} icon={WalletCards} /></div></CardContent></Card>
+            <Card><CardHeader><CardTitle>طلبات تحويل مستحقات الملاك</CardTitle></CardHeader><CardContent className="space-y-3">{payouts.data?.length ? payouts.data.map(item => <div key={item.id} className="flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">{item.ownerName || `مالك #${item.ownerId}`} · {money(item.amount)}</p><p className="text-xs text-slate-500">{item.method} · {item.status} · {item.ownerEmail || 'بدون بريد'}</p></div><div className="flex flex-wrap gap-2">{item.status === 'Pending' && <><Button size="sm" onClick={() => reviewPayout.mutate({ payoutId: item.id, status: 'Approved' })}>اعتماد</Button><Button size="sm" variant="destructive" onClick={() => reviewPayout.mutate({ payoutId: item.id, status: 'Rejected', adminNote: 'لم تتم الموافقة' })}>رفض</Button></>}{item.status === 'Approved' && <Button size="sm" onClick={() => reviewPayout.mutate({ payoutId: item.id, status: 'Paid', reference: `B2-${item.id}` })}>تأكيد التحويل</Button>}</div></div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد طلبات سحب.</p>}</CardContent></Card>
+          </TabsContent>
           <TabsContent value="bookings" className="mt-4">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-amber-600" />الحجوزات والإلغاء الطارئ</CardTitle></CardHeader><CardContent className="space-y-3">
               {adminBookings.data?.length ? adminBookings.data.map(item => <div key={item.id} className="flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">{item.listingTitle || 'إعلان'} · #{item.id}</p><p className="text-xs text-slate-500">{item.renterName || 'مستأجر'} · {item.status} · {money(item.totalPrice)}</p></div>{item.status !== 'Cancelled' && <Button size="sm" variant="destructive" onClick={() => cancelBooking.mutate({ bookingId: item.id })} disabled={cancelBooking.isPending}>إلغاء طارئ</Button>}</div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد حجوزات.</p>}
@@ -101,4 +111,8 @@ export default function AdminDashboard() {
       </div>
     </main>
   );
+}
+
+function Stat({ label, value, icon: Icon }: { label: string; value: string; icon: LucideIcon }) {
+  return <div className="rounded-xl border bg-white p-4"><Icon className="mb-2 h-4 w-4 text-amber-600" /><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-lg font-black text-[#0B3C5D]">{value}</p></div>;
 }

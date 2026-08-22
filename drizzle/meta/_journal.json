@@ -43,6 +43,13 @@
       "when": 1787413678960,
       "tag": "0005_clammy_nomad",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1787413947475,
+      "tag": "0006_equal_tag",
+      "breakpoints": true
     }
   ]
 }

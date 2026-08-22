@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts, notifications } from "../drizzle/schema";
+import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests } from "../drizzle/schema";
 import { eq, and, lte, gte, desc, count, isNull, inArray } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
@@ -128,8 +128,70 @@ export const appRouter = router({
         await db.update(listings).set({ status: input.status }).where(eq(listings.id, input.listingId));
         return { success: true };
       }),
+    commissionSettings: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return { commissionRateBasisPoints: 1000, vatRateBasisPoints: 2000 };
+      const rows = await db.select().from(platformSettings).limit(1);
+      return rows[0] ?? { commissionRateBasisPoints: 1000, vatRateBasisPoints: 2000 };
+    }),
+    updateCommission: adminProcedure
+      .input(z.object({ commissionRateBasisPoints: z.number().int().min(0).max(3000) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const existing = await db.select({ id: platformSettings.id }).from(platformSettings).limit(1);
+        if (existing[0]) {
+          await db.update(platformSettings).set({ commissionRateBasisPoints: input.commissionRateBasisPoints, updatedBy: ctx.user.id }).where(eq(platformSettings.id, existing[0].id));
+        } else {
+          await db.insert(platformSettings).values({ commissionRateBasisPoints: input.commissionRateBasisPoints, updatedBy: ctx.user.id });
+        }
+        return { success: true, commissionRateBasisPoints: input.commissionRateBasisPoints };
+      }),
+    payouts: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: payoutRequests.id, ownerId: payoutRequests.ownerId, ownerName: users.name, ownerEmail: users.email, amount: payoutRequests.amount, method: payoutRequests.method, status: payoutRequests.status, reference: payoutRequests.reference, adminNote: payoutRequests.adminNote, createdAt: payoutRequests.createdAt, reviewedAt: payoutRequests.reviewedAt })
+        .from(payoutRequests).leftJoin(users, eq(payoutRequests.ownerId, users.id)).orderBy(desc(payoutRequests.createdAt)).limit(200);
+    }),
+    reviewPayout: adminProcedure
+      .input(z.object({ payoutId: z.number().int().positive(), status: z.enum(['Approved', 'Paid', 'Rejected']), adminNote: z.string().max(1000).optional(), reference: z.string().max(120).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        await db.update(payoutRequests).set({ status: input.status, adminNote: input.adminNote, reference: input.reference, reviewedBy: ctx.user!.id, reviewedAt: new Date() }).where(eq(payoutRequests.id, input.payoutId));
+        return { success: true };
+      }),
+    ownerFinancials: ownerProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { gross: 0, platformFees: 0, net: 0, requested: 0, paid: 0 };
+      const rows = await db.select({ totalPrice: bookings.totalPrice, commissionFee: bookings.commissionFee, netProfit: bookings.netProfit })
+        .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id))
+        .where(and(eq(listings.ownerId, ctx.user!.id), eq(bookings.status, 'Confirmed')));
+      const payouts = await db.select({ amount: payoutRequests.amount, status: payoutRequests.status }).from(payoutRequests).where(eq(payoutRequests.ownerId, ctx.user!.id));
+      return {
+        gross: rows.reduce((sum, row) => sum + row.totalPrice, 0),
+        platformFees: rows.reduce((sum, row) => sum + row.commissionFee, 0),
+        net: rows.reduce((sum, row) => sum + row.netProfit, 0),
+        requested: payouts.filter(p => p.status === 'Pending' || p.status === 'Approved').reduce((sum, p) => sum + p.amount, 0),
+        paid: payouts.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0),
+      };
+    }),
   }),
 
+  payouts: router({
+    request: ownerProcedure
+      .input(z.object({ amount: z.number().int().positive(), method: z.enum(['bank_transfer', 'cash_plus', 'wafacash']) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const rows = await db.select({ netProfit: bookings.netProfit }).from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id)).where(and(eq(listings.ownerId, ctx.user!.id), eq(bookings.status, 'Confirmed')));
+        const previous = await db.select({ amount: payoutRequests.amount, status: payoutRequests.status }).from(payoutRequests).where(eq(payoutRequests.ownerId, ctx.user!.id));
+        const available = rows.reduce((sum, row) => sum + row.netProfit, 0) - previous.filter(p => p.status !== 'Rejected').reduce((sum, p) => sum + p.amount, 0);
+        if (input.amount > available) throw new Error('Requested amount exceeds available owner balance');
+        await db.insert(payoutRequests).values({ ownerId: ctx.user!.id, amount: input.amount, method: input.method });
+        return { success: true };
+      }),
+  }),
   listings: router({
     list: publicProcedure
       .input(

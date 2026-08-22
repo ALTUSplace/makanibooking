@@ -6,7 +6,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices } from "../drizzle/schema";
+import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions } from "../drizzle/schema";
 import { eq, and, lte, gte, desc, count, isNull, inArray, ne } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
@@ -100,6 +100,57 @@ export const appRouter = router({
       }),
   }),
 
+  kyc: router({
+    listMine: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({
+        id: kycSubmissions.id,
+        applicantRole: kycSubmissions.applicantRole,
+        documentType: kycSubmissions.documentType,
+        originalFileName: kycSubmissions.originalFileName,
+        mimeType: kycSubmissions.mimeType,
+        status: kycSubmissions.status,
+        rejectionReason: kycSubmissions.rejectionReason,
+        submittedAt: kycSubmissions.submittedAt,
+        reviewedAt: kycSubmissions.reviewedAt,
+      }).from(kycSubmissions).where(eq(kycSubmissions.userId, ctx.user!.id)).orderBy(desc(kycSubmissions.submittedAt));
+    }),
+    submit: protectedProcedure
+      .input(z.object({
+        applicantRole: z.enum(["renter", "owner", "company"]),
+        documentType: z.enum(["cni", "commercial_register"]),
+        fileName: z.string().trim().min(1).max(255),
+        mimeType: z.enum(["application/pdf", "image/jpeg", "image/png"]),
+        contentBase64: z.string().min(1).max(12_000_000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const existing = await db.select({ id: kycSubmissions.id }).from(kycSubmissions)
+          .where(and(eq(kycSubmissions.userId, ctx.user!.id), eq(kycSubmissions.status, "Pending"))).limit(1);
+        if (existing.length) throw new TRPCError({ code: "CONFLICT", message: "لديك طلب تحقق قيد المراجعة بالفعل." });
+        const bytes = Buffer.from(input.contentBase64, "base64");
+        if (!bytes.length || bytes.length > 8 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "حجم المستند يجب ألا يتجاوز 8 ميجابايت." });
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-180) || "identity-document";
+        const stored = await storagePut(`users/${ctx.user!.id}/kyc/${Date.now()}-${safeName}`, bytes, input.mimeType);
+        const [created] = await db.insert(kycSubmissions).values({ userId: ctx.user!.id, applicantRole: input.applicantRole, documentType: input.documentType, documentKey: stored.key, originalFileName: input.fileName, mimeType: input.mimeType, status: "Pending" }).$returningId();
+        return { id: created.id, status: "Pending" as const };
+      }),
+    adminList: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(kycSubmissions).orderBy(desc(kycSubmissions.submittedAt)).limit(100);
+    }),
+    review: adminProcedure
+      .input(z.object({ id: z.number().int().positive(), status: z.enum(["Approved", "Rejected"]), rejectionReason: z.string().trim().max(500).optional() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        await db.update(kycSubmissions).set({ status: input.status, rejectionReason: input.status === "Rejected" ? (input.rejectionReason || "لم يتم تقديم سبب.") : null, reviewedAt: new Date() }).where(eq(kycSubmissions.id, input.id));
+        return { success: true } as const;
+      }),
+  }),
   admin: router({
     overview: adminProcedure.query(async () => {
       const db = await getDb();

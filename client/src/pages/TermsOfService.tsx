@@ -51,7 +51,10 @@ export default function TermsOfService() {
                 1. مقدمة ونطاق الوساطة (Scope of Brokerage)
               </h2>
               <p>
-                منصة <strong>B2-Rent</strong> هي منصة تقنية وسيطة تربط بين مزودي الخدمات المعتمدين (شركات كراء السيارات وأصحاب العقارات والمنعشين العقاريين) وبين الزبائن والباحثين عن الإيجار في المملكة المغربية. لا تمتلك المنصة الأصول المعروضة بشكل مباشر، وإنما تقوم بدور الوسيط المعتمد لضمان حماية حقوق الطرفين.
+                منصة <strong>B2-Rent</strong> هي منصة إعلانية ووسيط تقني فقط، تربط بين مزودي الخدمات المعتمدين (شركات كراء السيارات وأصحاب العقارات والمنعشين العقاريين) وبين الزبائن والباحثين عن الإيجار في المملكة المغربية. لا تمتلك المنصة السيارة أو العقار ولا تديرهما، ولا تحل محل الشريك في معاينة الأصل أو تسليمه.
+              </p>
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-950">
+                <strong>إخلاء المسؤولية:</strong> يقر الزبون والشريك بأن الشريك يتحمل مسؤولية الحالة الميكانيكية والسلامة والنظافة والوصف الصحيح للسيارة أو العقار، وأن على الزبون معاينة الأصل وإبلاغ الشريك بأي تحفظ عند التسليم. لا تتحمل B2-Rent المسؤولية عن العيوب أو الحالة الميكانيكية للسيارة أو نظافة العقار أو حالته، وذلك في حدود ما يسمح به القانون المغربي ودون المساس بالحقوق القانونية الآمرة.
               </p>
             </section>
 
@@ -93,7 +96,10 @@ export default function TermsOfService() {
                 1. Introduction et Portée de la Médiation
               </h2>
               <p>
-                La plateforme <strong>B2-Rent</strong> est un intermédiaire technologique de confiance reliant les prestataires agréés (agences de location de voitures et propriétaires immobiliers) et les clients au Maroc. B2-Rent agit en tant que tiers de confiance pour garantir la sécurité des transactions.
+                La plateforme <strong>B2-Rent</strong> est uniquement une plateforme publicitaire et un intermédiaire technologique reliant les prestataires agréés (agences de location de voitures et propriétaires immobiliers) et les clients au Maroc. B2-Rent ne possède ni n'exploite le véhicule ou le bien et ne remplace pas le Partenaire lors de l'inspection ou de la remise.
+              </p>
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-950">
+                <strong>Clause de non-responsabilité :</strong> Le Client et le Partenaire reconnaissent que le Partenaire reste responsable de l'état mécanique, de la sécurité, de la propreté et de la conformité de l'annonce du véhicule ou du bien. Le Client doit examiner le bien et signaler toute réserve au Partenaire lors de la remise. B2-Rent n'est pas responsable des défauts, de l'état mécanique du véhicule ou de la propreté et de l'état du bien, dans les limites permises par le droit marocain et sans préjudice des droits impératifs.
               </p>
             </section>
 

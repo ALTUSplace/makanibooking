@@ -29,6 +29,9 @@ describe("commercial lease PDF generator", () => {
     expect(text).toContain(input.startDate);
     expect(text).toContain(input.endDate);
     expect(text).toContain("Avertissement légal");
+    expect(text).toContain("plateforme publicitaire et un intermédiaire technologique");
+    expect(text).toContain("état mécanique");
+    expect(text).toContain("propreté");
   });
 
   it("provides an Arabic contract variant with the same essential fields", () => {
@@ -38,5 +41,8 @@ describe("commercial lease PDF generator", () => {
     expect(text).toContain(input.landlordName);
     expect(text).toContain(input.tenantName);
     expect(text).toContain("تنبيه قانوني");
+    expect(text).toContain("منصة إعلانية ووسيط تقني فقط");
+    expect(text).toContain("الحالة الميكانيكية");
+    expect(text).toContain("نظافته");
   });
 });

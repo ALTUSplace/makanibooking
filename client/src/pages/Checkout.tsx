@@ -212,7 +212,7 @@ export default function CheckoutPage() {
                 className="mt-1 w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-500 cursor-pointer"
               />
               <label htmlFor="checkout_terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                أوافق على <a href="/terms" target="_blank" className="text-amber-500 underline font-bold">شروط الاستخدام وسياسة الضمان المالي (Escrow)</a> وقواعد عمولة الوساطة بنسبة 10%، وأقر بصحة البيانات المدرجة.
+                أوافق على <a href="/terms" target="_blank" className="text-amber-500 underline font-bold">شروط الاستخدام وسياسة الضمان المالي (Escrow)</a> وإخلاء المسؤولية الذي يقر بأن B2-Rent منصة إعلانية ووسيط تقني فقط، وأن الشريك مسؤول عن الحالة الميكانيكية للسيارة أو حالة العقار ونظافته. كما أوافق على قواعد عمولة الوساطة بنسبة 10% وأقر بصحة البيانات المدرجة.
               </label>
             </div>
           </div>

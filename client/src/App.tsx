@@ -16,7 +16,7 @@ import { lazy, Suspense } from "react";
 // Lazy-loaded pages for performance optimization & code splitting
 import Home from "./pages/Home";
 import RenterDashboard from "./pages/RenterDashboard";
-import AdminDashboard from "@/pages/AdminDashboard";
+// removed duplicate static import of AdminDashboard
 import PartnerDashboard from "@/pages/PartnerDashboard";
 import DisputeResolution from './pages/DisputeResolution';
 import TermsOfService from './pages/TermsOfService';
@@ -76,7 +76,7 @@ function Router() {
         )}
       </Route>
       <Route path={"/dashboard"} component={DashboardPage} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin" component={AdminDashboardPage} />
           <Route path="/dispute-resolution" component={DisputeResolution} />
           <Route path="/terms" component={TermsOfService} />
       <Route path={"/partner"} component={PartnerDashboard} />

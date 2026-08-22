@@ -81,22 +81,24 @@ export default function Navbar() {
             })}
           </nav>
 
-          <div className="hidden md:flex items-center gap-2.5">
+          <div className="hidden md:flex items-center gap-3">
             
-            {/* اختيار العملة */}
-            <div className="flex items-center bg-muted/80 border border-border rounded-xl p-1 text-xs font-bold">
-              <Coins className="w-3.5 h-3.5 text-amber-500 mx-1.5" />
+            {/* اختيار العملة بتصميم عصري فائق الوضوح */}
+            <div className="flex items-center bg-slate-900/90 dark:bg-slate-800/90 border border-amber-500/30 rounded-2xl p-1.5 text-xs font-bold shadow-inner">
+              <div className="flex items-center gap-1 px-2 text-amber-400 font-extrabold">
+                <Coins className="w-4 h-4 animate-pulse" />
+              </div>
               {(['MAD', 'EUR', 'USD'] as Currency[]).map((curr) => (
                 <button
                   key={curr}
                   onClick={() => {
                     setCurrency(curr);
-                    toast.success(`تم تبديل العملة إلى ${curr}`);
+                    toast.success(`تم تبديل العملة بنجاح إلى ${curr}`);
                   }}
-                  className={`px-2 py-1 rounded-lg uppercase transition-all ${
+                  className={`px-3 py-1.5 rounded-xl uppercase tracking-wider transition-all duration-200 transform active:scale-95 ${
                     currency === curr
-                      ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {curr}
@@ -104,23 +106,25 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* اختيار اللغة */}
-            <div className="flex items-center bg-muted/80 border border-border rounded-xl p-1 text-xs font-bold">
-              <Globe className="w-3.5 h-3.5 text-amber-500 mx-1.5" />
+            {/* اختيار اللغة بتصميم عصري فائق الوضوح */}
+            <div className="flex items-center bg-slate-900/90 dark:bg-slate-800/90 border border-amber-500/30 rounded-2xl p-1.5 text-xs font-bold shadow-inner">
+              <div className="flex items-center gap-1 px-2 text-amber-400 font-extrabold">
+                <Globe className="w-4 h-4" />
+              </div>
               {(['ar', 'fr', 'en'] as const).map((lang) => (
                 <button
                   key={lang}
                   onClick={() => {
                     setLanguage(lang);
-                    toast.success(lang === 'ar' ? 'تم التبديل إلى العربية' : lang === 'fr' ? 'Passé au Français' : 'Switched to English');
+                    toast.success(lang === 'ar' ? 'تم التبديل إلى اللغة العربية' : lang === 'fr' ? 'Passé au Français avec succès' : 'Switched to English successfully');
                   }}
-                  className={`px-2 py-1 rounded-lg uppercase transition-all ${
+                  className={`px-3 py-1.5 rounded-xl uppercase tracking-wider transition-all duration-200 transform active:scale-95 ${
                     language === lang
-                      ? 'bg-amber-500 text-slate-950 font-black shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  {lang}
+                  {lang === 'ar' ? 'عربي' : lang === 'fr' ? 'FR' : 'EN'}
                 </button>
               ))}
             </div>
@@ -280,14 +284,67 @@ export default function Navbar() {
               );
             })}
 
-            <div className="pt-3 border-t border-slate-800 flex flex-col gap-2.5">
-              <div className="flex items-center justify-between px-2">
+            <div className="pt-4 border-t border-slate-800 flex flex-col gap-4">
+              
+              {/* قسم العملات للجوال */}
+              <div className="space-y-1.5">
+                <div className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  <span>اختر العملة المفضلة:</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+                  {(['MAD', 'EUR', 'USD'] as Currency[]).map((curr) => (
+                    <button
+                      key={curr}
+                      onClick={() => {
+                        setCurrency(curr);
+                        toast.success(`تم تبديل العملة إلى ${curr}`);
+                      }}
+                      className={`py-2 text-xs font-black rounded-xl uppercase transition-all ${
+                        currency === curr
+                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {curr}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* قسم اللغات للجوال */}
+              <div className="space-y-1.5">
+                <div className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-amber-400" />
+                  <span>اختر لغة التصفح:</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+                  {(['ar', 'fr', 'en'] as const).map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        setLanguage(lang);
+                        toast.success(lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English');
+                      }}
+                      className={`py-2 text-xs font-black rounded-xl uppercase transition-all ${
+                        language === lang
+                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {lang === 'ar' ? 'العربية' : lang === 'fr' ? 'Français' : 'English'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-800/80">
                 <span className="text-xs text-slate-400 font-medium">الدور الحالي:</span>
                 <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg">
                   {role === 'super_admin' ? 'مشرف عام' : 'مدير وكالة'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => { setTwoFaModalOpen(true); setMobileMenuOpen(false); }}
                   className="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold rounded-xl border border-slate-800 flex items-center justify-center gap-2"

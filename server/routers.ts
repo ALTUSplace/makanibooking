@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests } from "../drizzle/schema";
+import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, payments } from "../drizzle/schema";
 import { eq, and, lte, gte, desc, count, isNull, inArray } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
@@ -159,6 +159,26 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error('Database unavailable');
         await db.update(payoutRequests).set({ status: input.status, adminNote: input.adminNote, reference: input.reference, reviewedBy: ctx.user!.id, reviewedAt: new Date() }).where(eq(payoutRequests.id, input.payoutId));
+        return { success: true };
+      }),
+    payments: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: payments.id, bookingId: payments.bookingId, payerId: payments.payerId, payerName: users.name, payerEmail: users.email, method: payments.method, status: payments.status, amount: payments.amount, currency: payments.currency, providerReference: payments.providerReference, simulated: payments.simulated, createdAt: payments.createdAt })
+        .from(payments).leftJoin(users, eq(payments.payerId, users.id)).orderBy(desc(payments.createdAt)).limit(200);
+    }),
+    disputes: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: disputes.id, bookingId: disputes.bookingId, openedBy: disputes.openedBy, type: disputes.type, description: disputes.description, status: disputes.status, resolutionNote: disputes.resolutionNote, createdAt: disputes.createdAt, openerName: users.name })
+        .from(disputes).leftJoin(users, eq(disputes.openedBy, users.id)).orderBy(desc(disputes.createdAt)).limit(200);
+    }),
+    resolveDispute: adminProcedure
+      .input(z.object({ disputeId: z.number().int().positive(), status: z.enum(['UnderReview', 'Resolved', 'Rejected']), resolutionNote: z.string().min(2).max(2000) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        await db.update(disputes).set({ status: input.status, resolutionNote: input.resolutionNote, reviewedBy: ctx.user.id, updatedAt: new Date() }).where(eq(disputes.id, input.disputeId));
         return { success: true };
       }),
     ownerFinancials: ownerProcedure.query(async ({ ctx }) => {

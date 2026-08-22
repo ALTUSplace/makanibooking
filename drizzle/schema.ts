@@ -161,6 +161,19 @@ export const invoices = mysqlTable("invoices", {
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
 });
 
+export const disputes = mysqlTable("disputes", {
+  id: int("dispute_id").autoincrement().primaryKey(),
+  bookingId: int("booking_id").notNull(),
+  openedBy: int("opened_by").notNull(),
+  type: varchar("type", { length: 120 }).notNull(),
+  description: text("description").notNull(),
+  status: mysqlEnum("status", ["Open", "UnderReview", "Resolved", "Rejected"]).default("Open").notNull(),
+  resolutionNote: text("resolution_note"),
+  reviewedBy: int("reviewed_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Listing = typeof listings.$inferSelect;
@@ -183,3 +196,5 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type CommercialLeaseContract = typeof commercialLeaseContracts.$inferSelect;
 export type InsertCommercialLeaseContract = typeof commercialLeaseContracts.$inferInsert;
+export type Dispute = typeof disputes.$inferSelect;
+export type InsertDispute = typeof disputes.$inferInsert;

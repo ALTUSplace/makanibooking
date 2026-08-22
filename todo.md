@@ -283,3 +283,10 @@
 - [x] حفظ checkpoint نهائي منشور بعد إغلاق فجوات الفواتير والملف الشخصي
 
 - [x] تحديث اختبار إشعار booking_new ليتوافق مع استجابة bookings.create الجديدة
+
+- [x] إزالة صفحة Booking القديمة المعتمدة على MOCK_CARS والبيانات الشخصية والمبالغ القادمة من الرابط
+- [x] جعل Booking يتحقق من الإعلان المنشور عبر listings.getById قبل الانتقال إلى Checkout
+- [x] إزالة تخزين b2_current_booking المحلي من CarDetails
+- [x] إضافة حالات تحميل و404 آمنة في CarDetails
+- [x] pnpm check بعد تنظيف Booking وCarDetails
+- [x] pnpm test: 33 اختباراً ناجحاً بعد تنظيف Booking وCarDetails

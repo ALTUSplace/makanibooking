@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
-import { MOCK_CARS } from '@/data/cars';
 import { Button } from '@/components/ui/button';
 import InteractiveCalendar from '@/components/InteractiveCalendar';
 import { Star, ShieldCheck, Users, Car as CarIcon, Fuel, MapPin, Phone, CheckCircle2, Award, Calendar, ChevronRight, Share2, Copy, Check } from 'lucide-react';
@@ -11,8 +10,26 @@ export default function CarDetails() {
   const [, params] = useRoute('/car/:id');
   const [, setLocation] = useLocation();
 
-  const carId = params?.id || 'car-1';
-  const car = MOCK_CARS.find((c) => c.id === carId) || MOCK_CARS[0];
+  const carId = params?.id || '';
+  const numericListingId = Number(carId);
+  const listingQuery = trpc.listings.getById.useQuery(
+    { id: numericListingId },
+    { enabled: Number.isInteger(numericListingId) && numericListingId > 0 },
+  );
+  const listing = listingQuery.data;
+  const car = listing ? {
+    id: String(listing.id),
+    name: listing.title,
+    brand: listing.title.split(' ')[0] || 'B2-Rent',
+    cityName: listing.city,
+    pricePerDay: listing.pricePerDay,
+    image: listing.imageUrl || '',
+    transmission: listing.transmission || 'غير محدد',
+    fuel: listing.fuelType || 'غير محدد',
+    seats: 5,
+    features: listing.amenities ? listing.amenities.split(',').map((item) => item.trim()).filter(Boolean) : [],
+    agency: { name: 'المؤجر على B2-Rent', address: listing.city, whatsapp: '' },
+  } : null;
 
   const [startDate, setStartDate] = useState('2026-08-20');
   const [endDate, setEndDate] = useState('2026-08-25');
@@ -21,10 +38,22 @@ export default function CarDetails() {
 
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const numericListingId = Number(carId.replace(/\D/g, '')) || 1;
-  const { data: bookedDatesData, isLoading: bookedDatesLoading, isError: bookedDatesError } = trpc.listings.getBookedDates.useQuery({ listingId: numericListingId });
-  const reviewsQuery = trpc.reviews.listByListing.useQuery({ listingId: numericListingId });
+  const { data: bookedDatesData, isLoading: bookedDatesLoading, isError: bookedDatesError } = trpc.listings.getBookedDates.useQuery(
+    { listingId: numericListingId },
+    { enabled: Boolean(car) },
+  );
+  const reviewsQuery = trpc.reviews.listByListing.useQuery(
+    { listingId: numericListingId },
+    { enabled: Boolean(car) },
+  );
   const reviews = reviewsQuery.data ?? [];
+
+  if (listingQuery.isLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-200">جاري تحميل تفاصيل الإعلان...</div>;
+  }
+  if (!car || listingQuery.isError) {
+    return <div className="min-h-screen flex flex-col gap-4 items-center justify-center bg-slate-950 text-slate-200"><p>هذا الإعلان غير متاح أو لم يعد منشوراً.</p><Button onClick={() => setLocation('/search')}>العودة إلى نتائج البحث</Button></div>;
+  }
 
   const calcDays = () => {
     try {
@@ -62,20 +91,15 @@ export default function CarDetails() {
       toast.error('يرجى تحديد تاريخ الاستلام والإرجاع');
       return;
     }
-    const bookingData = {
-      carId: car.id,
-      carName: car.name,
-      carImage: car.image,
-      city: car.cityName,
+    const checkoutParams = new URLSearchParams({
+      listingId: String(numericListingId),
+      title: car.name,
+      pricePerDay: String(dailyPrice),
+      days: String(daysCount),
       startDate,
       endDate,
-      days: daysCount,
-      totalPrice,
-      agencyName: car.agency.name,
-      whatsapp: car.agency.whatsapp,
-    };
-    localStorage.setItem('b2_current_booking', JSON.stringify(bookingData));
-    setLocation(`/checkout?listingId=${numericListingId}&title=${encodeURIComponent(car.name)}&pricePerDay=${dailyPrice}&days=${daysCount}&startDate=${startDate}&endDate=${endDate}`);
+    });
+    setLocation(`/checkout?${checkoutParams.toString()}`);
   };
 
   const carSchema = {

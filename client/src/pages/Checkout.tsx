@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreditCard, Wallet, CheckCircle2, ArrowRight, FileText, Lock } from 'lucide-react';
+import { CreditCard, Wallet, CheckCircle2, ArrowRight, FileText, Lock, ShieldCheck, Landmark, BadgeCheck, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { LoadingAnimation } from '@/components/LoadingAnimation';
@@ -111,17 +111,25 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8" dir="rtl">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border pb-6">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">بوابة الدفع الآمن وعربون الضمان (Deposit)</h1>
-            <p className="text-muted-foreground mt-1">ادفع بأمان عبر بطاقات الائتمان (Visa/Mastercard) أو بوابات CMI المغربية.</p>
+      <div className="min-h-screen bg-[#f4f7fb] text-slate-900 py-5 sm:py-10 px-3 sm:px-6 lg:px-8" dir="rtl">
+      <div className="max-w-5xl mx-auto space-y-5 sm:space-y-7">
+        <div className="overflow-hidden rounded-3xl bg-[#0B3C5D] text-white shadow-2xl">
+          <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-8 sm:py-5">
+            <div className="flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/12 ring-1 ring-white/20"><ShieldCheck className="h-6 w-6 text-amber-300" /></div>
+              <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">B2-Rent Secure Checkout</p><p className="text-sm font-bold sm:text-base">بوابة دفع مغربية محاكية</p></div>
+            </div>
+            <Button variant="ghost" onClick={() => window.history.back()} className="gap-2 text-white hover:bg-white/10 hover:text-white cursor-pointer"><ArrowRight className="w-4 h-4" /> عودة</Button>
           </div>
-          <Button variant="ghost" onClick={() => window.history.back()} className="gap-2 cursor-pointer">
-            <ArrowRight className="w-4 h-4" /> عودة
-          </Button>
+          <div className="border-t border-white/10 px-5 py-5 sm:px-8">
+            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">تأكيد الحجز والدفع الآمن</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/72">أكمل الخطوات التالية لتسجيل العربون وإنشاء الفاتورة. لا يتم إرسال أي بيانات مالية إلى مؤسسة خارجية في هذه النسخة التجريبية.</p>
+            <div className="mt-5 grid grid-cols-3 gap-2 text-[11px] sm:max-w-xl sm:text-xs">
+              <div className="flex items-center gap-2 font-bold text-amber-300"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-400 text-slate-950">1</span> تفاصيل الحجز</div>
+              <div className="flex items-center gap-2 font-bold text-white"><span className="grid h-6 w-6 place-items-center rounded-full border border-white/40">2</span> الدفع</div>
+              <div className="flex items-center gap-2 text-white/55"><span className="grid h-6 w-6 place-items-center rounded-full border border-white/25">3</span> التأكيد</div>
+            </div>
+          </div>
         </div>
 
         {!Number.isInteger(listingId) || listingId <= 0 || !hasValidDates || !Number.isFinite(pricePerDay) || pricePerDay <= 0 ? (
@@ -134,12 +142,15 @@ export default function CheckoutPage() {
           </Card>
         ) : <form onSubmit={handleCheckout} className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Payment Methods Section */}
-          <div className="md:col-span-2 space-y-6">
-            <Card className="border-border shadow-md">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-amber-500" /> طريـقة الدفع المفضلة
-                </CardTitle>
+          <div className="md:col-span-2 space-y-5">
+            <div className="flex items-center justify-between rounded-2xl border border-[#d9e5ee] bg-white px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><BadgeCheck className="h-5 w-5" /></div><div><p className="text-xs font-bold text-[#0B3C5D]">جلسة دفع محمية</p><p className="text-[11px] text-slate-500">تشفير تجريبي • لا نخزن بيانات البطاقة</p></div></div>
+              <div className="hidden items-center gap-2 text-[11px] font-bold text-slate-500 sm:flex"><Landmark className="h-4 w-4" /> MAD / الدرهم المغربي</div>
+            </div>
+            <Card className="border-[#d9e5ee] bg-white shadow-lg shadow-slate-200/60">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="flex items-center gap-2 text-xl font-black text-[#0B3C5D]"><CreditCard className="h-5 w-5 text-amber-500" /> اختر طريقة الدفع</CardTitle>
+                <p className="text-xs leading-5 text-slate-500">اختر الطريقة المناسبة لإكمال تسجيل الحجز.</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Credit Card */}
@@ -150,7 +161,7 @@ export default function CheckoutPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
+                    <div className="rounded-xl bg-amber-500/10 p-3 text-amber-500">
                       <CreditCard className="w-6 h-6" />
                     </div>
                     <div>
@@ -169,7 +180,7 @@ export default function CheckoutPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-600">
+                    <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-600">
                       <Wallet className="w-6 h-6" />
                     </div>
                     <div>
@@ -181,9 +192,10 @@ export default function CheckoutPage() {
                 </div>
 
                 {paymentMethod === 'cmi_card' && (
-                  <div className="mt-4 p-4 bg-muted/30 rounded-xl border border-amber-500/20 space-y-2 text-sm">
-                    <div className="flex items-center gap-2 font-bold"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> محاكاة CMI مفعّلة</div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">لا تدخل رقم بطاقة أو رمز CVV حقيقياً. هذه نسخة محاكاة لا تتصل بمؤسسة CMI، وسيُحفظ فقط مرجع العملية وحالتها دون بيانات البطاقة.</p>
+                    <div className="mt-4 space-y-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm">
+                    <div className="flex items-center gap-2 font-black text-[#0B3C5D]"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> بيئة CMI محاكية مفعّلة</div>
+                    <p className="text-xs leading-relaxed text-slate-600">لا تدخل رقم بطاقة أو رمز CVV حقيقياً. هذه الواجهة تحاكي تجربة الدفع فقط ولا تتصل بمؤسسة CMI؛ سيُحفظ مرجع العملية وحالتها دون بيانات البطاقة.</p>
+                    <div className="flex flex-wrap gap-2 text-[10px] font-bold text-slate-500"><span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-amber-200">Visa</span><span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-amber-200">Mastercard</span><span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-amber-200">CMI Sandbox</span></div>
                   </div>
                 )}
               </CardContent>
@@ -205,12 +217,10 @@ export default function CheckoutPage() {
           </div>
 
           {/* Invoice Summary & Commission Details */}
-          <div className="space-y-6 md:sticky md:top-6 md:self-start">
-            <Card className="border-border shadow-md h-fit">
+          <div className="space-y-5 md:sticky md:top-6 md:self-start">
+            <Card className="h-fit border-[#d9e5ee] bg-white shadow-lg shadow-slate-200/60">
               <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-amber-500" /> ملخص الفاتورة الشفافة
-                </CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-lg font-black text-[#0B3C5D]"><FileText className="h-5 w-5 text-amber-500" /> ملخص الفاتورة الشفافة</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-3 bg-muted/40 rounded-xl">
@@ -254,16 +264,9 @@ export default function CheckoutPage() {
                   <span className="text-amber-500 text-right">يحدده الخادم</span>
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full py-6 text-base font-black bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xl gap-2 mt-4 cursor-pointer"
-                >
-                  تأكيد ودفع العربون الآن <CheckCircle2 className="w-5 h-5" />
-                </Button>
+                  <Button type="submit" className="group mt-4 w-full gap-2 rounded-2xl bg-amber-500 py-6 text-base font-black text-slate-950 shadow-xl shadow-amber-500/20 hover:bg-amber-600 cursor-pointer"><span>تأكيد ودفع العربون الآن</span><ChevronLeft className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-1" /></Button>
 
-                <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-2">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" /> لا تُحفظ بيانات البطاقة؛ الدفع المعروض محاكاة فقط
-                </div>
+                <div className="flex items-center justify-center gap-2 border-t border-slate-100 pt-3 text-center text-[11px] text-slate-500"><Lock className="h-3.5 w-3.5 text-emerald-600" /> لا تُحفظ بيانات البطاقة؛ الدفع المعروض محاكاة فقط</div>
               </CardContent>
             </Card>
           </div>

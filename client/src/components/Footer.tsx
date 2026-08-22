@@ -32,9 +32,9 @@ export default function Footer() {
                 { href: '/', label: 'الصفحة الرئيسية' },
                 { href: '/search?type=car', label: 'تصفح أسطول السيارات' },
                 { href: '/search?type=property', label: 'العقارات الفاخرة' },
-                { href: '/partner', label: 'لوحة تحكم الوكالة' },
+                { href: '/host', label: 'لوحة تحكم المالك' },
                 { href: '/add-car', label: 'إضافة إعلان جديد' },
-                { href: '/help', label: 'الدعم وخدمة العملاء' },
+                { href: '/support-tickets', label: 'الدعم وخدمة العملاء' },
               ].map((link, idx) => (
                 <li key={idx}>
                   <Link
@@ -98,7 +98,7 @@ export default function Footer() {
           <div className="flex items-center gap-6">
             <Link href="/terms" className="py-1 transition-colors hover:text-amber-400">شروط الاستخدام</Link>
             <Link href="/privacy" className="py-1 transition-colors hover:text-amber-400">سياسة الخصوصية</Link>
-            <Link href="/help" className="py-1 transition-colors hover:text-amber-400">الدعم الفني</Link>
+            <Link href="/support-tickets" className="py-1 transition-colors hover:text-amber-400">الدعم الفني</Link>
           </div>
         </div>
       </div>

@@ -1,21 +1,35 @@
 import { COOKIE_NAME } from "@shared/const";
+import { randomUUID } from "node:crypto";
+import { TRPCError } from "@trpc/server";
 import { parse as parseCookie } from "cookie";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, payments } from "../drizzle/schema";
-import { eq, and, lte, gte, desc, count, isNull, inArray } from "drizzle-orm";
+import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices } from "../drizzle/schema";
+import { eq, and, lte, gte, desc, count, isNull, inArray, ne } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
 import { storageGet, storagePut } from "./storage";
 import { generateServerCommercialLeasePdf } from "./commercialLeasePdf";
 import { createHeartbeatJob } from "./_core/heartbeat";
+import { calculateInvoiceTotals, createInvoiceNumber, getSimulatedPaymentStatus } from "./billing";
 
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(({ ctx }) => {
+      const user = ctx.user;
+      if (!user) return null;
+      return {
+        id: user.id,
+        openId: user.openId,
+        name: user.name,
+        email: user.email,
+        loginMethod: user.loginMethod,
+        role: user.role,
+      };
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -66,6 +80,24 @@ export const appRouter = router({
         .where(and(eq(notifications.userId, ctx.user!.id), isNull(notifications.readAt)));
       return { success: true };
     }),
+  }),
+
+  storage: router({
+    uploadImage: ownerProcedure
+      .input(z.object({
+        fileName: z.string().trim().min(1).max(160),
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        contentBase64: z.string().min(1).max(8_500_000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "listing-image";
+        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+        if (imageBuffer.length === 0 || imageBuffer.length > 6 * 1024 * 1024) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الصورة يجب أن يكون بين 1 بايت و6 ميجابايت." });
+        }
+        const uploaded = await storagePut(`users/${ctx.user!.id}/listings/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
+        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType };
+      }),
   }),
 
   admin: router({
@@ -173,6 +205,20 @@ export const appRouter = router({
       return db.select({ id: disputes.id, bookingId: disputes.bookingId, openedBy: disputes.openedBy, type: disputes.type, description: disputes.description, status: disputes.status, resolutionNote: disputes.resolutionNote, createdAt: disputes.createdAt, openerName: users.name })
         .from(disputes).leftJoin(users, eq(disputes.openedBy, users.id)).orderBy(desc(disputes.createdAt)).limit(200);
     }),
+    supportTickets: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: supportTickets.id, userId: supportTickets.userId, subject: supportTickets.subject, category: supportTickets.category, description: supportTickets.description, status: supportTickets.status, lastResponse: supportTickets.lastResponse, respondedAt: supportTickets.respondedAt, createdAt: supportTickets.createdAt, userName: users.name, userEmail: users.email })
+        .from(supportTickets).leftJoin(users, eq(supportTickets.userId, users.id)).orderBy(desc(supportTickets.createdAt)).limit(200);
+    }),
+    updateSupportTicket: adminProcedure
+      .input(z.object({ ticketId: z.number().int().positive(), status: z.enum(["Open", "InProgress", "Resolved"]), response: z.string().max(2000).optional() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        await db.update(supportTickets).set({ status: input.status, ...(input.response ? { lastResponse: input.response, respondedAt: new Date() } : {}) }).where(eq(supportTickets.id, input.ticketId));
+        return { success: true };
+      }),
     resolveDispute: adminProcedure
       .input(z.object({ disputeId: z.number().int().positive(), status: z.enum(['UnderReview', 'Resolved', 'Rejected']), resolutionNote: z.string().min(2).max(2000) }))
       .mutation(async ({ ctx, input }) => {
@@ -196,6 +242,81 @@ export const appRouter = router({
         paid: payouts.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0),
       };
     }),
+  }),
+
+  supportTickets: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: supportTickets.id, subject: supportTickets.subject, category: supportTickets.category, description: supportTickets.description, status: supportTickets.status, lastResponse: supportTickets.lastResponse, respondedAt: supportTickets.respondedAt, createdAt: supportTickets.createdAt, updatedAt: supportTickets.updatedAt })
+        .from(supportTickets).where(eq(supportTickets.userId, ctx.user!.id)).orderBy(desc(supportTickets.createdAt)).limit(100);
+    }),
+    create: protectedProcedure
+      .input(z.object({ subject: z.string().trim().min(3).max(255), category: z.string().trim().min(2).max(120), description: z.string().trim().min(5).max(5000) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const [inserted] = await db.insert(supportTickets).values({ userId: ctx.user!.id, subject: input.subject, category: input.category, description: input.description, status: "Open" });
+        const ticketId = Number(inserted.insertId);
+        const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(20);
+        await Promise.all(admins.filter(admin => admin.id !== ctx.user!.id).map(admin => safeNotifyUser({
+          userId: admin.id,
+          type: "system",
+          title: "تذكرة دعم جديدة / Nouveau ticket",
+          message: `تم فتح تذكرة دعم جديدة: ${input.subject}`,
+          href: "/admin",
+          entityType: "support_ticket",
+          entityId: ticketId,
+        })));
+        return { success: true, ticketId };
+      }),
+  }),
+
+  disputes: router({
+    listMine: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select({ id: disputes.id, bookingId: disputes.bookingId, type: disputes.type, description: disputes.description, status: disputes.status, resolutionNote: disputes.resolutionNote, createdAt: disputes.createdAt, updatedAt: disputes.updatedAt })
+        .from(disputes).where(eq(disputes.openedBy, ctx.user!.id)).orderBy(desc(disputes.createdAt)).limit(100);
+      if (!rows.length) return [];
+      const attachments = await db.select({ id: disputeAttachments.id, disputeId: disputeAttachments.disputeId, originalFileName: disputeAttachments.originalFileName, fileKey: disputeAttachments.fileKey, mimeType: disputeAttachments.mimeType, fileSize: disputeAttachments.fileSize })
+        .from(disputeAttachments).where(inArray(disputeAttachments.disputeId, rows.map(row => row.id)));
+      return rows.map(row => ({ ...row, attachments: attachments.filter(file => file.disputeId === row.id).map(file => ({ id: file.id, name: file.originalFileName, mimeType: file.mimeType, size: file.fileSize, url: `/manus-storage/${file.fileKey}` })) }));
+    }),
+    create: protectedProcedure
+      .input(z.object({ bookingId: z.number().int().positive(), type: z.string().trim().min(2).max(120), description: z.string().trim().min(5).max(5000), attachments: z.array(z.object({ name: z.string().trim().min(1).max(255), mimeType: z.string().trim().min(1).max(100), contentBase64: z.string().max(14000000) })).max(5).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const booking = await db.select({ id: bookings.id, renterId: bookings.renterId, listingId: bookings.listingId }).from(bookings).where(eq(bookings.id, input.bookingId)).limit(1);
+        if (!booking[0]) throw new Error("الحجز المرتبط بالنزاع غير موجود.");
+        const listing = await db.select({ ownerId: listings.ownerId, title: listings.title }).from(listings).where(eq(listings.id, booking[0].listingId)).limit(1);
+        const canOpen = ctx.user!.role === "admin" || booking[0].renterId === ctx.user!.id || listing[0]?.ownerId === ctx.user!.id;
+        if (!canOpen) throw new Error("لا يمكنك فتح نزاع حول حجز لا يخصك.");
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+        const files = input.attachments ?? [];
+        if (files.some(file => !allowedTypes.includes(file.mimeType))) throw new Error("نوع ملف مرفق غير مدعوم.");
+        const totalBytes = files.reduce((total, file) => total + Math.floor(file.contentBase64.length * 0.75), 0);
+        if (totalBytes > 10 * 1024 * 1024) throw new Error("إجمالي المرفقات يتجاوز 10 ميجابايت.");
+        const [inserted] = await db.insert(disputes).values({ bookingId: input.bookingId, openedBy: ctx.user!.id, type: input.type, description: input.description, status: "Open" });
+        const disputeId = Number(inserted.insertId);
+        for (const file of files) {
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const uploaded = await storagePut(`disputes/${disputeId}/${safeName}`, Buffer.from(file.contentBase64, "base64"), file.mimeType);
+          await db.insert(disputeAttachments).values({ disputeId, fileKey: uploaded.key, originalFileName: file.name, mimeType: file.mimeType, fileSize: Math.floor(file.contentBase64.length * 0.75) });
+        }
+        const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(20);
+        await Promise.all(admins.filter(admin => admin.id !== ctx.user!.id).map(admin => safeNotifyUser({
+          userId: admin.id,
+          type: "system",
+          title: "نزاع جديد / Nouveau litige",
+          message: `تم فتح نزاع جديد مرتبط بالحجز #${input.bookingId}.`,
+          href: "/admin",
+          entityType: "dispute",
+          entityId: disputeId,
+        })));
+        return { success: true, disputeId };
+      }),
   }),
 
   payouts: router({
@@ -393,10 +514,9 @@ export const appRouter = router({
     create: protectedProcedure
       .input(
         z.object({
-          listingId: z.number(),
+          listingId: z.number().int().positive(),
           startDate: z.string(),
           endDate: z.string(),
-          totalPrice: z.number(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -405,6 +525,9 @@ export const appRouter = router({
 
         const start = new Date(input.startDate);
         const end = new Date(input.endDate);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+          throw new Error("تواريخ الحجز غير صالحة.");
+        }
         const listing = await db.select().from(listings).where(eq(listings.id, input.listingId)).limit(1);
         if (!listing[0]) throw new Error("الإعلان غير موجود.");
         const owner = await db.select({ id: users.id, name: users.name, email: users.email })
@@ -427,15 +550,23 @@ export const appRouter = router({
           throw new Error("عذراً، المركبة أو العقار محجوز بالكامل في هذا النطاق الزمني.");
         }
 
-        const commissionFee = Math.round(input.totalPrice * 0.10); // 10% platform commission
-        const netProfit = input.totalPrice - commissionFee;
+        const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        if (!Number.isInteger(durationDays) || durationDays <= 0) {
+          throw new Error("مدة الحجز غير صالحة.");
+        }
+        const subtotal = listing[0].pricePerDay * durationDays;
+        const settings = await db.select({ commissionRateBasisPoints: platformSettings.commissionRateBasisPoints })
+          .from(platformSettings).limit(1);
+        const commissionRateBasisPoints = settings[0]?.commissionRateBasisPoints ?? 1_000;
+        const commissionFee = Math.round(subtotal * commissionRateBasisPoints / 10_000);
+        const netProfit = subtotal - commissionFee;
 
         const [inserted] = await db.insert(bookings).values({
           renterId: ctx.user!.id,
           listingId: input.listingId,
           startDate: start,
           endDate: end,
-          totalPrice: input.totalPrice,
+          totalPrice: subtotal,
           commissionFee,
           netProfit,
           status: "Pending", // Owner approval is required before the booking becomes confirmed
@@ -456,20 +587,7 @@ export const appRouter = router({
           email: owner[0]?.email ? { to: owner[0].email, subject: ownerTitle, ...buildEmailContent(ownerTitle, ownerMessage, "/host") } : undefined,
         });
 
-        const acceptedTitle = "تم تأكيد الحجز / Réservation confirmée";
-        const acceptedMessage = `تم تأكيد حجزك لـ «${listing[0].title}» من ${dateLabel}.\nVotre réservation pour «${listing[0].title}» est confirmée.`;
-        await safeNotifyUser({
-          userId: ctx.user!.id,
-          type: "booking_accepted",
-          title: acceptedTitle,
-          message: acceptedMessage,
-          href: "/my-bookings",
-          entityType: "booking",
-          entityId: bookingId,
-          email: ctx.user!.email ? { to: ctx.user!.email, subject: acceptedTitle, ...buildEmailContent(acceptedTitle, acceptedMessage, "/my-bookings") } : undefined,
-        });
-
-        return { success: true, bookingId };
+        return { success: true, bookingId, subtotal, durationDays, commissionFee, netProfit };
       }),
 
     updateStatus: protectedProcedure
@@ -531,16 +649,46 @@ export const appRouter = router({
         const bookingDetails = await db.select({
           bookingId: bookings.id,
           renterId: bookings.renterId,
+          listingId: bookings.listingId,
           startDate: bookings.startDate,
           endDate: bookings.endDate,
+          status: bookings.status,
           listingTitle: listings.title,
           renterEmail: users.email,
         }).from(bookings)
           .innerJoin(listings, eq(bookings.listingId, listings.id))
           .leftJoin(users, eq(bookings.renterId, users.id))
           .where(eq(bookings.id, input.bookingId)).limit(1);
-        if (!bookingDetails[0]) throw new Error("الحجز غير موجود.");
-        await db.update(bookings).set({ status: input.status }).where(eq(bookings.id, input.bookingId));
+        const booking = bookingDetails[0];
+        if (!booking) throw new Error("الحجز غير موجود.");
+        if (booking.status !== "Pending") {
+          throw new Error("لا يمكن تغيير حالة هذا الحجز بعد حسمه.");
+        }
+
+        if (input.status === "Confirmed") {
+          const start = new Date(booking.startDate);
+          const end = new Date(booking.endDate);
+          if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+            throw new Error("تواريخ الحجز غير صالحة.");
+          }
+          const overlapping = await db.select({ id: bookings.id }).from(bookings).where(and(
+            eq(bookings.listingId, booking.listingId),
+            eq(bookings.status, "Confirmed"),
+            ne(bookings.id, booking.bookingId),
+            lte(bookings.startDate, end),
+            gte(bookings.endDate, start),
+          )).limit(1);
+          if (overlapping[0]) {
+            throw new Error("لا يمكن قبول الحجز لأن الفترة أصبحت محجوزة.");
+          }
+        }
+
+        const updated = await db.update(bookings)
+          .set({ status: input.status })
+          .where(and(eq(bookings.id, input.bookingId), eq(bookings.status, "Pending")));
+        if (Number(updated[0]?.affectedRows ?? 0) === 0) {
+          throw new Error("تم تحديث الحجز من مستخدم آخر؛ أعد تحميل الصفحة.");
+        }
 
         const accepted = input.status === "Confirmed";
         const title = accepted ? "تم قبول الحجز / Réservation acceptée" : "تم رفض الحجز / Réservation refusée";
@@ -561,19 +709,162 @@ export const appRouter = router({
       }),
   }),
 
+  payments: router({
+    create: protectedProcedure
+      .input(z.object({
+        bookingId: z.number().int().positive(),
+        method: z.enum(["cmi_card", "bank_transfer"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const bookingRows = await db.select({
+          id: bookings.id,
+          renterId: bookings.renterId,
+          totalPrice: bookings.totalPrice,
+          commissionFee: bookings.commissionFee,
+          status: bookings.status,
+        }).from(bookings).where(eq(bookings.id, input.bookingId)).limit(1);
+        const booking = bookingRows[0];
+        if (!booking) throw new Error("الحجز غير موجود.");
+        if (ctx.user!.role !== "admin" && booking.renterId !== ctx.user!.id) {
+          throw new Error("لا يمكنك الدفع لحجز لا يخص حسابك.");
+        }
+        if (booking.status === "Cancelled") throw new Error("لا يمكن دفع حجز ملغى.");
+
+        const existingPaymentRows = await db.select().from(payments)
+          .where(and(eq(payments.bookingId, input.bookingId), eq(payments.payerId, booking.renterId)))
+          .orderBy(desc(payments.createdAt)).limit(1);
+        const existingPayment = existingPaymentRows[0];
+        if (existingPayment) {
+          if (existingPayment.method !== input.method) {
+            throw new Error("يوجد دفع سابق لهذا الحجز بطريقة مختلفة.");
+          }
+          const existingInvoice = await db.select().from(invoices)
+            .where(eq(invoices.paymentId, existingPayment.id)).limit(1);
+          if (existingInvoice[0]) {
+            return { payment: existingPayment, invoice: existingInvoice[0] };
+          }
+        }
+
+        const settings = await db.select({
+          vatRateBasisPoints: platformSettings.vatRateBasisPoints,
+        }).from(platformSettings).limit(1);
+        const vatRateBasisPoints = settings[0]?.vatRateBasisPoints ?? 2_000;
+        const totals = calculateInvoiceTotals(booking.totalPrice, booking.commissionFee, vatRateBasisPoints);
+        const paymentStatus = getSimulatedPaymentStatus(input.method);
+        const providerPrefix = input.method === "cmi_card" ? "CMI-SIM" : "BANK-SIM";
+        const providerReference = `${providerPrefix}-${randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase()}`;
+
+        const [paymentInsert] = await db.insert(payments).values({
+          bookingId: booking.id,
+          payerId: booking.renterId,
+          method: input.method,
+          status: paymentStatus,
+          amount: totals.total,
+          currency: totals.currency,
+          providerReference,
+          simulated: true,
+        });
+        const paymentId = Number(paymentInsert.insertId);
+        const [invoiceInsert] = await db.insert(invoices).values({
+          invoiceNumber: createInvoiceNumber(booking.id),
+          bookingId: booking.id,
+          paymentId,
+          payerId: booking.renterId,
+          subtotal: totals.subtotal,
+          commissionFee: totals.commissionFee,
+          vatRateBasisPoints: totals.vatRateBasisPoints,
+          vatAmount: totals.vatAmount,
+          total: totals.total,
+          currency: totals.currency,
+          status: paymentStatus === "Succeeded" ? "Issued" : "Pending",
+        });
+        const invoiceId = Number(invoiceInsert.insertId);
+        const createdInvoice = await db.select().from(invoices).where(eq(invoices.id, invoiceId)).limit(1);
+        const createdPayment = await db.select().from(payments).where(eq(payments.id, paymentId)).limit(1);
+        if (!createdInvoice[0] || !createdPayment[0]) throw new Error("تعذر حفظ تفاصيل الفاتورة.");
+        return { payment: createdPayment[0], invoice: createdInvoice[0] };
+      }),
+  }),
+
+  invoices: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const query = db.select({
+        id: invoices.id,
+        invoiceNumber: invoices.invoiceNumber,
+        bookingId: invoices.bookingId,
+        payerId: invoices.payerId,
+        subtotal: invoices.subtotal,
+        commissionFee: invoices.commissionFee,
+        vatRateBasisPoints: invoices.vatRateBasisPoints,
+        vatAmount: invoices.vatAmount,
+        total: invoices.total,
+        currency: invoices.currency,
+        status: invoices.status,
+        issuedAt: invoices.issuedAt,
+        paymentId: invoices.paymentId,
+        paymentMethod: payments.method,
+        paymentStatus: payments.status,
+        bookingStatus: bookings.status,
+        startDate: bookings.startDate,
+        endDate: bookings.endDate,
+        listingTitle: listings.title,
+      }).from(invoices)
+        .innerJoin(bookings, eq(invoices.bookingId, bookings.id))
+        .innerJoin(payments, eq(invoices.paymentId, payments.id))
+        .leftJoin(listings, eq(bookings.listingId, listings.id));
+      if (ctx.user!.role === "admin") return query.orderBy(desc(invoices.issuedAt));
+      return query.where(eq(invoices.payerId, ctx.user!.id)).orderBy(desc(invoices.issuedAt));
+    }),
+
+    getByBooking: protectedProcedure
+      .input(z.object({ bookingId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const rows = await db.select({
+          id: invoices.id,
+          invoiceNumber: invoices.invoiceNumber,
+          bookingId: invoices.bookingId,
+          payerId: invoices.payerId,
+          subtotal: invoices.subtotal,
+          commissionFee: invoices.commissionFee,
+          vatRateBasisPoints: invoices.vatRateBasisPoints,
+          vatAmount: invoices.vatAmount,
+          total: invoices.total,
+          currency: invoices.currency,
+          status: invoices.status,
+          issuedAt: invoices.issuedAt,
+          paymentId: invoices.paymentId,
+          paymentMethod: payments.method,
+          paymentStatus: payments.status,
+          bookingStatus: bookings.status,
+          startDate: bookings.startDate,
+          endDate: bookings.endDate,
+          listingTitle: listings.title,
+          city: listings.city,
+        }).from(invoices)
+          .innerJoin(bookings, eq(invoices.bookingId, bookings.id))
+          .innerJoin(payments, eq(invoices.paymentId, payments.id))
+          .leftJoin(listings, eq(bookings.listingId, listings.id))
+          .where(eq(invoices.bookingId, input.bookingId)).limit(1);
+        const invoice = rows[0];
+        if (!invoice || (ctx.user!.role !== "admin" && invoice.payerId !== ctx.user!.id)) {
+          throw new Error("الفاتورة غير موجودة أو لا تخص حسابك.");
+        }
+        return invoice;
+      }),
+  }),
+
   commercialLeaseContracts: router({
     create: protectedProcedure
       .input(z.object({
         bookingId: z.number(),
         leaseType: z.enum(["commercial", "professional"]),
-        landlordName: z.string().min(2),
-        tenantName: z.string().min(2),
-        premises: z.string().min(3),
-        city: z.string().min(2),
-        startDate: z.string(),
-        endDate: z.string(),
-        monthlyRent: z.number().int().nonnegative(),
-        deposit: z.number().int().nonnegative().default(0),
         language: z.enum(["ar", "fr"]).default("fr"),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -583,6 +874,9 @@ export const appRouter = router({
         if (!booking[0] || booking[0].renterId !== ctx.user!.id) {
           throw new Error("لا يمكن إنشاء عقد لهذا الحجز.");
         }
+        if (booking[0].status !== "Confirmed") {
+          throw new Error("لا يمكن إنشاء عقد الكراء قبل اعتماد الحجز من المالك.");
+        }
         const existing = await db.select().from(commercialLeaseContracts).where(eq(commercialLeaseContracts.bookingId, input.bookingId)).limit(1);
         if (existing[0]) {
           const stored = existing[0].pdfKey ? await storageGet(existing[0].pdfKey) : null;
@@ -590,20 +884,26 @@ export const appRouter = router({
         }
         const listing = await db.select().from(listings).where(eq(listings.id, booking[0].listingId)).limit(1);
         if (!listing[0]) throw new Error("الإعلان المرتبط بالحجز غير موجود.");
+        const landlord = await db.select({ name: users.name }).from(users).where(eq(users.id, listing[0].ownerId)).limit(1);
+        const canonicalLandlordName = landlord[0]?.name || "المالك / الشركة المؤجرة";
+        const canonicalTenantName = ctx.user!.name || "المستأجر";
+        const canonicalStartDate = new Date(booking[0].startDate);
+        const canonicalEndDate = new Date(booking[0].endDate);
+        const canonicalMonthlyRent = booking[0].totalPrice;
         const reference = `B2R-LEASE-${input.bookingId}-${Date.now().toString(36).toUpperCase()}`;
         const legalNotice = input.language === "ar"
           ? "تنبيه قانوني: هذا نموذج تقني عام، ويجب مراجعته واعتماده من طرف محامٍ أو موثق مغربي قبل التوقيع أو الاستعمال الفعلي."
           : "Avertissement légal : ce modèle technique doit être validé par un avocat ou un notaire au Maroc avant toute signature ou utilisation réelle.";
         const pdfBuffer = generateServerCommercialLeasePdf({
           reference,
-          landlordName: input.landlordName,
-          tenantName: input.tenantName,
-          premises: input.premises,
-          city: input.city,
-          startDate: input.startDate,
-          endDate: input.endDate,
-          monthlyRent: input.monthlyRent,
-          deposit: input.deposit,
+          landlordName: canonicalLandlordName,
+          tenantName: canonicalTenantName,
+          premises: listing[0].title,
+          city: listing[0].city,
+          startDate: canonicalStartDate.toISOString(),
+          endDate: canonicalEndDate.toISOString(),
+          monthlyRent: canonicalMonthlyRent,
+          deposit: 0,
           purpose: input.leaseType,
           language: input.language,
         });
@@ -614,14 +914,14 @@ export const appRouter = router({
           tenantId: ctx.user!.id,
           reference,
           leaseType: input.leaseType,
-          landlordName: input.landlordName,
-          tenantName: input.tenantName,
-          premises: input.premises,
-          city: input.city,
-          startDate: new Date(input.startDate),
-          endDate: new Date(input.endDate),
-          monthlyRent: input.monthlyRent,
-          deposit: input.deposit,
+          landlordName: canonicalLandlordName,
+          tenantName: canonicalTenantName,
+          premises: listing[0].title,
+          city: listing[0].city,
+          startDate: canonicalStartDate,
+          endDate: canonicalEndDate,
+          monthlyRent: canonicalMonthlyRent,
+          deposit: 0,
           legalNotice,
           pdfKey: storedPdf.key,
           status: "Generated",
@@ -685,14 +985,44 @@ export const appRouter = router({
       .input(
         z.object({
           listingId: z.number(),
-          bookingId: z.number().optional().default(1),
-          rating: z.number().min(1).max(5),
-          comment: z.string(),
+          bookingId: z.number().int().positive(),
+          rating: z.number().int().min(1).max(5),
+          comment: z.string().trim().min(3).max(2000),
         })
       )
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
+        const booking = await db
+          .select({
+            id: bookings.id,
+            renterId: bookings.renterId,
+            listingId: bookings.listingId,
+            status: bookings.status,
+            endDate: bookings.endDate,
+          })
+          .from(bookings)
+          .where(eq(bookings.id, input.bookingId))
+          .limit(1);
+        const ownedCompletedBooking = booking[0]
+          && booking[0].renterId === ctx.user!.id
+          && booking[0].listingId === input.listingId
+          && booking[0].status === "Confirmed"
+          && booking[0].endDate.getTime() <= Date.now();
+        if (!ownedCompletedBooking) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "لا يمكن إضافة تقييم إلا بعد انتهاء حجز مؤكد تملكه.",
+          });
+        }
+        const existing = await db
+          .select({ id: reviews.id })
+          .from(reviews)
+          .where(and(eq(reviews.bookingId, input.bookingId), eq(reviews.userId, ctx.user!.id)))
+          .limit(1);
+        if (existing[0]) {
+          throw new TRPCError({ code: "CONFLICT", message: "تم تقييم هذا الحجز مسبقاً." });
+        }
         await db.insert(reviews).values({
           userId: ctx.user!.id,
           listingId: input.listingId,

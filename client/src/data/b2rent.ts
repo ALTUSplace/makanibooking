@@ -3,9 +3,9 @@ export interface PartnerProvider {
   name: string;
   type: 'car_rental' | 'real_estate';
   city: string;
-  rating: number;
-  reviewsCount: number;
-  isExcellence: boolean;
+  rating?: number;
+  reviewsCount?: number;
+  isExcellence?: boolean;
   phone: string;
   email: string;
   logo: string;
@@ -25,8 +25,8 @@ export interface ListingItem {
   unitLabel: string; // "درهم / يوم" or "درهم / ليلة"
   image: string;
   images: string[];
-  rating: number;
-  reviewsCount: number;
+  rating?: number;
+  reviewsCount?: number;
   features: string[];
   description: string;
   officeType?: 'private' | 'coworking' | 'meeting_room' | 'company_headquarters';
@@ -48,9 +48,6 @@ export const PARTNERS: PartnerProvider[] = [
     name: 'أغادير كار برستيج (وكالة سيارات)',
     type: 'car_rental',
     city: 'أغادير',
-    rating: 4.9,
-    reviewsCount: 142,
-    isExcellence: true,
     phone: '',
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=200&q=80',
@@ -62,9 +59,6 @@ export const PARTNERS: PartnerProvider[] = [
     name: 'مراكش القصر العقاري (وكالة عقارية)',
     type: 'real_estate',
     city: 'مراكش',
-    rating: 4.85,
-    reviewsCount: 98,
-    isExcellence: true,
     phone: '',
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=200&q=80',
@@ -76,9 +70,6 @@ export const PARTNERS: PartnerProvider[] = [
     name: 'الدار البيضاء الدولية للسيارات',
     type: 'car_rental',
     city: 'الدار البيضاء',
-    rating: 4.75,
-    reviewsCount: 210,
-    isExcellence: false,
     phone: '',
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=200&q=80',
@@ -90,9 +81,6 @@ export const PARTNERS: PartnerProvider[] = [
     name: 'طنجة بيتش للعقارات الفاخرة',
     type: 'real_estate',
     city: 'طنجة',
-    rating: 4.92,
-    reviewsCount: 115,
-    isExcellence: true,
     phone: '',
     email: 'b2rentt@gmail.com',
     logo: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=200&q=80',
@@ -117,8 +105,6 @@ export const LISTINGS: ListingItem[] = [
       'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80'
     ],
-    rating: 4.9,
-    reviewsCount: 84,
     features: ['تكييف رقمي', 'تحكم في المقود', 'توصيل مجاني للمطار', 'ناقل مانوال', 'شاشة تعمل باللمس'],
     description: 'سيارة دفع رباعي اقتصادية وقوية، ممتازة للطرق الوعرة والمدن المغربية. تشمل التأمين الشامل والصيانة الدورية.',
     specs: { transmission: 'يدوي (Manual)', seats: '5 مقاعد', fuel: 'ديزل (Diesel)' }
@@ -138,8 +124,6 @@ export const LISTINGS: ListingItem[] = [
       'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80'
     ],
-    rating: 4.9,
-    reviewsCount: 62,
     features: ['مسبح مشترك', 'واي فاي سريع', 'أمن 24/7', 'موقف سيارات خاص', 'شرفة بإطلالة بانورامية'],
     description: 'شقة مفروشة بتصميم راقٍ في قلب حي جليز الراقي بمراكش. قريبة من جميع المطاعم والمقاهي والأماكن السياحية.',
     specs: { rooms: 'غرفتا نوم', area: '110 متر مربع', bathrooms: '2 حمام' }
@@ -158,8 +142,6 @@ export const LISTINGS: ListingItem[] = [
     images: [
       'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=800&q=80'
     ],
-    rating: 4.7,
-    reviewsCount: 110,
     features: ['اقتصادية جداً في الوقود', 'حساسات وقوف', 'بلوتوث ونظام صوتي متطور', 'تكييف هواء'],
     description: 'السيارة الأكثر طلباً للتنقل الحضري في الدار البيضاء ومحطة قطار محمد الخامس والمطارات.',
     specs: { transmission: 'أوتوماتيك', seats: '5 مقاعد', fuel: 'بنزين / ديزل' }
@@ -176,8 +158,6 @@ export const LISTINGS: ListingItem[] = [
     unitLabel: 'درهم / شهر',
     image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80',
     images: ['https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80'],
-    rating: 4.8,
-    reviewsCount: 24,
     features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'قاعة استقبال', 'مرآب سيارات'],
     description: 'مكتب خاص مجهز للشركات الناشئة والمهنيين، بموقع مركزي وخدمات استقبال احترافية.',
     officeType: 'private',
@@ -197,8 +177,6 @@ export const LISTINGS: ListingItem[] = [
     unitLabel: 'درهم / يوم',
     image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
     images: ['https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'],
-    rating: 4.7,
-    reviewsCount: 18,
     features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'قاعة استقبال'],
     description: 'Coworking مرن لرواد الأعمال والفرق الصغيرة مع إنترنت سريع ومرافق مشتركة.',
     officeType: 'coworking',
@@ -218,8 +196,6 @@ export const LISTINGS: ListingItem[] = [
     unitLabel: 'درهم / يوم',
     image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80',
     images: ['https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80'],
-    rating: 4.9,
-    reviewsCount: 11,
     features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'قاعة استقبال', 'حراسة'],
     description: 'قاعة اجتماعات مهنية لاستقبال العملاء وتنظيم الاجتماعات والورشات في موقع مركزي.',
     officeType: 'meeting_room',
@@ -239,8 +215,6 @@ export const LISTINGS: ListingItem[] = [
     unitLabel: 'درهم / شهر',
     image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80',
     images: ['https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80'],
-    rating: 4.75,
-    reviewsCount: 9,
     features: ['إنترنت فايبر أوبتيك', 'مكيف هواء', 'مرآب سيارات', 'حراسة'],
     description: 'مقر مهني قابل للتخصيص للشركات مع استقبال وحراسة ومرافق مناسبة للتسجيل الإداري.',
     officeType: 'company_headquarters',
@@ -262,8 +236,6 @@ export const LISTINGS: ListingItem[] = [
     images: [
       'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80'
     ],
-    rating: 4.95,
-    reviewsCount: 45,
     features: ['إطلالة مباشرة على المحيط', 'مسبح خاص', 'حديقة واسعة', 'طباخ خاص عند الطلب', 'جراج لسيارتين'],
     description: 'فيلا استثنائية للاستجمام العائلي في منطقة أشقار بطنجة بالقرب من مغارة هركليس.',
     specs: { rooms: '4 غرف نوم', area: '380 متر مربع', bathrooms: '4 حمامات' }

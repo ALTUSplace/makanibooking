@@ -3,7 +3,8 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
-import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download } from 'lucide-react';
+import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download, Receipt } from 'lucide-react';
+import { generateInvoicePdf } from '@/lib/invoicePdf';
 
 const formatDate = (value: string | Date) => new Date(value).toLocaleDateString('fr-MA');
 const formatMoney = (value: number) => new Intl.NumberFormat('fr-MA').format(value);
@@ -12,12 +13,25 @@ export default function MyBookings() {
   const [, setLocation] = useLocation();
   const { data: dbBookings = [], isLoading: bookingsLoading } = trpc.bookings.list.useQuery();
   const { data: listings = [] } = trpc.listings.list.useQuery();
+  const { data: invoices = [], isLoading: invoicesLoading, isError: invoicesError } = trpc.invoices.list.useQuery();
   const [contractBookingId, setContractBookingId] = useState<number | null>(null);
   const contractQuery = trpc.commercialLeaseContracts.getByBooking.useQuery(
     { bookingId: contractBookingId ?? 0 },
     { enabled: contractBookingId !== null },
   );
   const listingById = useMemo(() => new Map(listings.map((listing) => [listing.id, listing])), [listings]);
+  const invoiceByBooking = useMemo(() => new Map(invoices.map((invoice) => [invoice.bookingId, invoice])), [invoices]);
+
+  const downloadInvoice = (invoice: Parameters<typeof generateInvoicePdf>[0]) => {
+    const blob = generateInvoicePdf(invoice);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${invoice.invoiceNumber}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('تم تنزيل الفاتورة الإلكترونية بصيغة PDF.');
+  };
 
   useEffect(() => {
     if (contractQuery.data?.pdfUrl) {
@@ -78,7 +92,7 @@ export default function MyBookings() {
                     </div>
                   </div>
                   <div className="w-full md:w-auto flex md:flex-col gap-2 shrink-0">
-                    {(booking.status === 'Confirmed' || booking.status === 'Cancelled') && (
+                    {booking.status === 'Confirmed' && (
                       <Button
                         disabled={isContractLoading}
                         onClick={() => setContractBookingId(booking.id)}
@@ -87,7 +101,16 @@ export default function MyBookings() {
                         {isContractLoading ? <span>جاري التحضير...</span> : <><Download className="w-4 h-4" /> عقد الكراء</>}
                       </Button>
                     )}
-                    <a href="/help" className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold">
+                    {invoiceByBooking.get(booking.id) && (
+                      <Button
+                        type="button"
+                        onClick={() => downloadInvoice(invoiceByBooking.get(booking.id)!)}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold"
+                      >
+                        <Receipt className="w-4 h-4" /> الفاتورة PDF
+                      </Button>
+                    )}
+                    <a href="/support-tickets" className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold">
                       <Phone className="w-4 h-4" /> الدعم
                     </a>
                   </div>
@@ -97,7 +120,9 @@ export default function MyBookings() {
           </div>
         )}
 
-        <p className="text-center text-[11px] text-slate-500">عقود الكراء نماذج تقنية يجب مراجعتها من طرف مهني قانوني مغربي قبل التوقيع.</p>
+        {invoicesLoading && <p className="text-center text-[11px] text-slate-500">جاري تحميل الفواتير...</p>}
+        {invoicesError && <p className="text-center text-[11px] text-amber-400">تعذر تحميل الفواتير؛ يمكنك إعادة المحاولة من صفحة الملف الشخصي.</p>}
+        <p className="text-center text-[11px] text-slate-500">الفواتير مستخرجة من قاعدة البيانات، وعقود الكراء نماذج تقنية يجب مراجعتها من طرف مهني قانوني مغربي قبل التوقيع.</p>
       </div>
     </div>
   );

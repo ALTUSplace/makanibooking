@@ -1,12 +1,24 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Upload, CheckCircle2, ArrowRight, Car } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Car } from 'lucide-react';
 import { toast } from 'sonner';
+import { AdvancedMediaUpload } from '@/components/AdvancedMediaUpload';
+import { trpc } from '@/lib/trpc';
 
 export default function AddCar() {
   const [, setLocation] = useLocation();
   const [submitted, setSubmitted] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+
+  const createListing = trpc.listings.create.useMutation({
+    onSuccess: () => {
+      setSubmitted(true);
+      toast.success('تم إرسال السيارة إلى مراجعة الإدارة بنجاح!');
+      window.setTimeout(() => setLocation('/host'), 1500);
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   const [carName, setCarName] = useState('');
   const [brand, setBrand] = useState('');
@@ -23,22 +35,31 @@ export default function AddCar() {
       return;
     }
     
-    setSubmitted(true);
-    toast.success('تم نشر السيارة بنجاح في أسطول الوكالة!');
-    setTimeout(() => {
-      setLocation('/dashboard');
-    }, 1500);
+    const numericPrice = Number(price);
+    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+      toast.error('يرجى إدخال سعر يومي صحيح أكبر من صفر');
+      return;
+    }
+
+    createListing.mutate({
+      title: `${brand} ${carName}`.trim(),
+      city,
+      category: 'car',
+      pricePerDay: numericPrice,
+      description: `الفئة: ${category} — ناقل الحركة: ${transmission} — ${seats}.`,
+      imageUrl: imageUrl || undefined,
+    });
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4" dir="rtl">
       <div className="container mx-auto max-w-2xl">
         <button
-          onClick={() => setLocation('/dashboard')}
+          onClick={() => setLocation('/host')}
           className="inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 mb-8 font-medium transition-colors"
         >
           <ArrowRight className="w-4 h-4" />
-          <span>العودة إلى لوحة تحكم الوكالة</span>
+          <span>العودة إلى لوحة تحكم المالك</span>
         </button>
 
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-8 relative overflow-hidden">
@@ -46,19 +67,19 @@ export default function AddCar() {
 
           <div className="space-y-2">
             <span className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Car className="w-4 h-4" /> إدارة الأسطول والوكالة المستقلة
+              <Car className="w-4 h-4" /> إدارة السيارات والإعلانات
             </span>
-            <h1 className="text-3xl font-black text-white">إضافة سيارة جديدة لأسطول وكالتك</h1>
+            <h1 className="text-3xl font-black text-white">إضافة سيارة جديدة إلى إعلاناتك</h1>
             <p className="text-slate-400 text-xs leading-relaxed">
-              أدخل تفاصيل المركبة والمواصفات والسعر لتظهر مباشرة في نتائج البحث والصفحة الرئيسية للعملاء في المغرب.
+              أدخل تفاصيل المركبة والمواصفات والسعر لإرسال الإعلان إلى مراجعة الإدارة قبل ظهوره للعملاء.
             </p>
           </div>
 
           {submitted ? (
             <div className="bg-emerald-500/15 border border-emerald-500/30 p-8 rounded-2xl text-center space-y-4">
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto animate-bounce" />
-              <h2 className="text-xl font-bold text-white">تم نشر المركبة بنجاح في المنصة!</h2>
-              <p className="text-slate-300 text-xs">جاري تحويلك إلى لوحة تحكم الوكالة...</p>
+              <h2 className="text-xl font-bold text-white">تم إرسال المركبة إلى مراجعة الإدارة بنجاح!</h2>
+              <p className="text-slate-300 text-xs">جاري تحويلك إلى لوحة تحكم المالك...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -144,18 +165,15 @@ export default function AddCar() {
 
               <div className="space-y-2 text-right">
                 <label className="text-xs font-bold text-slate-300">صورة السيارة الرئيسية</label>
-                <div className="border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center space-y-2 bg-slate-950/60 hover:border-amber-500/50 transition-colors cursor-pointer">
-                  <Upload className="w-8 h-8 text-amber-500 mx-auto" />
-                  <div className="text-xs text-slate-300 font-bold">اسحب صورة السيارة هنا أو اضغط للاختيار من جهازك</div>
-                  <div className="text-[10px] text-slate-500">PNG, JPG, WEBP حتى 10 ميجابايت</div>
-                </div>
+                <AdvancedMediaUpload onImagesUploaded={(urls) => setImageUrl(urls[0] ?? '')} />
               </div>
 
               <Button
                 type="submit"
+                disabled={createListing.isPending}
                 className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black py-4 rounded-xl text-xs shadow-xl shadow-amber-500/20 transition-all"
               >
-                نشر السيارة في أسطول الوكالة فوراً
+                {createListing.isPending ? 'جاري إرسال الإعلان...' : 'إرسال السيارة إلى مراجعة الإدارة'}
               </Button>
             </form>
           )}

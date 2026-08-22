@@ -45,9 +45,9 @@ const navLinks: NavLink[] = [
   { href: "/search?type=car", label: "تأجير السيارات", labelKey: "cars", icon: Car },
   { href: "/search?type=property", label: "العقارات الفاخرة", labelKey: "properties", icon: Building2 },
   { href: "/admin", label: "لوحة الإدارة", labelKey: "admin", icon: ShieldAlert },
-  { href: "/partner-dashboard", label: "لوحة الوكلاء", labelKey: "dashboard", icon: LayoutDashboard },
+  { href: "/host", label: "لوحة المالك", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/my-bookings", label: "حجوزاتي", labelKey: "myBookings", icon: BookmarkCheck },
-  { href: "/help", label: "الدعم الفني", labelKey: "help", icon: HelpCircle },
+  { href: "/support-tickets", label: "الدعم الفني", labelKey: "help", icon: HelpCircle },
   { href: "/blog", label: "المدونة", labelKey: "blog", icon: BookOpen },
 ];
 

@@ -7,16 +7,26 @@ import { randomUUID } from "node:crypto";
 export const MOROCCO_VAT_RATE_BASIS_POINTS = 2_000;
 export const PLATFORM_COMMISSION_RATE_BASIS_POINTS = 1_000;
 
-export function calculateInvoiceTotals(subtotal: number, commissionFee = Math.round(subtotal * PLATFORM_COMMISSION_RATE_BASIS_POINTS / 10_000)) {
+export function calculateInvoiceTotals(
+  subtotal: number,
+  commissionFee = Math.round(subtotal * PLATFORM_COMMISSION_RATE_BASIS_POINTS / 10_000),
+  vatRateBasisPoints = MOROCCO_VAT_RATE_BASIS_POINTS,
+) {
   if (!Number.isFinite(subtotal) || subtotal < 0) {
     throw new Error("Subtotal must be a non-negative finite number");
   }
+  if (!Number.isFinite(commissionFee) || commissionFee < 0 || commissionFee > subtotal) {
+    throw new Error("Commission fee must be between zero and subtotal");
+  }
+  if (!Number.isInteger(vatRateBasisPoints) || vatRateBasisPoints < 0 || vatRateBasisPoints > 10_000) {
+    throw new Error("VAT rate must be a valid basis-point value");
+  }
 
-  const vatAmount = Math.round(subtotal * MOROCCO_VAT_RATE_BASIS_POINTS / 10_000);
+  const vatAmount = Math.round(subtotal * vatRateBasisPoints / 10_000);
   return {
     subtotal,
     commissionFee,
-    vatRateBasisPoints: MOROCCO_VAT_RATE_BASIS_POINTS,
+    vatRateBasisPoints,
     vatAmount,
     total: subtotal + vatAmount,
     netPartnerAmount: subtotal - commissionFee,

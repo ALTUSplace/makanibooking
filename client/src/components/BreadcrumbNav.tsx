@@ -7,15 +7,24 @@ const routeNames: Record<string, string> = {
   "/booking": "حجز موعد",
   "/checkout": "إتمام الدفع",
   "/success": "تأكيد الحجز",
-  "/dashboard": "لوحة التحكم الشاملة",
+  "/dashboard": "لوحة المالك",
   "/admin": "لوحة المشرف العام",
   "/profile": "الملف الشخصي",
   "/renter-dashboard": "حجوزاتي وفواتيري",
-  "/partner-dashboard": "لوحة الشريك والأسطول",
   "/add-car": "إضافة إعلان جديد",
   "/my-bookings": "إدارة الحجوزات",
   "/help": "الدعم والمساعدة",
+  "/support-tickets": "تذاكر الدعم",
+  "/dispute-resolution": "حل النزاعات",
+  "/notifications": "الإشعارات",
   "/favorites": "المفضلة",
+  "/privacy": "سياسة الخصوصية",
+  "/terms": "شروط الاستخدام",
+  "/host": "لوحة المالك",
+  "/host-dashboard": "لوحة المالك",
+  "/partner": "لوحة المالك",
+  "/partner-dashboard": "لوحة المالك",
+  "/blog": "المدونة",
   "/about": "من نحن",
 };
 
@@ -32,7 +41,10 @@ export default function BreadcrumbNav() {
 
   pathSegments.forEach((segment) => {
     currentPath += `/${segment}`;
-    const label = routeNames[currentPath] || (segment.startsWith("car_") ? "تفاصيل الإعلان" : segment);
+    const label = routeNames[currentPath]
+      || (currentPath.startsWith("/property/") ? "تفاصيل العقار"
+        : currentPath.startsWith("/car/") ? "تفاصيل السيارة"
+          : segment.startsWith("car_") ? "تفاصيل الإعلان" : "صفحة غير معنونة");
     items.push({ label, path: currentPath });
   });
 

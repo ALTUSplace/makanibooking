@@ -1,30 +1,63 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check, Stamp, FileCheck, X } from 'lucide-react';
-import { jsPDF } from 'jspdf';
+import { CheckCircle2, Phone, Home, Download, Edit3, Eraser, Check, Stamp, FileCheck, X, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRef, useState, useEffect } from 'react';
 import { playSuccessSound } from '@/lib/sound';
 import { trpc } from '@/lib/trpc';
+import { generateInvoicePdf } from '@/lib/invoicePdf';
 
 export default function Success() {
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
 
-  const bookingRef = 'B2R-' + Math.floor(1000 + Math.random() * 9000);
-  const name = searchParams.get('name') || 'يوسف العلوي';
-  const phone = searchParams.get('phone') || '+212 661 112 233';
-  const total = searchParams.get('total') || '9000';
-  const days = searchParams.get('days') || '5';
-  const start = searchParams.get('start') || '2026-08-15';
-  const end = searchParams.get('end') || '2026-08-20';
   const bookingId = Number(searchParams.get('bookingId') || 0);
+  const bookingRef = searchParams.get('reference') || (bookingId > 0 ? `B2R-${bookingId}` : 'B2R-PENDING');
+  const name = searchParams.get('name') || 'المستأجر';
+  const phone = searchParams.get('phone') || 'غير متوفر';
+  const urlTotal = searchParams.get('total') || '0';
+  const start = searchParams.get('start') || searchParams.get('startDate') || 'غير محدد';
+  const end = searchParams.get('end') || searchParams.get('endDate') || 'غير محدد';
+  const startTimestamp = start !== 'غير محدد' ? new Date(`${start}T12:00:00`).getTime() : Number.NaN;
+  const endTimestamp = end !== 'غير محدد' ? new Date(`${end}T12:00:00`).getTime() : Number.NaN;
+  const calculatedDays = Number.isFinite(startTimestamp) && Number.isFinite(endTimestamp) && endTimestamp > startTimestamp
+    ? Math.ceil((endTimestamp - startTimestamp) / (1000 * 60 * 60 * 24))
+    : 0;
+  const days = searchParams.get('days') || String(calculatedDays || 0);
+  const bookingStatus = searchParams.get('bookingStatus') || 'Pending';
+  const isPending = bookingStatus !== 'Confirmed';
   const contractType = searchParams.get('contractType') as 'commercial' | 'professional' | null;
   const premises = searchParams.get('premises') || searchParams.get('title') || 'المحل موضوع الحجز';
   const city = searchParams.get('city') || 'المغرب';
   const landlordName = searchParams.get('landlordName') || 'المالك / الشركة المؤجرة';
-  const monthlyRent = Number(searchParams.get('monthlyRent') || total);
+  const monthlyRent = Number(searchParams.get('monthlyRent') || urlTotal);
   const language = searchParams.get('language') === 'ar' ? 'ar' : 'fr';
+  const agencyWhatsapp = (searchParams.get('agencyWhatsapp') || '').replace(/\D/g, '');
+  const canContactAgency = bookingId > 0 && agencyWhatsapp.length >= 8;
+  const whatsappMessage = `مرحباً، أود متابعة الحجز ${bookingRef} عبر منصة B2-Rent.`;
+
+  const handleWhatsappContact = () => {
+    if (!canContactAgency) {
+      toast.info('لا يتوفر رقم واتساب مؤكد للوكالة في بيانات هذا الحجز.');
+      return;
+    }
+    window.open(`https://wa.me/${agencyWhatsapp}?text=${encodeURIComponent(whatsappMessage)}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleEmailContact = () => {
+    if (isPending) {
+      toast.info('ستتوفر رسالة البريد بعد اعتماد الحجز وإتاحة العقد.');
+      return;
+    }
+    if (!hasSigned) {
+      toast.error('يرجى توقيع العقد أولاً قبل فتح رسالة البريد الإلكتروني.');
+      return;
+    }
+    const subject = `B2-Rent — عقد الحجز ${bookingRef}`;
+    const body = `مرحباً، أرفق لكم عقد الحجز ${bookingRef} الذي تم تنزيله من منصة B2-Rent.`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    toast.success('تم فتح تطبيق البريد لإرفاق ملف العقد وإرساله.');
+  };
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -37,23 +70,33 @@ export default function Success() {
   const [commercialContractReference, setCommercialContractReference] = useState<string | null>(null);
   const [isCommercialContractGenerating, setIsCommercialContractGenerating] = useState(false);
   const createLeaseMutation = trpc.commercialLeaseContracts.create.useMutation();
+  const invoiceQuery = trpc.invoices.getByBooking.useQuery({ bookingId }, { enabled: bookingId > 0, retry: false });
+  const invoice = invoiceQuery.data;
+  const total = invoice ? String(invoice.total) : '—';
+
+  const handleInvoiceDownload = () => {
+    if (!invoice) {
+      toast.info('لم يتم تحميل الفاتورة بعد. يرجى الانتظار أو فتح صفحة حجوزاتك.');
+      return;
+    }
+    const blob = generateInvoicePdf(invoice);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${invoice.invoiceNumber}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('تم تنزيل الفاتورة الإلكترونية بصيغة PDF.');
+  };
 
   useEffect(() => {
     playSuccessSound();
-    if (!bookingId || !contractType) return;
+    if (!bookingId || !contractType || isPending) return;
     let active = true;
     setIsCommercialContractGenerating(true);
     createLeaseMutation.mutate({
       bookingId,
       leaseType: contractType,
-      landlordName,
-      tenantName: name,
-      premises,
-      city,
-      startDate: start,
-      endDate: end,
-      monthlyRent,
-      deposit: 0,
       language,
     }, {
       onSuccess: (result) => {
@@ -70,7 +113,7 @@ export default function Success() {
       },
     });
     return () => { active = false; };
-  }, [bookingId, contractType]);
+  }, [bookingId, contractType, isPending]);
 
 
   useEffect(() => {
@@ -130,13 +173,18 @@ export default function Success() {
   };
 
   const handleDownloadPDF = () => {
+    if (isPending) {
+      toast.info('سيصبح العقد والتنزيل متاحين بعد اعتماد المالك للحجز.');
+      return;
+    }
     if (!hasSigned) {
       toast.error('يرجى توقيع العقد في المربع المخصص قبل تنزيله.');
       return;
     }
     setIsGeneratingPDF(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
+        const { jsPDF } = await import('jspdf');
         const doc = new jsPDF();
       
       doc.setFont("helvetica", "bold");
@@ -233,10 +281,6 @@ export default function Success() {
     }, 800);
   };
 
-  const whatsappMessage = encodeURIComponent(
-    `مرحباً، لقد قمت بحجز سيارة عبر منصة B2-Rent وتوقيع العقد إلكترونياً مع الختم الرسمي.\nرقم الحجز: ${bookingRef}\nالاسم: ${name}\nالهاتف: ${phone}\nمن تاريخ ${start} إلى ${end} (${days} أيام)\nالمجموع: ${total} درهم.`
-  );
-
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12 px-4 relative">
       <div className="container mx-auto px-4 max-w-2xl text-center space-y-8">
@@ -246,12 +290,14 @@ export default function Success() {
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">تم الحجز بنجاح 🚀</span>
+            <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">{isPending ? 'تم إرسال طلب الحجز' : 'تم تأكيد الحجز'}</span>
             <h1 className="text-2xl font-extrabold text-white">شكراً لك، {name}!</h1>
             <p className="text-slate-400 text-xs max-w-md mx-auto">
-              رقم مرجع الحجز الخاص بك هو <span className="text-amber-400 font-bold">{bookingRef}</span>. يرجى توقيع العقد أدناه.
+              رقم مرجع الحجز الخاص بك هو <span className="text-amber-400 font-bold">{bookingRef}</span>. {isPending ? 'الطلب الآن قيد مراجعة المالك، وسيصلك إشعار عند القبول أو الرفض.' : 'يمكنك توقيع العقد وتنزيل مستندات الحجز.'}
             </p>
           </div>
+
+          {isPending && <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl text-right text-xs text-amber-100">الحالة الحالية: <strong className="text-amber-300">قيد موافقة المالك</strong>. لا يتم إنشاء عقد الكراء أو اعتباره نهائياً قبل اعتماد الطلب.</div>}
 
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl text-right space-y-3 text-xs">
             <div className="flex justify-between border-b border-slate-800 pb-2">
@@ -268,70 +314,99 @@ export default function Success() {
             </div>
           </div>
 
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <Stamp className="w-5 h-5 text-amber-400" />
-              <div className="text-right">
-                <div className="text-xs font-bold text-white">إدراج الختم الرقمي الرسمي للوكالة</div>
-                <div className="text-[10px] text-slate-400">يثبت المصداقية القانونية والاعتماد الرسمي للوكالة</div>
+          <div className="bg-slate-900 border border-amber-500/30 p-5 rounded-2xl text-right space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2"><Receipt className="w-5 h-5 text-amber-400" /><span className="font-bold text-white">الفاتورة الإلكترونية</span></div>
+              {invoice && <span className={`text-[10px] px-2 py-1 rounded-full ${invoice.status === 'Issued' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-300'}`}>{invoice.status === 'Issued' ? 'صادرة' : 'قيد المراجعة'}</span>}
+            </div>
+            {invoiceQuery.isLoading ? <p className="text-xs text-slate-400">جاري التحقق من الفاتورة المحفوظة...</p> : invoice ? (
+              <>
+                <div className="grid grid-cols-2 gap-3 text-xs"><div><span className="text-slate-400 block">رقم الفاتورة</span><strong className="text-white">{invoice.invoiceNumber}</strong></div><div><span className="text-slate-400 block">حالة الدفع</span><strong className="text-white">{invoice.paymentStatus}</strong></div><div><span className="text-slate-400 block">TVA</span><strong className="text-white">{invoice.vatAmount} {invoice.currency}</strong></div><div><span className="text-slate-400 block">الإجمالي الخادمي</span><strong className="text-amber-300">{invoice.total} {invoice.currency}</strong></div></div>
+                <Button type="button" onClick={handleInvoiceDownload} className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold"><Download className="w-4 h-4 ml-2" /> تنزيل الفاتورة PDF</Button>
+              </>
+            ) : <p className="text-xs text-slate-400">{invoiceQuery.isError ? 'تعذر التحقق من الفاتورة لهذا الحجز. يمكنك مراجعة صفحة حجوزاتك.' : `تم تسجيل الدفع، رقم المبلغ المرجعي ${urlTotal} درهم، وسيظهر المستند بعد اكتمال الحفظ.`}</p>}
+          </div>
+
+          {!isPending && (
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Stamp className="w-5 h-5 text-amber-400" />
+                <div className="text-right">
+                  <div className="text-xs font-bold text-white">إدراج الختم الرقمي الرسمي للوكالة</div>
+                  <div className="text-[10px] text-slate-400">يثبت المصداقية القانونية والاعتماد الرسمي للوكالة</div>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={includeOfficialStamp}
+                onChange={(e) => setIncludeOfficialStamp(e.target.checked)}
+                className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+              />
+            </div>
+          )}
+
+          {!isPending && (
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 text-right">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Edit3 className="w-4 h-4 text-amber-400" /> التوقيع الإلكتروني (ارسم توقيعك في المربع أدناه):
+                </label>
+                {hasSigned && (
+                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                    <Check className="w-3 h-3" /> تم التوقيع بنجاح
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-white rounded-xl overflow-hidden border border-slate-700 relative shadow-inner cursor-crosshair">
+                <canvas
+                  ref={canvasRef}
+                  width={500}
+                  height={160}
+                  className="w-full h-36 touch-none"
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                />
+                {!hasSigned && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs">
+                    ارسم توقيعك هنا بالإصبع أو الفأرة
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] text-slate-400">
+                  {hasSigned ? 'التوقيع جاهز للاعتماد في العقد' : 'يرجى رسم التوقيع أعلاه'}
+                </span>
+                <button
+                  onClick={clearSignature}
+                  type="button"
+                  className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border border-amber-500/20"
+                >
+                  <Eraser className="w-3.5 h-3.5" /> مسح وإعادة المحاولة
+                </button>
               </div>
             </div>
-            <input
-              type="checkbox"
-              checked={includeOfficialStamp}
-              onChange={(e) => setIncludeOfficialStamp(e.target.checked)}
-              className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
-            />
-          </div>
+          )}
 
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3 text-right">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Edit3 className="w-4 h-4 text-amber-400" /> التوقيع الإلكتروني (ارسم توقيعك في المربع أدناه):
-              </label>
-              {hasSigned && (
-                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
-                  <Check className="w-3 h-3" /> تم التوقيع بنجاح
-                </span>
-              )}
-            </div>
-
-            <div className="bg-white rounded-xl overflow-hidden border border-slate-700 relative shadow-inner cursor-crosshair">
-              <canvas
-                ref={canvasRef}
-                width={500}
-                height={160}
-                className="w-full h-36 touch-none"
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing}
-                onTouchMove={draw}
-                onTouchEnd={stopDrawing}
-              />
-              {!hasSigned && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs">
-                  ارسم توقيعك هنا بالإصبع أو الفأرة
+          {contractType && isPending && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-right space-y-2">
+              <div className="flex items-center gap-3">
+                <FileCheck className="h-6 w-6 text-amber-400" />
+                <div>
+                  <h2 className="text-sm font-bold text-white">عقد الكراء جاهز بعد الاعتماد</h2>
+                  <p className="text-[11px] text-slate-300">سيتم إنشاء العقد تلقائياً عندما يقبل المالك طلب الحجز. لا يوجد عقد نهائي في هذه المرحلة.</p>
                 </div>
-              )}
+              </div>
             </div>
+          )}
 
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-slate-400">
-                {hasSigned ? 'التوقيع جاهز للاعتماد في العقد' : 'يرجى رسم التوقيع أعلاه'}
-              </span>
-              <button
-                onClick={clearSignature}
-                type="button"
-                className="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border border-amber-500/20"
-              >
-                <Eraser className="w-3.5 h-3.5" /> مسح وإعادة المحاولة
-              </button>
-            </div>
-          </div>
-
-          {contractType && (
+          {contractType && !isPending && (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-right space-y-3">
               <div className="flex items-center gap-3">
                 <FileCheck className="h-6 w-6 text-amber-400" />
@@ -366,7 +441,7 @@ export default function Success() {
           <div className="space-y-4 pt-2">
             <Button
               onClick={handleDownloadPDF}
-              disabled={isGeneratingPDF}
+              disabled={isGeneratingPDF || isPending}
               type="button"
               className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50"
             >
@@ -378,36 +453,32 @@ export default function Success() {
               ) : (
                 <>
                   <Download className="w-5 h-5" />
-                  <span>تحميل عقد الإيجار الرقمي المذيل بالختم والتوقيع (PDF)</span>
+                  <span>{isPending ? 'يتاح تنزيل العقد بعد موافقة المالك' : 'تحميل عقد الإيجار الرقمي المذيل بالتوقيع (PDF)'}</span>
                 </>
               )}
             </Button>
 
-            <a
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-xs cursor-pointer"
+            <Button
+              type="button"
+              onClick={handleWhatsappContact}
+              disabled={!canContactAgency}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/30 transition-all text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              title={!canContactAgency ? 'سيظهر التواصل بعد توفر رقم واتساب مؤكد للحجز' : undefined}
             >
               <Phone className="w-4 h-4" />
-              <span>إرسال نسخة عقد الإيجار وتفاصيل الحجز عبر واتساب الوكالة</span>
-            </a>
+              <span>{canContactAgency ? 'التواصل مع الوكالة عبر واتساب' : 'واتساب الوكالة غير متوفر لهذا الحجز'}</span>
+            </Button>
 
             <Button
-              onClick={() => {
-                if (!hasSigned) {
-                  toast.error('يرجى توقيع العقد أولاً قبل إرساله عبر البريد الإلكتروني.');
-                  return;
-                }
-                toast.success('تم إرسال نسخة من عقد الإيجار الموقع بصيغة PDF بنجاح إلى بريدك الإلكتروني (b2rentt@gmail.com).');
-              }}
+              onClick={handleEmailContact}
               type="button"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 cursor-pointer"
+              disabled={isPending}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5v10a2 2 0 002-2 2 0 00-2 2z" />
               </svg>
-              <span>إرسال نسخة العقد والمرفقات عبر البريد الإلكتروني (PDF)</span>
+              <span>{isPending ? 'تتوفر رسالة البريد بعد اعتماد الحجز' : 'فتح رسالة بريد لإرفاق العقد الموقع (PDF)'}</span>
             </Button>
 
             <Button
@@ -455,14 +526,14 @@ export default function Success() {
               >
                 حسناً، متابعة التصفح
               </Button>
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs"
+              <Button
+                type="button"
+                onClick={handleWhatsappContact}
+                disabled={!canContactAgency}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Phone className="w-4 h-4" /> إرسال نسخة الوثيقة عبر واتساب الوكالة
-              </a>
+                <Phone className="w-4 h-4" /> {canContactAgency ? 'التواصل مع الوكالة عبر واتساب' : 'واتساب الوكالة غير متوفر لهذا الحجز'}
+              </Button>
             </div>
           </div>
         </div>

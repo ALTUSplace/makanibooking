@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, Users, Building2, CalendarDays, WalletCards, CheckCircle2, XCircle, ShieldAlert, Loader2, ArrowLeft, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, CalendarDays, WalletCards, CheckCircle2, XCircle, ShieldAlert, Loader2, ArrowLeft, LifeBuoy, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,8 +23,11 @@ export default function AdminDashboard() {
   const payouts = trpc.admin.payouts.useQuery(undefined, { enabled: user?.role === 'admin' });
   const payments = trpc.admin.payments.useQuery(undefined, { enabled: user?.role === 'admin' });
   const disputes = trpc.admin.disputes.useQuery(undefined, { enabled: user?.role === 'admin' });
+  const supportTickets = trpc.admin.supportTickets.useQuery(undefined, { enabled: user?.role === 'admin' });
   const resolveDispute = trpc.admin.resolveDispute.useMutation({ onSuccess: async () => { toast.success('تم تحديث حالة النزاع'); await disputes.refetch(); }, onError: error => toast.error(error.message) });
+  const updateSupportTicket = trpc.admin.updateSupportTicket.useMutation({ onSuccess: async () => { toast.success('تم تحديث تذكرة الدعم وإشعار صاحبها'); setTicketResponses({}); await supportTickets.refetch(); }, onError: error => toast.error(error.message) });
   const [commissionRate, setCommissionRate] = useState('10');
+  const [ticketResponses, setTicketResponses] = useState<Record<number, string>>({});
   const updateCommission = trpc.admin.updateCommission.useMutation({ onSuccess: async () => { toast.success('تم تحديث عمولة المنصة'); await commissionSettings.refetch(); }, onError: error => toast.error(error.message) });
   const reviewPayout = trpc.admin.reviewPayout.useMutation({ onSuccess: async () => { toast.success('تم تحديث طلب السحب'); await payouts.refetch(); }, onError: error => toast.error(error.message) });
   const utils = trpc.useUtils();
@@ -71,13 +74,14 @@ export default function AdminDashboard() {
         </section>
 
         <Tabs value={tab} onValueChange={setTab} dir="rtl">
-          <TabsList className="grid h-auto w-full grid-cols-2 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-6">
+          <TabsList className="grid h-auto w-full grid-cols-2 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-7">
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="overview">نظرة عامة</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="listings">مراجعة الإعلانات</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="users">المستخدمون</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="bookings">الحجوزات</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="finance">المالية</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="disputes">النزاعات</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="support">الدعم</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><LayoutDashboard className="h-5 w-5 text-amber-600" />المؤشرات التشغيلية</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-3">
@@ -110,6 +114,11 @@ export default function AdminDashboard() {
           <TabsContent value="disputes" className="mt-4">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-amber-600" />مركز الشكاوى والنزاعات</CardTitle></CardHeader><CardContent className="space-y-3">
               {disputes.isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : disputes.data?.length ? disputes.data.map(item => <div key={item.id} className="flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">#{item.id} · {item.type} · الحجز #{item.bookingId}</p><p className="text-xs text-slate-500">{item.openerName || `المستخدم #${item.openedBy}`} · {item.description}</p><Badge variant={item.status === 'Resolved' ? 'default' : 'secondary'}>{item.status}</Badge>{item.resolutionNote && <p className="mt-1 text-xs text-slate-500">قرار: {item.resolutionNote}</p>}</div><div className="flex flex-wrap gap-2">{item.status !== 'Resolved' && item.status !== 'Rejected' && <><Button size="sm" variant="outline" onClick={() => resolveDispute.mutate({ disputeId: item.id, status: 'UnderReview', resolutionNote: 'تم تحويل الملف للمراجعة' })}>قيد المراجعة</Button><Button size="sm" onClick={() => resolveDispute.mutate({ disputeId: item.id, status: 'Resolved', resolutionNote: 'تمت معالجة النزاع من الإدارة' })}>حسم النزاع</Button><Button size="sm" variant="destructive" onClick={() => resolveDispute.mutate({ disputeId: item.id, status: 'Rejected', resolutionNote: 'تم رفض الطلب بعد المراجعة' })}>رفض</Button></>}</div></div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد نزاعات مسجلة.</p>}
+            </CardContent></Card>
+          </TabsContent>
+          <TabsContent value="support" className="mt-4">
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><LifeBuoy className="h-5 w-5 text-amber-600" />تذاكر الدعم والاستفسارات</CardTitle></CardHeader><CardContent className="space-y-3">
+              {supportTickets.isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : supportTickets.isError ? <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">تعذر تحميل تذاكر الدعم. <Button variant="outline" size="sm" onClick={() => supportTickets.refetch()} className="mr-2 border-red-300 text-red-700">إعادة المحاولة</Button></div> : supportTickets.data?.length ? supportTickets.data.map(item => <div key={item.id} className="space-y-3 rounded-xl border bg-white p-4"><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-bold text-[#0B3C5D]">TCK-{item.id} · {item.subject}</p><p className="text-xs text-slate-500">{item.userName || `المستخدم #${item.userId}`} · {item.userEmail || 'بدون بريد'} · {item.category}</p></div><Badge variant={item.status === 'Resolved' ? 'default' : 'secondary'}>{item.status}</Badge></div><p className="text-sm leading-6 text-slate-700">{item.description}</p>{item.lastResponse && <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><strong>آخر رد:</strong> {item.lastResponse}</div>}<textarea value={ticketResponses[item.id] || ''} onChange={(event) => setTicketResponses((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="اكتب رداً يظهر لصاحب التذكرة..." maxLength={2000} rows={2} className="w-full rounded-lg border bg-background p-3 text-sm" /><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={updateSupportTicket.isPending} onClick={() => updateSupportTicket.mutate({ ticketId: item.id, status: 'InProgress', response: ticketResponses[item.id]?.trim() || undefined })}>إرسال رد وقيد المعالجة</Button><Button size="sm" disabled={updateSupportTicket.isPending} onClick={() => updateSupportTicket.mutate({ ticketId: item.id, status: 'Resolved', response: ticketResponses[item.id]?.trim() || undefined })}>إرسال الرد وإغلاق التذكرة</Button></div></div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد تذاكر دعم.</p>}
             </CardContent></Card>
           </TabsContent>
           <TabsContent value="bookings" className="mt-4">

@@ -14,11 +14,7 @@ export default function InteractiveCalendar({ listingId, bookedDates = [], onDat
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  // Sample booked dates if none provided
-  const activeBookings = bookedDates.length > 0 ? bookedDates : [
-    { start: '2026-08-25', end: '2026-08-28' },
-    { start: '2026-09-02', end: '2026-09-05' }
-  ];
+  const activeBookings = bookedDates;
 
   // Generate next 30 days for display
   const today = new Date();

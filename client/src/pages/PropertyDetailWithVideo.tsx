@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { Play, Video, MapPin, Building2, Bed, Bath, ShieldCheck, Star, Calendar, Check, ArrowRight, Share2, Heart, CheckCircle2 } from 'lucide-react';
+import { Play, Video, MapPin, Building2, Bed, Bath, ShieldCheck, Calendar, Check, ArrowRight, Share2, Heart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,8 +23,6 @@ export default function PropertyDetailWithVideo() {
     bathrooms: 2,
     area: '160 متر²',
     type: 'شقة سكنية فاخرة',
-    rating: 4.9,
-    reviewsCount: 38,
     description: 'شقة عصرية مجهزة بالكامل بتصميم هندسي فاخر، مطلة مباشرة على المحيط الأطلسي. تحتوي على غرفة نوم رئيسية مجهزة، مطبخ أمريكي متكامل، وصالة واسعة تفتح على شرفة إيفست واسعة.',
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Placeholder video tour tour
     images: [
@@ -53,11 +51,6 @@ export default function PropertyDetailWithVideo() {
       "price": property.price,
       "availability": "https://schema.org/InStock"
     },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": property.rating,
-      "reviewCount": property.reviewsCount
-    }
   };
 
   return (
@@ -90,10 +83,7 @@ export default function PropertyDetailWithVideo() {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Badge className="bg-amber-500 text-white">عقار مميز موثق</Badge>
-            <div className="flex items-center gap-1 text-sm font-semibold text-amber-600">
-              <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-              <span>{property.rating} ({property.reviewsCount} تقييم)</span>
-            </div>
+            <span className="text-xs text-slate-500">لا توجد مراجعات موثقة بعد</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{property.title}</h1>
           <p className="text-slate-600 flex items-center gap-1.5 text-sm">

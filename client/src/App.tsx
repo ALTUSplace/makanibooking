@@ -16,31 +16,27 @@ import { useAuth } from "./_core/hooks/useAuth";
 import { startLogin } from "./const";
 import { Button } from "@/components/ui/button";
 
-// Lazy-loaded pages for performance optimization & code splitting
-import Home from "./pages/Home";
-import RenterDashboard from "./pages/RenterDashboard";
-// removed duplicate static import of AdminDashboard
-import PartnerDashboard from "@/pages/PartnerDashboard";
+// Lazy-loaded pages keep the initial mobile bundle small.
 import HostDashboard from "./pages/HostDashboard";
-import DisputeResolution from './pages/DisputeResolution';
-import TermsOfService from './pages/TermsOfService';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import PropertyDetailWithVideo from './pages/PropertyDetailWithVideo';
 import AIChatWidget from './components/AIChatWidget';
-import AddCar from "./pages/AddCar";
-import MyBookings from "./pages/MyBookings";
-import Help from "./pages/Help";
-import Favorites from "./pages/Favorites";
-import About from "./pages/About";
-import SupportTickets from "./pages/SupportTickets";
-import NotificationsPage from "./pages/NotificationsPage";
-import BlogPage from "./pages/BlogPage";
 
+const HomePage = lazy(() => import("./pages/Home"));
 const SearchPage = lazy(() => import("./pages/Search"));
+const PropertyDetailPage = lazy(() => import("./pages/PropertyDetailWithVideo"));
+const DisputeResolutionPage = lazy(() => import('./pages/DisputeResolution'));
+const TermsPage = lazy(() => import('./pages/TermsOfService'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPolicy'));
+const AddCarPage = lazy(() => import("./pages/AddCar"));
+const MyBookingsPage = lazy(() => import("./pages/MyBookings"));
+const HelpPage = lazy(() => import("./pages/Help"));
+const FavoritesPage = lazy(() => import("./pages/Favorites"));
+const AboutPage = lazy(() => import("./pages/About"));
+const SupportTicketsPage = lazy(() => import("./pages/SupportTickets"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
 const CarDetailsPage = lazy(() => import("./pages/CarDetails"));
 const BookingPage = lazy(() => import("./pages/Booking"));
 const SuccessPage = lazy(() => import("./pages/Success"));
-const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboard"));
 const ProfilePage = lazy(() => import("./pages/Profile"));
 const CheckoutPage = lazy(() => import("./pages/Checkout"));
@@ -59,7 +55,7 @@ function Router() {
     <Switch>
       <Route path={"/"}>
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري التحميل...</div></div>}>
-          <Home />
+          <HomePage />
         </Suspense>
       </Route>
       <Route path={"/search"}>
@@ -69,7 +65,7 @@ function Router() {
           </Suspense>
         )}
       </Route>
-      <Route path="/property/:id" component={PropertyDetailWithVideo} />
+      <Route path="/property/:id" component={PropertyDetailPage} />
       <Route path="/car/:id">
         {params => (
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل التفاصيل...</div></div>}>
@@ -91,25 +87,25 @@ function Router() {
           </Suspense>
         )}
       </Route>
-      <Route path={"/dashboard"} component={DashboardPage} />
+      <Route path="/dashboard">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
       <Route path="/admin">{() => <AccessGuard area="admin"><Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center">جاري تحميل لوحة الإدارة...</div>}><AdminDashboardPage /></Suspense></AccessGuard>}</Route>
-          <Route path="/dispute-resolution" component={DisputeResolution} />
-          <Route path="/terms" component={TermsOfService} />
-      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/dispute-resolution" component={DisputeResolutionPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route path="/host">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
       <Route path="/host-dashboard">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
-      <Route path="/partner" component={PartnerDashboard} />
-      <Route path={"/partner-dashboard"} component={PartnerDashboard} />
-      <Route path={"/add-car"} component={AddCar} />
-      <Route path={"/my-bookings"} component={MyBookings} />
+      <Route path="/partner">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
+      <Route path="/partner-dashboard">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
+      <Route path="/add-car">{() => <AccessGuard area="host"><AddCarPage /></AccessGuard>}</Route>
+      <Route path={"/my-bookings"} component={MyBookingsPage} />
       <Route path={"/profile"} component={ProfilePage} />
       <Route path={"/checkout"} component={CheckoutPage} />
-      <Route path={"/help"} component={Help} />
-      <Route path={"/support-tickets"} component={SupportTickets} />
+      <Route path={"/help"} component={HelpPage} />
+      <Route path={"/support-tickets"} component={SupportTicketsPage} />
       <Route path={"/notifications"} component={NotificationsPage} />
-      <Route path={"/favorites"} component={Favorites} />
+      <Route path={"/favorites"} component={FavoritesPage} />
       <Route path={"/about"}>
-        <About />
+        <AboutPage />
       </Route>
       <Route path={"/blog"}>
         <BlogPage />
@@ -132,7 +128,9 @@ export default function App() {
                   <BreadcrumbNav />
                   <main className="flex-1 pb-16 md:pb-0">
                     <PageTransition>
-                      <Router />
+                      <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center bg-background text-foreground"><div className="text-amber-500 font-bold">جاري تحميل الصفحة...</div></div>}>
+                        <Router />
+                      </Suspense>
                     </PageTransition>
                   </main>
                   <Footer />

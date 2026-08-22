@@ -109,7 +109,7 @@ export default function Search() {
     }).sort((a, b) => {
       if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
       if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
-      if (sortBy === 'rating') return b.rating - a.rating;
+      if (sortBy === 'rating') return (b.rating ?? 0) - (a.rating ?? 0);
       return 0;
     });
   }, [cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
@@ -335,10 +335,12 @@ export default function Search() {
                         {item.city}
                       </div>
 
-                      <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold">
-                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                        <span>{item.rating}</span>
-                      </div>
+                      {item.rating != null && (
+                        <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold">
+                          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                          <span>{item.rating.toFixed(1)}</span>
+                        </div>
+                      )}
 
                       {/* زر المقارنة */}
                       <button
@@ -427,9 +429,13 @@ export default function Search() {
                 </div>
                 <div className="text-left">
                   <div className="text-2xl font-black text-amber-400">{quickViewItem.pricePerUnit} {quickViewItem.unitLabel}</div>
-                  <div className="text-xs text-slate-400 flex items-center gap-1 justify-end">
-                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {quickViewItem.rating} ({quickViewItem.reviewsCount} تقييم)
-                  </div>
+                  {quickViewItem.rating != null ? (
+                    <div className="text-xs text-slate-400 flex items-center gap-1 justify-end">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {quickViewItem.rating.toFixed(1)} ({quickViewItem.reviewsCount ?? 0} تقييم موثق)
+                    </div>
+                  ) : (
+                    <div className="text-xs text-slate-500">لا توجد تقييمات موثقة بعد</div>
+                  )}
                 </div>
               </div>
 
@@ -525,7 +531,7 @@ export default function Search() {
                     </div>
                     <div className="flex justify-between py-2 border-b border-slate-800">
                       <span className="text-slate-400">التقييم:</span>
-                      <span className="font-bold text-amber-400">⭐ {c.rating}</span>
+                      <span className="font-bold text-slate-400">{c.rating != null ? `⭐ ${c.rating.toFixed(1)}` : 'لا توجد تقييمات موثقة'}</span>
                     </div>
                     <div className="flex justify-between py-2">
                       <span className="text-slate-400">المزود:</span>

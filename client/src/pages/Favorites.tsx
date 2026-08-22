@@ -37,7 +37,7 @@ export default function Favorites() {
   }).sort((a, b) => {
     if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
     if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
-    if (sortBy === 'rating') return b.rating - a.rating;
+    if (sortBy === 'rating') return (b.rating ?? 0) - (a.rating ?? 0);
     return 0;
   });
 

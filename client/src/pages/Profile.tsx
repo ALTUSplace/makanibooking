@@ -1,302 +1,155 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { User, Mail, Phone, MapPin, ShieldCheck, Heart, Calendar, Settings, Bookmark, Sun, Moon, Trash2, Save, ExternalLink } from 'lucide-react';
-import { toast } from 'sonner';
-import { LISTINGS } from '@/data/b2rent';
-import { Link } from 'wouter';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Download, FileText, Mail, Moon, Receipt, Save, ShieldCheck, Sun, UserRound } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { useTheme } from "@/contexts/ThemeContext";
+import { generateInvoicePdf } from "@/lib/invoicePdf";
+
+const money = (value: number, currency = "MAD") => `${new Intl.NumberFormat("fr-MA").format(value)} ${currency}`;
+const date = (value: string | Date | null | undefined) => value ? new Date(value).toLocaleDateString("fr-MA") : "—";
+
+const statusLabel: Record<string, string> = {
+  Pending: "قيد المراجعة",
+  Confirmed: "مؤكد",
+  Cancelled: "ملغى",
+  Issued: "صادرة",
+};
 
 export default function Profile() {
-  const [name, setName] = useState('يوسف المنصوري');
-  const [email, setEmail] = useState('youssef.mansouri@gmail.com');
-  const [phone, setPhone] = useState('+212 6 12 34 56 78');
-  const [city, setCity] = useState('مراكش');
-  const [activeTab, setActiveTab] = useState<'info' | 'bookings' | 'favorites' | 'searches'>('info');
-
+  const { user, loading: authLoading, isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState<"info" | "bookings" | "invoices">("info");
+  const [name, setName] = useState("");
 
-  // عمليات البحث المحفوظة
-  const [savedSearches, setSavedSearches] = useState([
-    { id: '1', query: 'سيارة دفع رباعي في أغادير', date: 'أمس، 04:30 مساءً', count: 4 },
-    { id: '2', query: 'شقة فخمة بمراكش مع مسبح', date: 'منذ 3 أيام', count: 2 },
-    { id: '3', query: 'داسيا لوغان الدار البيضاء', date: 'منذ أسبوع', count: 8 },
-  ]);
+  const bookingsQuery = trpc.bookings.list.useQuery(undefined, { enabled: isAuthenticated });
+  const invoicesQuery = trpc.invoices.list.useQuery(undefined, { enabled: isAuthenticated });
+  const displayName = name || user?.name || "مستخدم B2-Rent";
+  const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part: string) => part[0]).join("").toUpperCase() || "BR";
 
-  const handleDeleteSearch = (id: string) => {
-    setSavedSearches(savedSearches.filter(s => s.id !== id));
-    toast.success('تم حذف عملية البحث المحفوظة بنجاح');
+  const invoicesByBooking = useMemo(() => new Map((invoicesQuery.data ?? []).map(invoice => [invoice.bookingId, invoice])), [invoicesQuery.data]);
+
+  const saveProfile = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!name.trim()) {
+      setName(user?.name || "");
+    }
+    toast.success("تم حفظ الاسم المعروض في هذه الجلسة. تحديث بيانات الحساب الدائمة غير متاح في هذا الإصدار.");
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success('تم حفظ التعديلات وتحديث الملف الشخصي بنجاح!');
+  const downloadInvoice = (invoice: Parameters<typeof generateInvoicePdf>[0]) => {
+    const blob = generateInvoicePdf(invoice);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${invoice.invoiceNumber}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
-  const userBookings = [
-    { id: 'BK-8942', title: 'داسيا لوغان موديل 2024', city: 'مراكش', dates: '10 سبتمبر - 15 سبتمبر 2026', status: 'مؤكد', price: '1,500 درهم' },
-    { id: 'BK-5521', title: 'شقة فاخرة في جليز', city: 'مراكش', dates: '01 أكتوبر - 07 أكتوبر 2026', status: 'قيد المراجعة', price: '4,200 درهم' }
-  ];
+  if (authLoading || (isAuthenticated && bookingsQuery.isLoading && invoicesQuery.isLoading)) {
+    return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">جاري تحميل بيانات الحساب...</div>;
+  }
 
-  const userFavorites = LISTINGS.slice(0, 2);
+  if (!isAuthenticated || !user) return null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-12 px-4 transition-colors duration-500" dir="rtl">
-      <div className="container mx-auto max-w-5xl space-y-8">
-        
-        {/* رأس الملف الشخصي */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 font-black text-3xl shadow-lg border-2 border-amber-400/30">
-              YM
-            </div>
-            <div className="space-y-1 text-right">
-              <div className="inline-flex items-center gap-1.5 text-xs bg-amber-500/10 text-amber-400 font-bold px-3 py-1 rounded-full border border-amber-500/20">
-                <ShieldCheck className="w-3.5 h-3.5" /> مستخدم معتمد وموثق
-              </div>
-              <h1 className="text-2xl font-black text-white">{name}</h1>
-              <p className="text-xs text-slate-400 flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-amber-500" /> {email} | <Phone className="w-3.5 h-3.5 text-amber-500" /> {phone}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800 text-xs">
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'info' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              البيانات الشخصية
-            </button>
-            <button
-              onClick={() => setActiveTab('bookings')}
-              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'bookings' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              حجوزاتي ({userBookings.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('searches')}
-              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'searches' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              البحوث المحفوظة ({savedSearches.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('favorites')}
-              className={`px-3 py-2 rounded-xl font-bold transition-all ${activeTab === 'favorites' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              المفضلة ({userFavorites.length})
-            </button>
-          </div>
-        </div>
-
-        {/* محتوى التبويبات */}
-        <div className="space-y-6">
-          {activeTab === 'info' && (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-8">
+    <div className="min-h-screen bg-background text-foreground py-8 px-4" dir="rtl">
+      <div className="container max-w-5xl mx-auto space-y-6">
+        <section className="bg-slate-900 text-white rounded-3xl p-6 md:p-8 shadow-xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-2xl">{initials}</div>
               <div>
-                <h2 className="text-lg font-black text-white mb-6 flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-amber-500" /> تعديل بيانات الملف الشخصي
-                </h2>
-
-                <form onSubmit={handleSaveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2 text-right">
-                    <label className="text-xs font-bold text-slate-300">الاسم الكامل</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 text-right">
-                    <label className="text-xs font-bold text-slate-300">البريد الإلكتروني</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 text-right">
-                    <label className="text-xs font-bold text-slate-300">رقم الهاتف</label>
-                    <input
-                      type="text"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 text-right">
-                    <label className="text-xs font-bold text-slate-300">المدينة المفضلة</label>
-                    <select
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-3 text-xs focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="مراكش">مراكش</option>
-                      <option value="أغادير">أغادير</option>
-                      <option value="الدار البيضاء">الدار البيضاء</option>
-                      <option value="طنجة">طنجة</option>
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-2 pt-4 flex justify-end">
-                    <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-6 py-3 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20">
-                      <Save className="w-4 h-4" /> حفظ التغييرات
-                    </Button>
-                  </div>
-                </form>
-              </div>
-
-              {/* تفضيلات المظهر والوضع الليلي */}
-              <div className="pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="space-y-1 text-right">
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    {theme === 'dark' ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
-                    تفضيلات المظهر والوضع الليلي
-                  </h3>
-                  <p className="text-xs text-slate-400">الوضع الحالي: <span className="text-amber-400 font-bold">{theme === 'dark' ? 'الوضع الليلي المريح (Dark)' : 'الوضع النهاري الساطع (Light)'}</span></p>
+                <div className="inline-flex items-center gap-1.5 text-xs bg-emerald-400/10 text-emerald-300 px-3 py-1 rounded-full mb-2">
+                  <ShieldCheck className="w-3.5 h-3.5" /> حساب مصادق عليه
                 </div>
-
-                {toggleTheme && (
-                  <Button
-                    onClick={() => {
-                      toggleTheme();
-                      toast.success(theme === 'dark' ? 'تم التبديل إلى الوضع النهاري ☀️' : 'تم التبديل إلى الوضع الليلي 🌙');
-                    }}
-                    className="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-5 py-2.5 rounded-xl text-xs border border-slate-700 shadow"
-                  >
-                    تبديل مظهر المنصة الآن
-                  </Button>
-                )}
+                <h1 className="text-2xl font-black">{displayName}</h1>
+                <p className="text-sm text-slate-300 flex items-center gap-2 mt-1"><Mail className="w-4 h-4 text-amber-400" />{user.email || "البريد غير متوفر"}</p>
               </div>
             </div>
-          )}
-
-          {activeTab === 'searches' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Bookmark className="w-5 h-5 text-amber-500" /> إدارة عمليات البحث المحفوظة ({savedSearches.length})
-              </h2>
-
-              <div className="grid grid-cols-1 gap-4">
-                {savedSearches.length === 0 ? (
-                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center text-slate-400 text-xs">
-                    لا توجد عمليات بحث محفوظة حالياً. يمكنك حفظ عمليات البحث من الصفحة الرئيسية أو صفحة البحث المتقدم.
-                  </div>
-                ) : (
-                  savedSearches.map(search => (
-                    <div key={search.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
-                      <div className="space-y-1 text-right">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-amber-400">{search.date}</span>
-                          <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 font-bold">
-                            {search.count} نتائج مطابقة
-                          </span>
-                        </div>
-                        <h3 className="text-base font-bold text-white">"{search.query}"</h3>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Link href={`/search?q=${encodeURIComponent(search.query)}`}>
-                          <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow">
-                            <ExternalLink className="w-3.5 h-3.5" /> تنفيذ البحث
-                          </Button>
-                        </Link>
-                        <Button
-                          onClick={() => handleDeleteSearch(search.id)}
-                          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-2 rounded-xl text-xs"
-                          title="حذف البحث المحفوظ"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {([
+                ["info", "البيانات الشخصية", UserRound],
+                ["bookings", `حجوزاتي (${bookingsQuery.data?.length ?? 0})`, Calendar],
+                ["invoices", `فواتيري (${invoicesQuery.data?.length ?? 0})`, Receipt],
+              ] as const).map(([tab, label, Icon]) => (
+                <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 ${activeTab === tab ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:text-white"}`}>
+                  <Icon className="w-3.5 h-3.5" /> {label}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+        </section>
 
-          {activeTab === 'bookings' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-amber-500" /> سجل الحجوزات السابقة والحالية
-              </h2>
-
-              <div className="grid grid-cols-1 gap-4">
-                {userBookings.map(booking => (
-                  <div key={booking.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
-                    <div className="space-y-1 text-right">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-extrabold text-amber-400">{booking.id}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${booking.status === 'مؤكد' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                          {booking.status}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-bold text-white">{booking.title}</h3>
-                      <p className="text-xs text-slate-400 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-amber-500" /> {booking.city} | التواريخ: {booking.dates}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="text-left">
-                        <div className="text-[10px] text-slate-400">إجمالي السعر</div>
-                        <div className="text-base font-black text-amber-400">{booking.price}</div>
-                      </div>
-                      <Link href="/my-bookings">
-                        <Button className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-xs">
-                          التفاصيل
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {activeTab === "info" && (
+          <section className="bg-card border border-border rounded-3xl p-6 md:p-8 space-y-8">
+            <div>
+              <h2 className="text-lg font-black flex items-center gap-2"><UserRound className="w-5 h-5 text-amber-500" /> بيانات الحساب</h2>
+              <p className="text-sm text-muted-foreground mt-2">هذه البيانات مصدرها جلسة المصادقة الحالية، ولا يتم عرض رقم هاتف أو مدينة غير محفوظين في الحساب.</p>
             </div>
-          )}
-
-          {activeTab === 'favorites' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-black text-white flex items-center gap-2">
-                <Heart className="w-5 h-5 text-amber-500" /> المفضلة المحفوظة ({userFavorites.length})
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {userFavorites.map(item => (
-                  <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl flex flex-col">
-                    <div className="relative h-48 bg-slate-950">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                      <div className="absolute top-3 right-3 bg-amber-500 text-slate-950 px-3 py-1 rounded-full text-xs font-extrabold shadow">
-                        {item.pricePerUnit} {item.unitLabel}
-                      </div>
-                    </div>
-                    <div className="p-6 space-y-3 flex-grow flex flex-col justify-between">
-                      <div className="space-y-1">
-                        <div className="text-xs text-slate-400 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-amber-500" /> {item.city}
-                        </div>
-                        <h3 className="text-base font-bold text-white">{item.title}</h3>
-                      </div>
-                      <Link href={`/car/${item.id}`}>
-                        <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2 rounded-xl text-xs">
-                          عرض العرض والحجز
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+            <form onSubmit={saveProfile} className="grid md:grid-cols-2 gap-5">
+              <label className="space-y-2 text-sm">
+                <span className="font-bold">الاسم المعروض</span>
+                <input value={name || user.name || ""} onChange={event => setName(event.target.value)} className="w-full rounded-xl border border-border bg-background px-3 py-3" placeholder="اسمك" />
+              </label>
+              <label className="space-y-2 text-sm">
+                <span className="font-bold">البريد الإلكتروني</span>
+                <input value={user.email || ""} readOnly className="w-full rounded-xl border border-border bg-muted px-3 py-3 text-muted-foreground" />
+              </label>
+              <div className="md:col-span-2 flex justify-end">
+                <Button type="submit" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold"><Save className="w-4 h-4 ml-2" /> حفظ الاسم المعروض</Button>
               </div>
+            </form>
+            <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-bold flex items-center gap-2">{theme === "dark" ? <Moon className="w-4 h-4 text-amber-500" /> : <Sun className="w-4 h-4 text-amber-500" />} مظهر المنصة</h3>
+                <p className="text-sm text-muted-foreground mt-1">الوضع الحالي: {theme === "dark" ? "ليلي" : "نهاري"}</p>
+              </div>
+              <Button type="button" variant="outline" onClick={toggleTheme}>تبديل المظهر</Button>
             </div>
-          )}
-        </div>
+          </section>
+        )}
 
+        {activeTab === "bookings" && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-black flex items-center gap-2"><Calendar className="w-5 h-5 text-amber-500" /> الحجوزات المرتبطة بحسابك</h2>
+            {bookingsQuery.isError ? <EmptyState text="تعذر تحميل الحجوزات حالياً. حاول تحديث الصفحة." /> : bookingsQuery.data?.length ? bookingsQuery.data.map(booking => {
+              const invoice = invoicesByBooking.get(booking.id);
+              return <div key={booking.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2"><span className="text-xs font-bold text-amber-600">BK-{booking.id}</span><span className="text-xs rounded-full px-2 py-1 bg-muted">{statusLabel[booking.status] || booking.status}</span></div>
+                  <p className="font-bold">حجز إعلان رقم {booking.listingId}</p>
+                  <p className="text-sm text-muted-foreground">{date(booking.startDate)} — {date(booking.endDate)}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <strong className="text-amber-600">{money(booking.totalPrice)}</strong>
+                  {invoice && <Button type="button" size="sm" variant="outline" onClick={() => downloadInvoice(invoice)}><Download className="w-4 h-4 ml-1" /> الفاتورة</Button>}
+                </div>
+              </div>;
+            }) : <EmptyState text="لا توجد حجوزات مرتبطة بهذا الحساب بعد." />}
+          </section>
+        )}
+
+        {activeTab === "invoices" && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-black flex items-center gap-2"><Receipt className="w-5 h-5 text-amber-500" /> الفواتير الإلكترونية</h2><span className="text-xs text-muted-foreground">بيانات محفوظة في قاعدة البيانات</span></div>
+            {invoicesQuery.isError ? <EmptyState text="تعذر تحميل الفواتير حالياً." /> : invoicesQuery.data?.length ? invoicesQuery.data.map(invoice => <div key={invoice.id} className="bg-card border border-border rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2"><span className="font-bold text-amber-600">{invoice.invoiceNumber}</span><span className={`text-xs rounded-full px-2 py-1 ${invoice.status === "Issued" ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>{statusLabel[invoice.status] || invoice.status}</span></div>
+                <p className="text-sm">حجز #{invoice.bookingId} · {invoice.listingTitle || "إعلان تأجير"}</p>
+                <p className="text-xs text-muted-foreground mt-1">TVA {invoice.vatRateBasisPoints / 100}% · الدفع: {invoice.paymentStatus} · {date(invoice.issuedAt)}</p>
+              </div>
+              <div className="flex items-center gap-4"><strong className="text-lg">{money(invoice.total, invoice.currency)}</strong><Button type="button" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold" onClick={() => downloadInvoice(invoice)}><Download className="w-4 h-4 ml-1" /> تنزيل PDF</Button></div>
+            </div>) : <EmptyState text="لا توجد فواتير لهذا الحساب بعد. ستظهر هنا بعد تسجيل الدفع." />}
+          </section>
+        )}
       </div>
     </div>
   );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return <div className="bg-card border border-dashed border-border rounded-2xl p-10 text-center text-muted-foreground text-sm"><FileText className="w-8 h-8 mx-auto mb-3 text-amber-500" />{text}</div>;
 }

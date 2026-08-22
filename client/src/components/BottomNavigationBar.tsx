@@ -5,7 +5,7 @@ const navItems = [
   { label: "الرئيسية", path: "/", icon: Home },
   { label: "البحث", path: "/search", icon: Search },
   { label: "حجوزاتي", path: "/my-bookings", icon: CalendarDays },
-  { label: "الحساب", path: "/dashboard", icon: UserRound },
+  { label: "الحساب", path: "/profile", icon: UserRound },
 ];
 
 export default function BottomNavigationBar() {

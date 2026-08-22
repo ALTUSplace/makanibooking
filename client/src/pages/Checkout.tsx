@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreditCard, Wallet, Banknote, ShieldCheck, CheckCircle2, ArrowRight, FileText, Percent, Lock } from 'lucide-react';
+import { CreditCard, Wallet, CheckCircle2, ArrowRight, FileText, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { LoadingAnimation } from '@/components/LoadingAnimation';
@@ -12,71 +12,84 @@ export default function CheckoutPage() {
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
 
-  const listingId = Number(searchParams.get('listingId') || 1);
-  const title = searchParams.get('title') || 'مركبة فاخرة / عقار مميز';
-  const pricePerDay = Number(searchParams.get('pricePerDay') || 500);
-  const days = Number(searchParams.get('days') || 3);
-  const subtotal = pricePerDay * days;
-  const commission = Math.round(subtotal * 0.10); // 10% platform commission as requested
-  const netEarnings = subtotal - commission; // Partner net earnings
-  const total = subtotal;
+  const listingId = Number(searchParams.get('listingId'));
+  const title = searchParams.get('title') || '';
+  const pricePerDay = Number(searchParams.get('pricePerDay'));
+  const startDateParam = searchParams.get('startDate') || '';
+  const endDateParam = searchParams.get('endDate') || '';
+  const parsedStart = startDateParam ? new Date(`${startDateParam}T12:00:00`) : null;
+  const parsedEnd = endDateParam ? new Date(`${endDateParam}T12:00:00`) : null;
+  const hasValidDates = Boolean(parsedStart && parsedEnd && !Number.isNaN(parsedStart.getTime()) && !Number.isNaN(parsedEnd.getTime()) && parsedEnd > parsedStart);
+  const requestedDays = Number(searchParams.get('days'));
+  const daysFromDates = hasValidDates ? Math.ceil((parsedEnd!.getTime() - parsedStart!.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const days = daysFromDates || (Number.isFinite(requestedDays) && requestedDays > 0 ? Math.floor(requestedDays) : 0);
+  const subtotal = Number.isFinite(pricePerDay) && pricePerDay > 0 && days > 0 ? pricePerDay * days : 0;
   const requestedContractType = searchParams.get('contractType');
   const contractType = requestedContractType === 'commercial' || requestedContractType === 'professional' ? requestedContractType : null;
   const premises = searchParams.get('premises') || title;
   const city = searchParams.get('city') || 'المغرب';
   const landlordName = searchParams.get('landlordName') || 'المالك / الشركة المؤجرة';
 
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet' | 'cod'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'cmi_card' | 'bank_transfer'>('cmi_card');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardHolder, setCardHolder] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvv, setCvv] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
 
+  const createPaymentMutation = trpc.payments.create.useMutation();
   const createBookingMutation = trpc.bookings.create.useMutation({
     onSuccess: (data) => {
-      toast.success('تمت عملية الدفع بنجاح وتأكيد الحجز. سيتم تجهيز عقد الكراء تلقائياً.');
-      const params = new URLSearchParams({
-        title,
-        total: String(total),
-        bookingId: String(data.bookingId),
-        premises,
-        city,
-        landlordName,
-        monthlyRent: String(total),
+      createPaymentMutation.mutate({ bookingId: data.bookingId, method: paymentMethod }, {
+        onSuccess: (paymentResult) => {
+          const invoice = paymentResult.invoice;
+          toast.success(paymentResult.payment.status === 'Succeeded'
+            ? 'تمت محاكاة الدفع بنجاح وإصدار الفاتورة. سيصبح الحجز مؤكداً بعد موافقة المالك.'
+            : 'تم تسجيل طلب التحويل البنكي وإنشاء فاتورة قيد المراجعة.');
+          const params = new URLSearchParams({
+            title,
+            total: String(invoice.total),
+            bookingId: String(data.bookingId),
+            invoiceId: String(invoice.id),
+            invoiceNumber: invoice.invoiceNumber,
+            paymentStatus: paymentResult.payment.status,
+            invoiceStatus: invoice.status,
+            premises,
+            city,
+            landlordName,
+            startDate: startDateParam,
+            endDate: endDateParam,
+            monthlyRent: String(invoice.subtotal),
+            bookingStatus: 'Pending',
+          });
+          if (contractType) params.set('contractType', contractType);
+          setLocation(`/success?${params.toString()}`);
+        },
+        onError: (err) => {
+          toast.error(err.message || 'تم إنشاء الحجز لكن تعذر تسجيل الدفع. يمكنك إعادة المحاولة من صفحة حجوزاتك.');
+          setIsSubmitting(false);
+        },
       });
-      if (contractType) params.set('contractType', contractType);
-      setLocation(`/success?${params.toString()}`);
     },
     onError: (err) => {
-      toast.error(err.message || 'حدث خطأ أثناء معالجة الحجز والدفع.');
+      toast.error(err.message || 'حدث خطأ أثناء إنشاء الحجز.');
       setIsSubmitting(false);
     }
   });
 
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!Number.isInteger(listingId) || listingId <= 0 || !title || !hasValidDates || !Number.isFinite(pricePerDay) || pricePerDay <= 0) {
+      toast.error('رابط الحجز غير مكتمل. عد إلى تفاصيل الإعلان واختر تواريخ صحيحة قبل المتابعة.');
+      return;
+    }
     if (!agreeTerms) {
       toast.error('يرجى الموافقة على الشروط والأحكام وسياسة الضمان (Escrow) للمتابعة');
       return;
     }
-    if (paymentMethod === 'card' && (!cardNumber || !cardHolder || !expiry || !cvv)) {
-      toast.error('يرجى إدخال كافة بيانات بطاقة الائتمان بشكل صحيح');
-      return;
-    }
-
     setIsSubmitting(true);
-    const today = new Date();
-    const endDate = new Date();
-    endDate.setDate(today.getDate() + days);
-
     setTimeout(() => {
       createBookingMutation.mutate({
         listingId,
-        startDate: today.toISOString(),
-        endDate: endDate.toISOString(),
-        totalPrice: total,
+        startDate: parsedStart!.toISOString(),
+        endDate: parsedEnd!.toISOString(),
       });
     }, 1200);
   };
@@ -85,8 +98,8 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <LoadingAnimation 
-          text="جاري المعالجة الآمنة عبر بوابة CMI / Stripe..." 
-          subtext="نقوم بتأكيد التواريخ، قفل التقويم، وتوليد عقد الإيجار الرقمي" 
+          text="جاري تسجيل الحجز والدفع المحاكى عبر CMI..." 
+          subtext="يُحفظ مبلغ الفاتورة من الخادم؛ سيُتاح العقد بعد موافقة المالك" 
         />
       </div>
     );
@@ -106,7 +119,15 @@ export default function CheckoutPage() {
           </Button>
         </div>
 
-        <form onSubmit={handleCheckout} className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {!Number.isInteger(listingId) || listingId <= 0 || !hasValidDates || !Number.isFinite(pricePerDay) || pricePerDay <= 0 ? (
+          <Card className="border-red-200 bg-red-50 text-red-900">
+            <CardContent className="p-8 text-center">
+              <p className="font-bold">لا يمكن فتح الدفع لأن بيانات الحجز ناقصة أو غير صحيحة.</p>
+              <p className="mt-2 text-sm">عد إلى تفاصيل الإعلان واختر تاريخ البداية والنهاية قبل المتابعة.</p>
+              <Button type="button" onClick={() => window.history.back()} className="mt-4 bg-[#0B3C5D] text-white">العودة إلى تفاصيل الإعلان</Button>
+            </CardContent>
+          </Card>
+        ) : <form onSubmit={handleCheckout} className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Payment Methods Section */}
           <div className="md:col-span-2 space-y-6">
             <Card className="border-border shadow-md">
@@ -118,9 +139,9 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                 {/* Credit Card */}
                 <div
-                  onClick={() => setPaymentMethod('card')}
+                  onClick={() => setPaymentMethod('cmi_card')}
                   className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                    paymentMethod === 'card' ? 'border-amber-500 bg-amber-500/5 shadow-sm' : 'border-border hover:border-amber-500/50'
+                    paymentMethod === 'cmi_card' ? 'border-amber-500 bg-amber-500/5 shadow-sm' : 'border-border hover:border-amber-500/50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -132,14 +153,14 @@ export default function CheckoutPage() {
                       <p className="text-xs text-muted-foreground">دفع آمن ومعتمد عبر مركز المعاملات البنكية</p>
                     </div>
                   </div>
-                  <input type="radio" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-amber-500 w-5 h-5 cursor-pointer" />
+                  <input type="radio" checked={paymentMethod === 'cmi_card'} onChange={() => setPaymentMethod('cmi_card')} className="accent-amber-500 w-5 h-5 cursor-pointer" />
                 </div>
 
                 {/* E-Wallets */}
                 <div
-                  onClick={() => setPaymentMethod('wallet')}
+                  onClick={() => setPaymentMethod('bank_transfer')}
                   className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                    paymentMethod === 'wallet' ? 'border-amber-500 bg-amber-500/5 shadow-sm' : 'border-border hover:border-amber-500/50'
+                    paymentMethod === 'bank_transfer' ? 'border-amber-500 bg-amber-500/5 shadow-sm' : 'border-border hover:border-amber-500/50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -147,79 +168,17 @@ export default function CheckoutPage() {
                       <Wallet className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-bold">المحافظ الرقمية والمحلية (WafaCash / Cash Plus / PayPal)</h4>
-                      <p className="text-xs text-muted-foreground">تأكيد فوري عبر المحافظ المعتمدة في المغرب</p>
+                      <h4 className="font-bold">التحويل البنكي المباشر (RIB)</h4>
+                      <p className="text-xs text-muted-foreground">تُنشأ الفاتورة بحالة قيد المراجعة إلى حين تأكيد التحويل</p>
                     </div>
                   </div>
-                  <input type="radio" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-amber-500 w-5 h-5 cursor-pointer" />
+                  <input type="radio" checked={paymentMethod === 'bank_transfer'} onChange={() => setPaymentMethod('bank_transfer')} className="accent-amber-500 w-5 h-5 cursor-pointer" />
                 </div>
 
-                {/* Cash on Handover */}
-                <div
-                  onClick={() => setPaymentMethod('cod')}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                    paymentMethod === 'cod' ? 'border-amber-500 bg-amber-500/5 shadow-sm' : 'border-border hover:border-amber-500/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-600">
-                      <Banknote className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold">الدفع عند الاستلام (عربون ضمان معتمد)</h4>
-                      <p className="text-xs text-muted-foreground">دفع العربون الكترونياً والباقي عند استلام المفتاح</p>
-                    </div>
-                  </div>
-                  <input type="radio" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-amber-500 w-5 h-5 cursor-pointer" />
-                </div>
-
-                {paymentMethod === 'card' && (
-                  <div className="mt-4 p-4 bg-muted/30 rounded-xl border border-border space-y-4 animate-in fade-in">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground block mb-1">اسم حامل البطاقة</label>
-                      <input 
-                        type="text" 
-                        placeholder="الاسم كما يظهر على البطاقة" 
-                        value={cardHolder}
-                        onChange={(e) => setCardHolder(e.target.value)}
-                        className="w-full p-3 rounded-xl bg-background border border-border text-sm" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground block mb-1">رقم البطاقة الائتمانية</label>
-                      <input 
-                        type="text" 
-                        placeholder="4532 •••• •••• ••••" 
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        maxLength={19}
-                        className="w-full p-3 rounded-xl bg-background border border-border text-sm font-mono" 
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-semibold text-muted-foreground block mb-1">تاريخ الانتهاء</label>
-                        <input 
-                          type="text" 
-                          placeholder="MM/YY" 
-                          value={expiry}
-                          onChange={(e) => setExpiry(e.target.value)}
-                          maxLength={5}
-                          className="w-full p-3 rounded-xl bg-background border border-border text-sm" 
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-muted-foreground block mb-1">رمز الأمان (CVV)</label>
-                        <input 
-                          type="password" 
-                          placeholder="123" 
-                          value={cvv}
-                          onChange={(e) => setCvv(e.target.value)}
-                          maxLength={4}
-                          className="w-full p-3 rounded-xl bg-background border border-border text-sm" 
-                        />
-                      </div>
-                    </div>
+                {paymentMethod === 'cmi_card' && (
+                  <div className="mt-4 p-4 bg-muted/30 rounded-xl border border-amber-500/20 space-y-2 text-sm">
+                    <div className="flex items-center gap-2 font-bold"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> محاكاة CMI مفعّلة</div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">لا تدخل رقم بطاقة أو رمز CVV حقيقياً. هذه نسخة محاكاة لا تتصل بمؤسسة CMI، وسيُحفظ فقط مرجع العملية وحالتها دون بيانات البطاقة.</p>
                   </div>
                 )}
               </CardContent>
@@ -267,19 +226,16 @@ export default function CheckoutPage() {
                     <span className="text-muted-foreground">المجموع الفرعي:</span>
                     <span className="font-semibold">{subtotal} د.م</span>
                   </div>
-                  <div className="flex justify-between text-emerald-600 font-medium pt-2 border-t border-border">
-                    <span className="flex items-center gap-1"><Percent className="w-3.5 h-3.5" /> عمولة الوسيط (10%):</span>
-                    <span>{commission} د.م</span>
+                  <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border">
+                    <span>المجموع الأولي من بيانات الإعلان:</span>
+                    <span>{subtotal} د.م</span>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground bg-amber-500/5 p-2 rounded-lg border border-amber-500/20">
-                    <span>صافي أرباح الشريك:</span>
-                    <span className="font-semibold text-amber-600">{netEarnings} د.م</span>
-                  </div>
+                  <p className="text-[11px] text-muted-foreground bg-amber-500/5 p-2 rounded-lg border border-amber-500/20 leading-relaxed">سيحسب الخادم العمولة وTVA والإجمالي النهائي من الإعلان والإعدادات المحفوظة، وستظهر القيم المعتمدة في الفاتورة بعد التسجيل.</p>
                 </div>
 
                 <div className="pt-4 border-t border-border flex justify-between items-center text-lg font-extrabold">
                   <span>الإجمالي النهائي:</span>
-                  <span className="text-amber-500">{total} د.م</span>
+                  <span className="text-amber-500">يحدده الخادم</span>
                 </div>
 
                 <Button
@@ -290,12 +246,12 @@ export default function CheckoutPage() {
                 </Button>
 
                 <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-2">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600" /> معاملة مشفرة 256-bit ومضمونة بنسبة 100%
+                  <Lock className="w-3.5 h-3.5 text-emerald-600" /> لا تُحفظ بيانات البطاقة؛ الدفع المعروض محاكاة فقط
                 </div>
               </CardContent>
             </Card>
           </div>
-        </form>
+        </form>}
       </div>
     </div>
   );

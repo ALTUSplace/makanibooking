@@ -174,6 +174,29 @@ export const disputes = mysqlTable("disputes", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
+export const disputeAttachments = mysqlTable("dispute_attachments", {
+  id: int("attachment_id").autoincrement().primaryKey(),
+  disputeId: int("dispute_id").notNull(),
+  fileKey: varchar("file_key", { length: 512 }).notNull(),
+  originalFileName: varchar("original_file_name", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  fileSize: int("file_size").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const supportTickets = mysqlTable("support_tickets", {
+  id: int("ticket_id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  category: varchar("category", { length: 120 }).notNull(),
+  description: text("description").notNull(),
+  status: mysqlEnum("status", ["Open", "InProgress", "Resolved"]).default("Open").notNull(),
+  lastResponse: text("last_response"),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Listing = typeof listings.$inferSelect;
@@ -198,3 +221,7 @@ export type CommercialLeaseContract = typeof commercialLeaseContracts.$inferSele
 export type InsertCommercialLeaseContract = typeof commercialLeaseContracts.$inferInsert;
 export type Dispute = typeof disputes.$inferSelect;
 export type InsertDispute = typeof disputes.$inferInsert;
+export type DisputeAttachment = typeof disputeAttachments.$inferSelect;
+export type InsertDisputeAttachment = typeof disputeAttachments.$inferInsert;
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = typeof supportTickets.$inferInsert;

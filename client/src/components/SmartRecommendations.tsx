@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Star, MapPin, ArrowRight, Zap, Car, Building2 } from 'lucide-react';
+import { Sparkles, MapPin, ArrowRight, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,11 +37,6 @@ export function SmartRecommendations() {
           reason = `بناءً على اهتمامك بالعروض في مدينة ${item.city}`;
         }
 
-        if (item.rating >= 4.9) {
-          score += 5;
-          reason = 'من أعلى المركبات والعقارات تقييماً وثقة من الزوار';
-        }
-
         return { item, score, reason };
       });
 
@@ -60,12 +55,8 @@ export function SmartRecommendations() {
 
     } catch (e) {
       // Fallback في حال تعذر القراءة
-      setRecommendations(LISTINGS.slice(0, 3));
-      setReasonMap({
-        [LISTINGS[0]?.id || '1']: 'الأكثر طلباً هذا الأسبوع',
-        [LISTINGS[1]?.id || '2']: 'بناءً على تفضيلات الزوار',
-        [LISTINGS[2]?.id || '3']: 'توصية خاصة للوكالات المتميزة'
-      });
+      setRecommendations([]);
+      setReasonMap({});
     }
   }, []);
 
@@ -77,15 +68,15 @@ export function SmartRecommendations() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
           <div>
             <div className="flex items-center gap-2 text-amber-500 mb-2">
-              <Sparkles className="w-5 h-5 animate-pulse" />
-              <span className="text-sm font-semibold tracking-wide uppercase">التوصيات الذكية بالذكاء الاصطناعي</span>
+              <Sparkles className="w-5 h-5" />
+              <span className="text-sm font-semibold tracking-wide uppercase">اقتراحات مخصصة</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-              مُقترحة خصيصاً بناءً على تصفحك واهتماماتك
+اقتراحات مخصصة بناءً على تصفحك واهتماماتك
             </h2>
           </div>
           <Badge variant="outline" className="px-4 py-1.5 text-xs font-medium border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <Zap className="w-3.5 h-3.5 ml-1.5 inline" /> تحليل حي لسلوك التصفح
+            <Zap className="w-3.5 h-3.5 ml-1.5 inline" /> مبنية على تفضيلاتك
           </Badge>
         </div>
 
@@ -98,9 +89,6 @@ export function SmartRecommendations() {
                   alt={item.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-md">
-                  <Sparkles className="w-3 h-3" /> مطابقة ذكية 96%
-                </div>
                 <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-xs text-white flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-amber-400" /> {item.city}
                 </div>
@@ -115,9 +103,7 @@ export function SmartRecommendations() {
                   <h3 className="font-bold text-lg text-foreground group-hover:text-amber-600 transition-colors line-clamp-1">
                     {item.title}
                   </h3>
-                  <div className="flex items-center gap-1 text-amber-500 text-sm font-semibold shrink-0">
-                    <Star className="w-4 h-4 fill-amber-500" /> {item.rating}
-                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">لا توجد تقييمات موثقة بعد</span>
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/40">
@@ -127,7 +113,7 @@ export function SmartRecommendations() {
                   </div>
                   <Button 
                     size="sm" 
-                    onClick={() => setLocation(`/car/${item.id}`)}
+                    onClick={() => setLocation(item.type === 'car' ? `/car/${item.id}` : `/property/${item.id}`)}
                     className="bg-amber-500 hover:bg-amber-600 text-black font-semibold gap-1 cursor-pointer"
                   >
                     عرض التفاصيل <ArrowRight className="w-3.5 h-3.5 rotate-180" />

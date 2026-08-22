@@ -160,7 +160,7 @@ export default function NotificationsPage() {
           </div>
         </section>
 
-        <Link href="/help" className="flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground"><Settings className="h-4 w-4" />{language === "ar" ? "تحتاج مساعدة في إشعار؟ تواصل مع الدعم" : "Besoin d’aide ? Contacter le support"}</Link>
+        <Link href="/support-tickets" className="flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground"><Settings className="h-4 w-4" />{language === "ar" ? "تحتاج مساعدة في إشعار؟ تواصل مع الدعم" : "Besoin d’aide ? Contacter le support"}</Link>
       </div>
     </main>
   );

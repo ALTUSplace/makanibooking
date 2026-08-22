@@ -44,14 +44,14 @@ export default function PrivacyPolicy() {
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <h2 className="text-lg font-black text-[var(--brand-navy)] dark:text-white">{section.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground">{section.body}</p>
+              <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-200">{section.body}</p>
             </article>
           ))}
         </div>
 
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-border bg-muted/60 p-5 text-sm text-muted-foreground">
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-100 p-5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
           <LockKeyhole className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
-          <p className="leading-7">لمزيد من التفاصيل حول شروط الحجز والضمان والعمولات، راجع <Link href="/terms" className="font-bold text-amber-700 underline dark:text-amber-300">شروط الاستخدام</Link> أو تواصل مع <Link href="/help" className="font-bold text-amber-700 underline dark:text-amber-300">الدعم الفني</Link>.</p>
+          <p className="leading-7">لمزيد من التفاصيل حول شروط الحجز والضمان والعمولات، راجع <Link href="/terms" className="font-bold text-amber-700 underline dark:text-amber-300">شروط الاستخدام</Link> أو تواصل مع <Link href="/support-tickets" className="font-bold text-amber-700 underline dark:text-amber-300">الدعم الفني</Link>.</p>
         </div>
       </section>
     </div>

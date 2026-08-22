@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Building2, Car, ShieldCheck, Star, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { FAQSection } from '@/components/FAQSection';
@@ -34,11 +34,9 @@ export default function Home() {
     category: item.category === 'property' ? 'عقار' : 'سيارة',
     type: item.category,
     pricePerUnit: item.pricePerDay,
-    rating: 4.9,
-    reviewsCount: 12,
     image: item.imageUrl || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800',
     city: item.city || 'الدار البيضاء',
-    providerName: 'وكالة الأندلس المعتمدة',
+    providerName: 'بيانات الإعلان من B2-Rent',
     specs: {
       transmission: 'أوتوماتيك',
       fuel: 'ديزل / بنزين',
@@ -361,9 +359,9 @@ export default function Home() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
             <span className="text-[#E57C23] font-bold text-xs uppercase tracking-widest bg-[#E57C23]/10 px-3 py-1 rounded-full border border-[#E57C23]/30">
-              عروض مميزة وحصرية
+              إعلانات متاحة للتصفح
             </span>
-            <h2 className="text-3xl font-black text-[#0B3C5D] mt-2">الأكثر طلباً هذا الأسبوع</h2>
+            <h2 className="text-3xl font-black text-[#0B3C5D] mt-2">إعلانات مختارة من المنصة</h2>
           </div>
           <Link href="/search">
             <Button variant="outline" className="border-[#0B3C5D] text-[#0B3C5D] hover:bg-[#0B3C5D] hover:text-white font-bold rounded-xl text-xs">
@@ -391,10 +389,11 @@ export default function Home() {
                 <div className="absolute top-3 right-3 bg-[#0B3C5D]/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full shadow">
                   {item.category}
                 </div>
-                <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md text-[#0B3C5D] text-xs font-extrabold px-3 py-1 rounded-full shadow flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{item.rating} ({item.reviewsCount})</span>
-                </div>
+                {'rating' in item && item.rating != null && (
+                  <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md text-[#0B3C5D] text-xs font-extrabold px-3 py-1 rounded-full shadow">
+                    التقييم الموثق: {item.rating.toFixed(1)}
+                  </div>
+                )}
               </div>
 
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">

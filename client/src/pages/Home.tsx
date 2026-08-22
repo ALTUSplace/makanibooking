@@ -389,11 +389,6 @@ export default function Home() {
                 <div className="absolute top-3 right-3 bg-[#0B3C5D]/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full shadow">
                   {item.category}
                 </div>
-                {'rating' in item && item.rating != null && (
-                  <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md text-[#0B3C5D] text-xs font-extrabold px-3 py-1 rounded-full shadow">
-                    التقييم الموثق: {item.rating.toFixed(1)}
-                  </div>
-                )}
               </div>
 
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">

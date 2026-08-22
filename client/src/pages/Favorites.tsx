@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { LISTINGS, ListingItem } from '@/data/b2rent';
 import { Button } from '@/components/ui/button';
-import { Heart, MapPin, Star, ArrowRight, Trash2, SlidersHorizontal } from 'lucide-react';
+import { Heart, MapPin, Trash2, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Favorites() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [filterType, setFilterType] = useState<'all' | 'car' | 'property'>('all');
-  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('rating');
+  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc'>('price-asc');
 
   useEffect(() => {
     // جلب المفضلة من LocalStorage أو استخدام عينة افتراضية
@@ -37,7 +37,6 @@ export default function Favorites() {
   }).sort((a, b) => {
     if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
     if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
-    if (sortBy === 'rating') return (b.rating ?? 0) - (a.rating ?? 0);
     return 0;
   });
 
@@ -84,7 +83,6 @@ export default function Favorites() {
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="bg-slate-950 border border-slate-800 text-white rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-amber-500"
               >
-                <option value="rating">الأعلى تقييماً</option>
                 <option value="price-asc">السعر: من الأرخص للأغلى</option>
                 <option value="price-desc">السعر: من الأغلى للأرخص</option>
               </select>
@@ -135,10 +133,7 @@ export default function Favorites() {
                   </div>
 
                   <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
-                      <Star className="w-3.5 h-3.5 fill-current" />
-                      <span>{item.rating}</span>
-                    </div>
+                    <div className="text-xs text-slate-500">التقييمات تظهر بعد مراجعة موثقة</div>
                     <Link href={`/car/${item.id}`}>
                       <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow">
                         عرض التفاصيل

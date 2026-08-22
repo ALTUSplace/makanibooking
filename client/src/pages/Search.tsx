@@ -45,7 +45,7 @@ export default function Search() {
   const [searchQuery, setSearchQuery] = useState(naturalQuery);
   const [maxPrice, setMaxPrice] = useState(4000);
   const [excellenceOnly, setExcellenceOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('rating');
+  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc'>('price-asc');
   const [officeTypeFilter, setOfficeTypeFilter] = useState<string>('all');
   const [amenityFilters, setAmenityFilters] = useState<string[]>([]);
   const [rentalTermFilter, setRentalTermFilter] = useState<string>('all');
@@ -109,7 +109,6 @@ export default function Search() {
     }).sort((a, b) => {
       if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
       if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
-      if (sortBy === 'rating') return (b.rating ?? 0) - (a.rating ?? 0);
       return 0;
     });
   }, [cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
@@ -302,7 +301,6 @@ export default function Search() {
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
-                  <option value="rating">الأعلى تقييماً</option>
                   <option value="price-asc">السعر: من الأرخص للأغلى</option>
                   <option value="price-desc">السعر: من الأغلى للأرخص</option>
                 </select>
@@ -335,13 +333,7 @@ export default function Search() {
                         {item.city}
                       </div>
 
-                      {item.rating != null && (
-                        <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs flex items-center gap-1 font-semibold">
-                          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                          <span>{item.rating.toFixed(1)}</span>
-                        </div>
-                      )}
-
+    
                       {/* زر المقارنة */}
                       <button
                         onClick={() => toggleCompare(item)}
@@ -429,13 +421,7 @@ export default function Search() {
                 </div>
                 <div className="text-left">
                   <div className="text-2xl font-black text-amber-400">{quickViewItem.pricePerUnit} {quickViewItem.unitLabel}</div>
-                  {quickViewItem.rating != null ? (
-                    <div className="text-xs text-slate-400 flex items-center gap-1 justify-end">
-                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {quickViewItem.rating.toFixed(1)} ({quickViewItem.reviewsCount ?? 0} تقييم موثق)
-                    </div>
-                  ) : (
-                    <div className="text-xs text-slate-500">لا توجد تقييمات موثقة بعد</div>
-                  )}
+                  <div className="text-xs text-slate-500">التقييمات الموثقة تظهر في صفحة الإعلان بعد توفرها</div>
                 </div>
               </div>
 
@@ -528,10 +514,6 @@ export default function Search() {
                     <div className="flex justify-between py-2 border-b border-slate-800">
                       <span className="text-slate-400">المدينة:</span>
                       <span className="font-bold">{c.city}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-slate-800">
-                      <span className="text-slate-400">التقييم:</span>
-                      <span className="font-bold text-slate-400">{c.rating != null ? `⭐ ${c.rating.toFixed(1)}` : 'لا توجد تقييمات موثقة'}</span>
                     </div>
                     <div className="flex justify-between py-2">
                       <span className="text-slate-400">المزود:</span>

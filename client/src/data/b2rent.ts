@@ -3,8 +3,6 @@ export interface PartnerProvider {
   name: string;
   type: 'car_rental' | 'real_estate';
   city: string;
-  rating?: number;
-  reviewsCount?: number;
   isExcellence?: boolean;
   phone: string;
   email: string;
@@ -25,8 +23,6 @@ export interface ListingItem {
   unitLabel: string; // "درهم / يوم" or "درهم / ليلة"
   image: string;
   images: string[];
-  rating?: number;
-  reviewsCount?: number;
   features: string[];
   description: string;
   officeType?: 'private' | 'coworking' | 'meeting_room' | 'company_headquarters';

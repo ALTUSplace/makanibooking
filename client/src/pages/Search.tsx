@@ -370,7 +370,29 @@ export default function Search() {
                 ))}
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">مشاركة:</span>
+                  <button
+                    onClick={() => {
+                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`شاهد هذا العرض الرائع: ${quickViewItem.title} - ${quickViewItem.pricePerUnit} ${quickViewItem.unitLabel} في ${quickViewItem.city} عبر منصة B2-Rent: ${window.location.href}`)}`, '_blank');
+                    }}
+                    className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 p-2 rounded-xl text-xs flex items-center gap-1 transition-colors"
+                    title="مشاركة عبر واتساب"
+                  >
+                    واتساب
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast.success('تم نسخ رابط العرض بنجاح!');
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-xl text-xs transition-colors"
+                    title="نسخ الرابط"
+                  >
+                    نسخ الرابط
+                  </button>
+                </div>
                 <Button
                   onClick={() => setQuickViewItem(null)}
                   className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs"

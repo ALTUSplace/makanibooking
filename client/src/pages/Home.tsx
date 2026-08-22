@@ -365,7 +365,7 @@ export default function Home() {
         {/* Listing Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeListings.slice(0, 6).map((item) => (
-            <div key={item.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col group">
+            <div key={item.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-md hover:-translate-y-2 hover:shadow-2xl hover:border-[#E57C23]/60 transition-all duration-300 flex flex-col group">
               <div className="relative h-56 overflow-hidden">
                 <img 
                   src={item.image} 
@@ -429,7 +429,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col group">
+            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-48 overflow-hidden">
                 <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" alt="Car rental" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
@@ -443,7 +443,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col group">
+            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-48 overflow-hidden">
                 <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" alt="Real Estate" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
@@ -457,7 +457,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 flex flex-col group">
+            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-48 overflow-hidden">
                 <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" alt="Driving" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>

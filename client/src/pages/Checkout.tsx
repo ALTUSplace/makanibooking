@@ -6,6 +6,7 @@ import { CreditCard, Wallet, CheckCircle2, ArrowRight, FileText, Lock, ShieldChe
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { LoadingAnimation } from '@/components/LoadingAnimation';
+import { cancellationRefundPolicy } from '@/lib/legalDisclosure';
 
 export default function CheckoutPage() {
   const [, setLocation] = useLocation();
@@ -212,7 +213,7 @@ export default function CheckoutPage() {
                 className="mt-1 w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-500 cursor-pointer"
               />
               <label htmlFor="checkout_terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                أوافق على <a href="/terms" target="_blank" className="text-amber-500 underline font-bold">شروط الاستخدام وسياسة الضمان المالي (Escrow)</a> وإخلاء المسؤولية الذي يقر بأن B2-Rent منصة إعلانية ووسيط تقني فقط، وأن الشريك مسؤول عن الحالة الميكانيكية للسيارة أو حالة العقار ونظافته. كما أوافق على قواعد عمولة الوساطة بنسبة 10% وأقر بصحة البيانات المدرجة.
+                أوافق على <a href="/terms" target="_blank" className="text-amber-500 underline font-bold">شروط الاستخدام وسياسة الضمان المالي (Escrow)</a> وسياسة الإلغاء والاسترداد المبينة أدناه، وإخلاء المسؤولية الذي يقر بأن B2-Rent منصة إعلانية ووسيط تقني فقط، وأن الشريك مسؤول عن الحالة الميكانيكية للسيارة أو حالة العقار ونظافته. كما أوافق على قواعد عمولة الوساطة بنسبة 10% وأقر بصحة البيانات المدرجة.
               </label>
             </div>
           </div>
@@ -258,6 +259,14 @@ export default function CheckoutPage() {
                     <span>{subtotal} د.م</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground bg-amber-500/5 p-2 rounded-lg border border-amber-500/20 leading-relaxed">سيحسب الخادم العمولة وTVA والإجمالي النهائي من الإعلان والإعدادات المحفوظة، وستظهر القيم المعتمدة في الفاتورة بعد التسجيل.</p>
+                </div>
+
+                <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-right" aria-label="سياسة الإلغاء والاسترداد">
+                  <p className="font-black text-[#0B3C5D]">{cancellationRefundPolicy.ar.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600">{cancellationRefundPolicy.ar.summary}</p>
+                  <ul className="mt-2 list-disc space-y-1 pr-4 text-[11px] leading-5 text-slate-600">
+                    {cancellationRefundPolicy.ar.points.slice(0, 2).map((point) => <li key={point}>{point}</li>)}
+                  </ul>
                 </div>
 
                 <div className="pt-4 border-t border-border flex justify-between items-center text-lg font-extrabold gap-3" aria-live="polite">

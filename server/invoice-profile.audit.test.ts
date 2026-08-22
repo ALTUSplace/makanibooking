@@ -38,7 +38,7 @@ describe("invoice and profile audit contracts", () => {
     expect(bookingsPage).toMatch(/trpc\.invoices\.list\.useQuery/);
     expect(bookingsPage).toMatch(/الفاتورة PDF/);
     expect(successPage).toMatch(/trpc\.invoices\.getByBooking\.useQuery/);
-    expect(successPage).toMatch(/generateInvoicePdf\(invoice\)/);
+    expect(successPage).toMatch(/generateInvoicePdf\(\{[\s\S]*\.\.\.invoice/);
   });
 
   it("does not generate the lease contract before owner approval", () => {

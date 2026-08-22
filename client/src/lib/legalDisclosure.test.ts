@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEGAL_CONSENT_VERSION, getLegalDisclosurePlainText, legalDisclosure } from "./legalDisclosure";
+import { LEGAL_CONSENT_VERSION, getLegalDisclosurePlainText, legalDisclosure, cancellationRefundPolicy, getCancellationRefundPlainText } from "./legalDisclosure";
 
 describe("platform legal disclosure", () => {
   it("contains the four protection topics in Arabic and French", () => {
@@ -10,6 +10,15 @@ describe("platform legal disclosure", () => {
       expect(text).toContain(legalDisclosure[language].sections[1].title);
       expect(text).toContain(legalDisclosure[language].sections[2].title);
       expect(text).toContain(legalDisclosure[language].sections[3].title);
+    }
+  });
+
+  it("contains cancellation and refund policy in both languages", () => {
+    for (const language of ["ar", "fr"] as const) {
+      const text = getCancellationRefundPlainText(language);
+      expect(text).toContain(cancellationRefundPolicy[language].title);
+      expect(text).toContain(cancellationRefundPolicy[language].points[0]);
+      expect(text).toContain(cancellationRefundPolicy[language].points[1]);
     }
   });
 

@@ -47,6 +47,27 @@ export const legalDisclosure = {
   },
 } as const;
 
+export const cancellationRefundPolicy = {
+  ar: {
+    title: "سياسة الإلغاء والاسترداد",
+    summary: "يظهر مبلغ تأكيد الحجز باعتباره رسوماً للخدمة التقنية والربط. قبل الدفع، يجب على الزبون مراجعة شروط الإلغاء الخاصة بالحجز.",
+    points: [
+      "يُعد مبلغ تأكيد الحجز المدفوع عبر المنصة رسوماً للخدمة التقنية والربط، وقد يكون غير مسترد عند إلغاء الزبون أو عدم الحضور، ما لم تنص سياسة الحجز أو قاعدة قانونية آمرة على خلاف ذلك.",
+      "إذا تعذر على الشريك تقديم الخدمة المتفق عليها رغم أداء الزبون للمبلغ، يمكن للزبون فتح نزاع، وتراجع المنصة الحالة وقد تعيد رسوم الخدمة وفق السياسة المعلنة وشروط العقد.",
+      "تخضع أي مبالغ إضافية أو ضمانات أو مصاريف إلغاء لشروط العقد المكتوب بين الشريك والزبون، ولا تُعد هذه الصفحة بديلاً عن العقد أو عن الحقوق القانونية الآمرة.",
+    ],
+  },
+  fr: {
+    title: "Politique d'annulation et de remboursement",
+    summary: "Les frais de confirmation correspondent au service technique et à la mise en relation. Les conditions applicables sont affichées avant le paiement.",
+    points: [
+      "Les frais de confirmation payés sur la plateforme rémunèrent le service technique et la mise en relation. Ils peuvent être non remboursables en cas d'annulation ou de non-présentation du Client, sauf disposition contraire de la réservation ou d'une règle impérative.",
+      "Si le Partenaire ne peut pas fournir le service convenu malgré le paiement du Client, celui-ci peut ouvrir un litige. La plateforme examine le dossier et peut rembourser les frais de service selon la politique publiée et le contrat.",
+      "Les autres montants, dépôts de garantie et frais d'annulation sont régis par le contrat écrit entre le Partenaire et le Client. Cette page ne remplace ni le contrat ni les droits impératifs applicables.",
+    ],
+  },
+} as const;
+
 export type LegalLanguage = keyof typeof legalDisclosure;
 
 export function hasLegalConsent() {
@@ -68,6 +89,11 @@ export function clearLegalConsent() {
 export function getLegalDisclosurePlainText(language: LegalLanguage = "ar") {
   const content = legalDisclosure[language];
   return [content.title, ...content.sections.map((section) => `${section.title}: ${section.body}`)].join("\n\n");
+}
+
+export function getCancellationRefundPlainText(language: LegalLanguage = "ar") {
+  const content = cancellationRefundPolicy[language];
+  return [content.title, content.summary, ...content.points].join("\n\n");
 }
 
 export function getLegalDisclosureHtml(language: LegalLanguage = "ar") {

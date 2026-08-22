@@ -6,6 +6,7 @@ import { useRef, useState, useEffect } from 'react';
 import { playSuccessSound } from '@/lib/sound';
 import { trpc } from '@/lib/trpc';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
+import { cancellationRefundPolicy } from '@/lib/legalDisclosure';
 
 export default function Success() {
   const [, setLocation] = useLocation();
@@ -84,7 +85,11 @@ export default function Success() {
       toast.info('لم يتم تحميل الفاتورة بعد. يرجى الانتظار أو فتح صفحة حجوزاتك.');
       return;
     }
-    const blob = generateInvoicePdf(invoice);
+    const blob = generateInvoicePdf({
+      ...invoice,
+      cancellationPolicy: cancellationRefundPolicy.fr.points[0],
+      refundPolicy: cancellationRefundPolicy.fr.points[1],
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

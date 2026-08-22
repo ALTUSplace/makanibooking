@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, Users, Building2, CalendarDays, WalletCards, CheckCircle2, XCircle, ShieldAlert, Loader2, ArrowLeft, LifeBuoy, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, CalendarDays, WalletCards, CheckCircle2, XCircle, ShieldAlert, Loader2, ArrowLeft, LifeBuoy, ClipboardList, RotateCcw, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +24,11 @@ export default function AdminDashboard() {
   const payments = trpc.admin.payments.useQuery(undefined, { enabled: user?.role === 'admin' });
   const disputes = trpc.admin.disputes.useQuery(undefined, { enabled: user?.role === 'admin' });
   const supportTickets = trpc.admin.supportTickets.useQuery(undefined, { enabled: user?.role === 'admin' });
+  const refundRequests = trpc.admin.refundRequests.useQuery(undefined, { enabled: user?.role === 'admin' });
+  const auditLogs = trpc.admin.auditLogs.useQuery(undefined, { enabled: user?.role === 'admin' });
   const resolveDispute = trpc.admin.resolveDispute.useMutation({ onSuccess: async () => { toast.success('تم تحديث حالة النزاع'); await disputes.refetch(); }, onError: error => toast.error(error.message) });
   const updateSupportTicket = trpc.admin.updateSupportTicket.useMutation({ onSuccess: async () => { toast.success('تم تحديث تذكرة الدعم وإشعار صاحبها'); setTicketResponses({}); await supportTickets.refetch(); }, onError: error => toast.error(error.message) });
+  const reviewRefund = trpc.admin.reviewRefund.useMutation({ onSuccess: async () => { toast.success('تم تحديث طلب الاسترداد وإشعار صاحبه'); await Promise.all([refundRequests.refetch(), auditLogs.refetch()]); }, onError: error => toast.error(error.message) });
   const [commissionRate, setCommissionRate] = useState('10');
   const [ticketResponses, setTicketResponses] = useState<Record<number, string>>({});
   const updateCommission = trpc.admin.updateCommission.useMutation({ onSuccess: async () => { toast.success('تم تحديث عمولة المنصة'); await commissionSettings.refetch(); }, onError: error => toast.error(error.message) });
@@ -74,7 +77,7 @@ export default function AdminDashboard() {
         </section>
 
         <Tabs value={tab} onValueChange={setTab} dir="rtl">
-          <TabsList className="grid h-auto w-full grid-cols-2 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-7">
+          <TabsList className="grid h-auto w-full grid-cols-2 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-3 lg:grid-cols-9">
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="overview">نظرة عامة</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="listings">مراجعة الإعلانات</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="users">المستخدمون</TabsTrigger>
@@ -82,6 +85,8 @@ export default function AdminDashboard() {
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="finance">المالية</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="disputes">النزاعات</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="support">الدعم</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="refunds">الاستردادات</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="audit">سجل التدقيق</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><LayoutDashboard className="h-5 w-5 text-amber-600" />المؤشرات التشغيلية</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-3">
@@ -110,6 +115,16 @@ export default function AdminDashboard() {
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><WalletCards className="h-5 w-5 text-amber-600" />إعدادات العمولة والتسويات</CardTitle></CardHeader><CardContent className="space-y-5"><form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); const rate = Number(commissionRate); if (!Number.isFinite(rate) || rate < 0 || rate > 30) return toast.error('أدخل نسبة بين 0 و30'); updateCommission.mutate({ commissionRateBasisPoints: Math.round(rate * 100) }); }}><label className="flex-1 text-sm font-semibold">عمولة المنصة (%)<input className="mt-2 w-full rounded-xl border bg-background p-3" type="number" min="0" max="30" step="0.1" value={commissionRate} onChange={(event) => setCommissionRate(event.target.value)} /></label><Button type="submit" disabled={updateCommission.isPending}>حفظ النسبة الحالية {Number(commissionSettings.data?.commissionRateBasisPoints ?? 1000) / 100}%</Button></form><div className="grid gap-3 sm:grid-cols-3"><Stat label="عمولة المنصة" value={money(stats?.platformFees ?? 0)} icon={WalletCards} /><Stat label="إجمالي المعاملات" value={money(stats?.grossRevenue ?? 0)} icon={WalletCards} /><Stat label="طلبات السحب" value={String(payouts.data?.length ?? 0)} icon={WalletCards} /></div></CardContent></Card>
             <Card><CardHeader><CardTitle>سجل المدفوعات الفعلية</CardTitle></CardHeader><CardContent className="space-y-3">{payments.isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : payments.data?.length ? payments.data.map(item => <div key={item.id} className="flex flex-col gap-2 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">{money(item.amount)} · {item.method}</p><p className="text-xs text-slate-500">الحجز #{item.bookingId} · {item.payerName || `المستخدم #${item.payerId}`} · {item.payerEmail || 'بدون بريد'}</p></div><Badge variant={item.status === 'Succeeded' ? 'default' : 'secondary'}>{item.status}</Badge></div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد مدفوعات مسجلة.</p>}</CardContent></Card>
             <Card><CardHeader><CardTitle>طلبات تحويل مستحقات الملاك</CardTitle></CardHeader><CardContent className="space-y-3">{payouts.data?.length ? payouts.data.map(item => <div key={item.id} className="flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">{item.ownerName || `مالك #${item.ownerId}`} · {money(item.amount)}</p><p className="text-xs text-slate-500">{item.method} · {item.status} · {item.ownerEmail || 'بدون بريد'}</p></div><div className="flex flex-wrap gap-2">{item.status === 'Pending' && <><Button size="sm" onClick={() => reviewPayout.mutate({ payoutId: item.id, status: 'Approved' })}>اعتماد</Button><Button size="sm" variant="destructive" onClick={() => reviewPayout.mutate({ payoutId: item.id, status: 'Rejected', adminNote: 'لم تتم الموافقة' })}>رفض</Button></>}{item.status === 'Approved' && <Button size="sm" onClick={() => reviewPayout.mutate({ payoutId: item.id, status: 'Paid', reference: `B2-${item.id}` })}>تأكيد التحويل</Button>}</div></div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد طلبات سحب.</p>}</CardContent></Card>
+          </TabsContent>
+          <TabsContent value="refunds" className="mt-4">
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><RotateCcw className="h-5 w-5 text-amber-600" />طلبات الإلغاء والاسترداد</CardTitle></CardHeader><CardContent className="space-y-3">
+              {refundRequests.isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : refundRequests.data?.length ? refundRequests.data.map(item => <div key={item.id} className="flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">طلب #{item.id} · الحجز #{item.bookingId} · {money(item.amount)}</p><p className="text-xs text-slate-500">{item.requesterName || `المستخدم #${item.requestedBy}`} · {item.reason}</p><Badge variant={item.status === 'Paid' ? 'default' : 'secondary'}>{item.status}</Badge>{item.adminNote && <p className="mt-1 text-xs text-slate-500">ملاحظة: {item.adminNote}</p>}</div><div className="flex flex-wrap gap-2">{item.status === 'Pending' && <><Button size="sm" onClick={() => reviewRefund.mutate({ refundId: item.id, status: 'Approved', adminNote: 'تمت الموافقة المبدئية على الاسترداد.' })}>موافقة</Button><Button size="sm" variant="destructive" onClick={() => reviewRefund.mutate({ refundId: item.id, status: 'Rejected', adminNote: 'تم رفض الطلب بعد المراجعة.' })}>رفض</Button></>}{item.status === 'Approved' && <Button size="sm" onClick={() => reviewRefund.mutate({ refundId: item.id, status: 'Paid', adminNote: 'تم تسجيل دفع مبلغ الاسترداد.' })}>تسجيل الدفع</Button>}</div></div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد طلبات استرداد.</p>}
+            </CardContent></Card>
+          </TabsContent>
+          <TabsContent value="audit" className="mt-4">
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-amber-600" />سجل التدقيق الإداري</CardTitle></CardHeader><CardContent className="space-y-3">
+              {auditLogs.isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : auditLogs.data?.length ? auditLogs.data.map(item => <div key={item.id} className="rounded-xl border bg-white p-4"><div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><p className="font-bold text-[#0B3C5D]">{item.action} · {item.entityType}{item.entityId ? ` #${item.entityId}` : ''}</p><span className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleString('fr-MA')}</span></div><p className="mt-1 text-xs text-slate-500">بواسطة: {item.actorName || `المستخدم #${item.actorId}`}</p></div>) : <p className="py-8 text-center text-sm text-slate-500">لا توجد أحداث تدقيق بعد.</p>}
+            </CardContent></Card>
           </TabsContent>
           <TabsContent value="disputes" className="mt-4">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-amber-600" />مركز الشكاوى والنزاعات</CardTitle></CardHeader><CardContent className="space-y-3">

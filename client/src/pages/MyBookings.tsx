@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
-import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download, Receipt } from 'lucide-react';
+import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download, Receipt, MessageCircle } from 'lucide-react';
 import { generateInvoicePdf } from '@/lib/invoicePdf';
 
 const formatDate = (value: string | Date) => new Date(value).toLocaleDateString('fr-MA');
@@ -110,6 +110,9 @@ export default function MyBookings() {
                         <Receipt className="w-4 h-4" /> الفاتورة PDF
                       </Button>
                     )}
+                    <Link href={`/messages/${booking.id}`} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white px-4 py-2.5 rounded-xl text-xs font-semibold">
+                      <MessageCircle className="w-4 h-4" /> مراسلة الطرف الآخر
+                    </Link>
                     <a href="/support-tickets" className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold">
                       <Phone className="w-4 h-4" /> الدعم
                     </a>

@@ -42,6 +42,7 @@ const ProfilePage = lazy(() => import("./pages/Profile"));
 const CheckoutPage = lazy(() => import("./pages/Checkout"));
 const KycVerificationPage = lazy(() => import("./pages/KycVerification"));
 const VoucherPage = lazy(() => import("./pages/Voucher"));
+const BookingMessagesPage = lazy(() => import("./pages/BookingMessages"));
 const RegisterPage = lazy(() => import("./pages/Register"));
 
 function AccessGuard({ area, children }: { area: 'admin' | 'host'; children: React.ReactNode }) {
@@ -106,6 +107,7 @@ function Router() {
       <Route path={"/checkout"} component={CheckoutPage} />
       <Route path={"/kyc"}>{() => <Suspense fallback={<div className="min-h-screen grid place-items-center">جاري تحميل التحقق...</div>}><KycVerificationPage /></Suspense>}</Route>
       <Route path="/voucher/:code">{() => <Suspense fallback={<div className="min-h-screen grid place-items-center">جاري تحميل التذكرة...</div>}><VoucherPage /></Suspense>}</Route>
+      <Route path="/messages/:bookingId">{() => <Suspense fallback={<div className="min-h-screen grid place-items-center">جاري تحميل المراسلات...</div>}><BookingMessagesPage /></Suspense>}</Route>
       <Route path={"/help"}>{() => <Redirect to="/support-tickets" replace />}</Route>
       <Route path={"/support-tickets"} component={SupportTicketsPage} />
       <Route path={"/notifications"} component={NotificationsPage} />

@@ -7,7 +7,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers } from "../drizzle/schema";
+import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers, bookingMessages, auditLogs, refundRequests } from "../drizzle/schema";
 import { eq, and, lte, gte, lt, gt, desc, count, isNull, inArray, ne, sql } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
@@ -19,6 +19,26 @@ import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUr
 import { escapeIcal, parseIcalEvents, validateIcalImportUrl } from "../shared/ical";
 import { syncListingIcal } from "./ical";
 import { CANCELLATION_POLICY_VERSION, CANCELLATION_POLICY_TEXT, CANCELLATION_POLICY_FINGERPRINT } from "../shared/cancellationPolicySnapshot";
+
+async function writeAuditLog(input: {
+  actorId: number;
+  action: string;
+  entityType: string;
+  entityId?: number;
+  beforeData?: unknown;
+  afterData?: unknown;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(auditLogs).values({
+    actorId: input.actorId,
+    action: input.action,
+    entityType: input.entityType,
+    entityId: input.entityId,
+    beforeData: input.beforeData === undefined ? null : JSON.stringify(input.beforeData),
+    afterData: input.afterData === undefined ? null : JSON.stringify(input.afterData),
+  });
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -104,6 +124,77 @@ export const appRouter = router({
     }),
   }),
 
+  messages: router({
+    listByBooking: protectedProcedure
+      .input(z.object({ bookingId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const bookingRows = await db.select({ renterId: bookings.renterId, ownerId: listings.ownerId })
+          .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id))
+          .where(eq(bookings.id, input.bookingId)).limit(1);
+        const booking = bookingRows[0];
+        if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "الحجز غير موجود." });
+        const canRead = ctx.user!.role === "admin" || ctx.user!.id === booking.renterId || ctx.user!.id === booking.ownerId;
+        if (!canRead) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك الوصول إلى رسائل هذا الحجز." });
+        return db.select({ id: bookingMessages.id, bookingId: bookingMessages.bookingId, senderId: bookingMessages.senderId, recipientId: bookingMessages.recipientId, body: bookingMessages.body, readAt: bookingMessages.readAt, createdAt: bookingMessages.createdAt, senderName: users.name })
+          .from(bookingMessages).leftJoin(users, eq(bookingMessages.senderId, users.id))
+          .where(eq(bookingMessages.bookingId, input.bookingId)).orderBy(bookingMessages.createdAt);
+      }),
+    send: protectedProcedure
+      .input(z.object({ bookingId: z.number().int().positive(), body: z.string().trim().min(1).max(2000) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const bookingRows = await db.select({ renterId: bookings.renterId, ownerId: listings.ownerId, listingTitle: listings.title })
+          .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id))
+          .where(eq(bookings.id, input.bookingId)).limit(1);
+        const booking = bookingRows[0];
+        if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "الحجز غير موجود." });
+        const participants = [booking.renterId, booking.ownerId];
+        if (!participants.includes(ctx.user!.id)) throw new TRPCError({ code: "FORBIDDEN", message: "المراسلة متاحة فقط لأطراف الحجز." });
+        const recipientId = ctx.user!.id === booking.renterId ? booking.ownerId : booking.renterId;
+        const [inserted] = await db.insert(bookingMessages).values({ bookingId: input.bookingId, senderId: ctx.user!.id, recipientId, body: input.body });
+        const messageId = Number(inserted.insertId);
+        await safeNotifyUser({ userId: recipientId, type: "system", title: "رسالة جديدة حول الحجز / Nouveau message", message: input.body.slice(0, 180), href: `/my-bookings?booking=${input.bookingId}`, entityType: "booking_message", entityId: messageId });
+        return { success: true as const, messageId };
+      }),
+    markRead: protectedProcedure
+      .input(z.object({ messageId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        await db.update(bookingMessages).set({ readAt: new Date() }).where(and(eq(bookingMessages.id, input.messageId), eq(bookingMessages.recipientId, ctx.user!.id)));
+        return { success: true as const };
+      }),
+  }),
+
+  refunds: router({
+    listMine: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(refundRequests).where(eq(refundRequests.requestedBy, ctx.user!.id)).orderBy(desc(refundRequests.createdAt)).limit(100);
+    }),
+    request: protectedProcedure
+      .input(z.object({ bookingId: z.number().int().positive(), amount: z.number().int().positive(), reason: z.string().trim().min(5).max(2000) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const bookingRows = await db.select({ renterId: bookings.renterId, totalPrice: bookings.totalPrice, status: bookings.status, ownerId: listings.ownerId })
+          .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id)).where(eq(bookings.id, input.bookingId)).limit(1);
+        const booking = bookingRows[0];
+        if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "الحجز غير موجود." });
+        if (ctx.user!.id !== booking.renterId && ctx.user!.id !== booking.ownerId && ctx.user!.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك طلب استرداد لهذا الحجز." });
+        if (input.amount > booking.totalPrice) throw new TRPCError({ code: "BAD_REQUEST", message: "مبلغ الاسترداد لا يمكن أن يتجاوز قيمة الحجز." });
+        const pending = await db.select({ id: refundRequests.id }).from(refundRequests).where(and(eq(refundRequests.bookingId, input.bookingId), eq(refundRequests.status, "Pending"))).limit(1);
+        if (pending.length) throw new TRPCError({ code: "CONFLICT", message: "يوجد طلب استرداد قيد المراجعة لهذا الحجز." });
+        const [inserted] = await db.insert(refundRequests).values({ bookingId: input.bookingId, requestedBy: ctx.user!.id, amount: input.amount, reason: input.reason });
+        const refundId = Number(inserted.insertId);
+        await writeAuditLog({ actorId: ctx.user!.id, action: "refund.requested", entityType: "refund_request", entityId: refundId, afterData: { bookingId: input.bookingId, amount: input.amount, reason: input.reason } });
+        return { success: true as const, refundId };
+      }),
+  }),
+
   storage: router({
     uploadImage: ownerProcedure
       .input(z.object({
@@ -174,6 +265,30 @@ export const appRouter = router({
       }),
   }),
   admin: router({
+    auditLogs: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: auditLogs.id, actorId: auditLogs.actorId, actorName: users.name, action: auditLogs.action, entityType: auditLogs.entityType, entityId: auditLogs.entityId, beforeData: auditLogs.beforeData, afterData: auditLogs.afterData, createdAt: auditLogs.createdAt })
+        .from(auditLogs).leftJoin(users, eq(auditLogs.actorId, users.id)).orderBy(desc(auditLogs.createdAt)).limit(200);
+    }),
+    refundRequests: adminProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select({ id: refundRequests.id, bookingId: refundRequests.bookingId, requestedBy: refundRequests.requestedBy, requesterName: users.name, amount: refundRequests.amount, reason: refundRequests.reason, status: refundRequests.status, adminNote: refundRequests.adminNote, reviewedBy: refundRequests.reviewedBy, createdAt: refundRequests.createdAt, reviewedAt: refundRequests.reviewedAt })
+        .from(refundRequests).leftJoin(users, eq(refundRequests.requestedBy, users.id)).orderBy(desc(refundRequests.createdAt)).limit(200);
+    }),
+    reviewRefund: adminProcedure
+      .input(z.object({ refundId: z.number().int().positive(), status: z.enum(["Approved", "Rejected", "Paid"]), adminNote: z.string().trim().max(2000).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const current = await db.select().from(refundRequests).where(eq(refundRequests.id, input.refundId)).limit(1);
+        if (!current[0]) throw new TRPCError({ code: "NOT_FOUND", message: "طلب الاسترداد غير موجود." });
+        await db.update(refundRequests).set({ status: input.status, adminNote: input.adminNote || null, reviewedBy: ctx.user!.id, reviewedAt: new Date() }).where(eq(refundRequests.id, input.refundId));
+        await writeAuditLog({ actorId: ctx.user!.id, action: "refund.reviewed", entityType: "refund_request", entityId: input.refundId, beforeData: current[0], afterData: { ...current[0], status: input.status, adminNote: input.adminNote || null } });
+        await safeNotifyUser({ userId: current[0].requestedBy, type: "system", title: "تحديث طلب الاسترداد / Mise à jour du remboursement", message: `تم تحديث طلب الاسترداد #${input.refundId} إلى حالة ${input.status}.`, href: "/my-bookings", entityType: "refund_request", entityId: input.refundId });
+        return { success: true as const };
+      }),
     overview: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return { users: 0, owners: 0, renters: 0, listings: 0, pendingListings: 0, bookings: 0, grossRevenue: 0, platformFees: 0 };
@@ -213,10 +328,12 @@ export const appRouter = router({
     }),
     cancelBooking: adminProcedure
       .input(z.object({ bookingId: z.number().int().positive() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error('Database unavailable');
+        const before = await db.select().from(bookings).where(eq(bookings.id, input.bookingId)).limit(1);
         await db.update(bookings).set({ status: 'Cancelled' }).where(eq(bookings.id, input.bookingId));
+        await writeAuditLog({ actorId: ctx.user!.id, action: "booking.cancelled", entityType: "booking", entityId: input.bookingId, beforeData: before[0], afterData: { ...before[0], status: "Cancelled" } });
         return { success: true };
       }),
     listings: adminProcedure.query(async () => {

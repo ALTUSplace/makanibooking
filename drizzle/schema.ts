@@ -140,6 +140,49 @@ export const notifications = mysqlTable("notifications", {
   userUnreadIdx: index("notifications_user_unread_idx").on(table.userId, table.readAt),
 }));
 
+export const bookingMessages = mysqlTable("booking_messages", {
+  id: int("message_id").autoincrement().primaryKey(),
+  bookingId: int("booking_id").notNull(),
+  senderId: int("sender_id").notNull(),
+  recipientId: int("recipient_id").notNull(),
+  body: text("body").notNull(),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  bookingCreatedIdx: index("booking_messages_booking_created_idx").on(table.bookingId, table.createdAt),
+  recipientUnreadIdx: index("booking_messages_recipient_unread_idx").on(table.recipientId, table.readAt),
+}));
+
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("audit_log_id").autoincrement().primaryKey(),
+  actorId: int("actor_id").notNull(),
+  action: varchar("action", { length: 120 }).notNull(),
+  entityType: varchar("entity_type", { length: 80 }).notNull(),
+  entityId: int("entity_id"),
+  beforeData: text("before_data"),
+  afterData: text("after_data"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  entityIdx: index("audit_logs_entity_idx").on(table.entityType, table.entityId),
+  actorCreatedIdx: index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt),
+}));
+
+export const refundRequests = mysqlTable("refund_requests", {
+  id: int("refund_request_id").autoincrement().primaryKey(),
+  bookingId: int("booking_id").notNull(),
+  requestedBy: int("requested_by").notNull(),
+  amount: int("amount").notNull(),
+  reason: text("reason").notNull(),
+  status: mysqlEnum("status", ["Pending", "Approved", "Rejected", "Paid"]).default("Pending").notNull(),
+  adminNote: text("admin_note"),
+  reviewedBy: int("reviewed_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+}, (table) => ({
+  bookingIdx: index("refund_requests_booking_idx").on(table.bookingId, table.createdAt),
+  requesterIdx: index("refund_requests_requester_idx").on(table.requestedBy, table.status),
+}));
+
 export const platformSettings = mysqlTable("platform_settings", {
   id: int("setting_id").autoincrement().primaryKey(),
   commissionRateBasisPoints: int("commission_rate_basis_points").default(1000).notNull(),
@@ -241,6 +284,12 @@ export type InsertKycSubmission = typeof kycSubmissions.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
+export type BookingMessage = typeof bookingMessages.$inferSelect;
+export type InsertBookingMessage = typeof bookingMessages.$inferInsert;
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+export type RefundRequest = typeof refundRequests.$inferSelect;
+export type InsertRefundRequest = typeof refundRequests.$inferInsert;
 export type InsertNotification = typeof notifications.$inferInsert;
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = typeof platformSettings.$inferInsert;

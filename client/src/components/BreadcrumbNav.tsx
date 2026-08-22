@@ -28,24 +28,30 @@ const routeNames: Record<string, string> = {
   "/about": "من نحن",
 };
 
+function dynamicLabel(path: string, segment: string) {
+  if (path.startsWith("/property/")) return "تفاصيل العقار";
+  if (path.startsWith("/car/")) return "تفاصيل السيارة";
+  if (/^\d+$/.test(segment)) return `الإعلان رقم ${segment}`;
+  if (segment.startsWith("car_")) return "تفاصيل الإعلان";
+  return segment
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export default function BreadcrumbNav() {
   const [location] = useLocation();
-
   if (location === "/") return null;
 
   const pathSegments = location.split("/").filter(Boolean);
-  
-  // Build breadcrumb items
   const items = [{ label: "الرئيسية", path: "/" }];
   let currentPath = "";
 
   pathSegments.forEach((segment) => {
     currentPath += `/${segment}`;
-    const label = routeNames[currentPath]
-      || (currentPath.startsWith("/property/") ? "تفاصيل العقار"
-        : currentPath.startsWith("/car/") ? "تفاصيل السيارة"
-          : segment.startsWith("car_") ? "تفاصيل الإعلان" : "صفحة غير معنونة");
-    items.push({ label, path: currentPath });
+    items.push({
+      label: routeNames[currentPath] ?? dynamicLabel(currentPath, segment),
+      path: currentPath,
+    });
   });
 
   return (

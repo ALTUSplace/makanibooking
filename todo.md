@@ -290,3 +290,11 @@
 - [x] إضافة حالات تحميل و404 آمنة في CarDetails
 - [x] pnpm check بعد تنظيف Booking وCarDetails
 - [x] pnpm test: 33 اختباراً ناجحاً بعد تنظيف Booking وCarDetails
+
+- [x] حذف client/src/pages/Dashboard.tsx القديم غير المرتبط بمسارات الإنتاج
+- [x] حذف client/src/data/cars.ts الذي كان يحتوي MOCK_CARS وINITIAL_BOOKINGS غير مستخدمين
+- [x] التحقق من خلو client وserver من مراجع MOCK_CARS وINITIAL_BOOKINGS
+- [x] إعادة تشغيل pnpm check وpnpm test وpnpm build بعد التنظيف
+
+- [x] إصلاح BreadcrumbNav لعرض تسميات عربية مفهومة للمسارات الديناميكية وعدم إظهار صفحة غير معنونة
+- [x] pnpm check وpnpm test بعد إصلاح BreadcrumbNav: 33 اختباراً ناجحاً

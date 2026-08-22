@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, index } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -101,8 +101,27 @@ export const commercialLeaseContracts = mysqlTable("commercial_lease_contracts",
   pdfKey: varchar("pdf_key", { length: 512 }),
   status: mysqlEnum("status", ["Draft", "Generated", "Signed"]).default("Generated").notNull(),
   legalNotice: text("legal_notice").notNull(),
+  leaseEndReminderTaskUid: varchar("lease_end_reminder_task_uid", { length: 65 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const notifications = mysqlTable("notifications", {
+  id: int("notification_id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  type: mysqlEnum("type", ["booking_new", "booking_accepted", "booking_rejected", "lease_expiring", "system"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  href: varchar("href", { length: 512 }),
+  entityType: varchar("entity_type", { length: 64 }),
+  entityId: int("entity_id"),
+  readAt: timestamp("read_at"),
+  emailStatus: mysqlEnum("email_status", ["not_sent", "sent", "skipped", "failed"]).default("not_sent").notNull(),
+  emailSentAt: timestamp("email_sent_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userCreatedIdx: index("notifications_user_created_idx").on(table.userId, table.createdAt),
+  userUnreadIdx: index("notifications_user_unread_idx").on(table.userId, table.readAt),
+}));
 
 export const invoices = mysqlTable("invoices", {
   id: int("invoice_id").autoincrement().primaryKey(),
@@ -132,6 +151,8 @@ export type KycSubmission = typeof kycSubmissions.$inferSelect;
 export type InsertKycSubmission = typeof kycSubmissions.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type CommercialLeaseContract = typeof commercialLeaseContracts.$inferSelect;

@@ -1,13 +1,16 @@
 import { COOKIE_NAME } from "@shared/const";
+import { parse as parseCookie } from "cookie";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts } from "../drizzle/schema";
-import { eq, and, lte, gte, desc } from "drizzle-orm";
+import { listings, bookings, reviews, users, commercialLeaseContracts, notifications } from "../drizzle/schema";
+import { eq, and, lte, gte, desc, count, isNull } from "drizzle-orm";
+import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
 import { storageGet, storagePut } from "./storage";
 import { generateServerCommercialLeasePdf } from "./commercialLeasePdf";
+import { createHeartbeatJob } from "./_core/heartbeat";
 
 export const appRouter = router({
   system: systemRouter,
@@ -19,6 +22,49 @@ export const appRouter = router({
       return {
         success: true,
       } as const;
+    }),
+  }),
+
+  notifications: router({
+    list: protectedProcedure
+      .input(z.object({ unreadOnly: z.boolean().optional().default(false) }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const filters = [eq(notifications.userId, ctx.user.id)];
+        if (input.unreadOnly) filters.push(isNull(notifications.readAt));
+        return db.select().from(notifications)
+          .where(and(...filters))
+          .orderBy(desc(notifications.createdAt))
+          .limit(50);
+      }),
+
+    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return 0;
+      const result = await db.select({ value: count() }).from(notifications)
+        .where(and(eq(notifications.userId, ctx.user.id), isNull(notifications.readAt)));
+      return Number(result[0]?.value ?? 0);
+    }),
+
+    markRead: protectedProcedure
+      .input(z.object({ notificationId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        await db.update(notifications)
+          .set({ readAt: new Date() })
+          .where(and(eq(notifications.id, input.notificationId), eq(notifications.userId, ctx.user.id)));
+        return { success: true };
+      }),
+
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      await db.update(notifications)
+        .set({ readAt: new Date() })
+        .where(and(eq(notifications.userId, ctx.user.id), isNull(notifications.readAt)));
+      return { success: true };
     }),
   }),
 
@@ -163,6 +209,10 @@ export const appRouter = router({
 
         const start = new Date(input.startDate);
         const end = new Date(input.endDate);
+        const listing = await db.select().from(listings).where(eq(listings.id, input.listingId)).limit(1);
+        if (!listing[0]) throw new Error("الإعلان غير موجود.");
+        const owner = await db.select({ id: users.id, name: users.name, email: users.email })
+          .from(users).where(eq(users.id, listing[0].ownerId)).limit(1);
 
         // Check availability conflict
         const conflicts = await db
@@ -192,10 +242,38 @@ export const appRouter = router({
           totalPrice: input.totalPrice,
           commissionFee,
           netProfit,
-          status: "Confirmed", // Automatically confirmed upon mock payment gateway success
+          status: "Pending", // Owner approval is required before the booking becomes confirmed
         });
 
-        return { success: true, bookingId: inserted.insertId };
+        const bookingId = Number(inserted.insertId);
+        const dateLabel = `${start.toLocaleDateString("fr-MA")} → ${end.toLocaleDateString("fr-MA")}`;
+        const ownerTitle = "حجز جديد / Nouvelle réservation";
+        const ownerMessage = `توصلت بحجز جديد للإعلان «${listing[0].title}» من ${dateLabel}.\nVous avez reçu une nouvelle réservation pour «${listing[0].title}».`;
+        await safeNotifyUser({
+          userId: listing[0].ownerId,
+          type: "booking_new",
+          title: ownerTitle,
+          message: ownerMessage,
+          href: "/host",
+          entityType: "booking",
+          entityId: bookingId,
+          email: owner[0]?.email ? { to: owner[0].email, subject: ownerTitle, ...buildEmailContent(ownerTitle, ownerMessage, "/host") } : undefined,
+        });
+
+        const acceptedTitle = "تم تأكيد الحجز / Réservation confirmée";
+        const acceptedMessage = `تم تأكيد حجزك لـ «${listing[0].title}» من ${dateLabel}.\nVotre réservation pour «${listing[0].title}» est confirmée.`;
+        await safeNotifyUser({
+          userId: ctx.user.id,
+          type: "booking_accepted",
+          title: acceptedTitle,
+          message: acceptedMessage,
+          href: "/my-bookings",
+          entityType: "booking",
+          entityId: bookingId,
+          email: ctx.user.email ? { to: ctx.user.email, subject: acceptedTitle, ...buildEmailContent(acceptedTitle, acceptedMessage, "/my-bookings") } : undefined,
+        });
+
+        return { success: true, bookingId };
       }),
 
     updateStatus: protectedProcedure
@@ -254,7 +332,35 @@ export const appRouter = router({
           .where(and(eq(bookings.id, input.bookingId), eq(listings.ownerId, ctx.user.id)))
           .limit(1);
         if (!owned[0]) throw new Error('الحجز غير موجود ضمن إعلاناتك.');
+        const bookingDetails = await db.select({
+          bookingId: bookings.id,
+          renterId: bookings.renterId,
+          startDate: bookings.startDate,
+          endDate: bookings.endDate,
+          listingTitle: listings.title,
+          renterEmail: users.email,
+        }).from(bookings)
+          .innerJoin(listings, eq(bookings.listingId, listings.id))
+          .leftJoin(users, eq(bookings.renterId, users.id))
+          .where(eq(bookings.id, input.bookingId)).limit(1);
+        if (!bookingDetails[0]) throw new Error("الحجز غير موجود.");
         await db.update(bookings).set({ status: input.status }).where(eq(bookings.id, input.bookingId));
+
+        const accepted = input.status === "Confirmed";
+        const title = accepted ? "تم قبول الحجز / Réservation acceptée" : "تم رفض الحجز / Réservation refusée";
+        const message = accepted
+          ? `تم قبول حجزك لـ «${bookingDetails[0].listingTitle}».\nVotre réservation pour «${bookingDetails[0].listingTitle}» a été acceptée.`
+          : `تم رفض حجزك لـ «${bookingDetails[0].listingTitle}».\nVotre réservation pour «${bookingDetails[0].listingTitle}» a été refusée.`;
+        await safeNotifyUser({
+          userId: bookingDetails[0].renterId,
+          type: accepted ? "booking_accepted" : "booking_rejected",
+          title,
+          message,
+          href: "/my-bookings",
+          entityType: "booking",
+          entityId: bookingDetails[0].bookingId,
+          email: bookingDetails[0].renterEmail ? { to: bookingDetails[0].renterEmail, subject: title, ...buildEmailContent(title, message, "/my-bookings") } : undefined,
+        });
         return { success: true };
       }),
   }),
@@ -324,7 +430,24 @@ export const appRouter = router({
           pdfKey: storedPdf.key,
           status: "Generated",
         });
-        return { success: true, contractId: inserted.insertId, reference, pdfUrl: storedPdf.url };
+        const contractId = Number(inserted.insertId);
+        let reminderTaskUid: string | null = null;
+        try {
+          const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
+          const job = await createHeartbeatJob({
+            name: `lease-end-reminder-${contractId}`,
+            cron: "0 0 8 * * *",
+            path: "/api/scheduled/lease-end-reminder",
+            description: `تذكير انتهاء عقد الكراء ${reference} قبل 48 ساعة`,
+          }, sessionToken);
+          reminderTaskUid = job.taskUid;
+          await db.update(commercialLeaseContracts)
+            .set({ leaseEndReminderTaskUid: job.taskUid })
+            .where(eq(commercialLeaseContracts.id, contractId));
+        } catch (error) {
+          console.warn("[LeaseReminder] Could not schedule contract reminder:", error instanceof Error ? error.message : String(error));
+        }
+        return { success: true, contractId, reference, pdfUrl: storedPdf.url, reminderTaskUid };
       }),
 
     getByBooking: protectedProcedure

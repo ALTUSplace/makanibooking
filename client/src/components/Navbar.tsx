@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import {
   Bell,
   BookOpen,
@@ -49,30 +51,6 @@ const navLinks: NavLink[] = [
   { href: "/blog", label: "المدونة", labelKey: "blog", icon: BookOpen },
 ];
 
-const notificationItems = [
-  {
-    id: "security",
-    title: "الأمان وحماية 2FA",
-    desc: "تم تفعيل المصادقة الثنائية لحسابك الإداري بنجاح.",
-    time: "منذ دقيقتين",
-    unread: true,
-  },
-  {
-    id: "payment",
-    title: "تأكيد الحجز CMI",
-    desc: "تم سداد مبلغ الحجز بنجاح عبر بوابة CMI المغربية.",
-    time: "منذ ساعة",
-    unread: true,
-  },
-  {
-    id: "whatsapp",
-    title: "إشعار واتساب آلي",
-    desc: "تم إرسال تفاصيل العقد ورقم الحجز إلى الواتساب.",
-    time: "منذ 3 ساعات",
-    unread: false,
-  },
-];
-
 function isActiveLink(currentLocation: string, href: string) {
   const [currentPath, currentQuery = ""] = currentLocation.split("?");
   const [targetPath, targetQuery = ""] = href.split("?");
@@ -92,7 +70,6 @@ export default function Navbar() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(notificationItems);
   const [cmiModalOpen, setCmiModalOpen] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [twoFaModalOpen, setTwoFaModalOpen] = useState(false);
@@ -103,7 +80,27 @@ export default function Navbar() {
   const { role } = useRole();
   const { language, direction, setLanguage, t } = useLanguage();
   const { currency, setCurrency } = useCurrency();
-  const unreadCount = notifications.filter((item) => item.unread).length;
+  const { isAuthenticated } = useAuth();
+  const notificationQuery = trpc.notifications.list.useQuery({ unreadOnly: false }, {
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const unreadQuery = trpc.notifications.unreadCount.useQuery(undefined, {
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  const markReadMutation = trpc.notifications.markRead.useMutation();
+  const markAllMutation = trpc.notifications.markAllRead.useMutation({
+    onSuccess: async () => {
+      await notificationQuery.refetch();
+      await unreadQuery.refetch();
+      toast.success(language === "ar" ? "تم تحديد جميع الإشعارات كمقروءة" : "Toutes les notifications sont marquées comme lues");
+    },
+  });
+  const notifications = notificationQuery.data ?? [];
+  const unreadCount = unreadQuery.data ?? 0;
 
   const currentSection = useMemo(() => {
     if (location.startsWith("/search")) return "search";
@@ -173,8 +170,8 @@ export default function Navbar() {
   }, []);
 
   const markAllAsRead = () => {
-    setNotifications((items) => items.map((item) => ({ ...item, unread: false })));
-    toast.success("تم تحديد جميع الإشعارات كمقروءة");
+    if (!isAuthenticated || unreadCount === 0) return;
+    markAllMutation.mutate();
   };
 
   const selectCurrency = (nextCurrency: Currency) => {
@@ -340,15 +337,29 @@ export default function Navbar() {
                     )}
                   </div>
                   <div className="max-h-64 space-y-2.5 overflow-y-auto py-3">
-                    {notifications.map((item) => (
-                      <div key={item.id} className={`space-y-1 rounded-xl border p-3 text-xs ${item.unread ? "border-amber-500/30 bg-amber-500/10" : "border-border bg-muted"}`}>
-                        <div className="flex items-center justify-between gap-2 font-bold">
-                          <span>{item.title}</span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground">{item.time}</span>
+                    {!isAuthenticated ? (
+                      <p className="py-5 text-center text-xs text-muted-foreground">سجّل الدخول لمتابعة إشعارات حجوزاتك.</p>
+                    ) : notifications.length === 0 ? (
+                      <p className="py-5 text-center text-xs text-muted-foreground">لا توجد إشعارات جديدة.</p>
+                    ) : notifications.map((item) => {
+                      const unread = item.readAt === null;
+                      return (
+                        <div
+                          key={item.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => unread && markReadMutation.mutate({ notificationId: item.id }, { onSuccess: () => { void notificationQuery.refetch(); void unreadQuery.refetch(); } })}
+                          onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (unread) markReadMutation.mutate({ notificationId: item.id }, { onSuccess: () => { void notificationQuery.refetch(); void unreadQuery.refetch(); } }); } }}
+                          className={`space-y-1 rounded-xl border p-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${unread ? "border-amber-500/30 bg-amber-500/10" : "border-border bg-muted"}`}
+                        >
+                          <div className="flex items-center justify-between gap-2 font-bold">
+                            <span>{item.title}</span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground">{new Date(item.createdAt).toLocaleString(language === "ar" ? "ar-MA" : "fr-MA", { dateStyle: "short", timeStyle: "short" })}</span>
+                          </div>
+                          <p className="whitespace-pre-line text-[11px] text-muted-foreground">{item.message}</p>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <Link href="/notifications" className="block border-t border-border pt-3 text-center text-xs font-bold text-amber-700 hover:underline dark:text-amber-300">
                     عرض كل الإشعارات

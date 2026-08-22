@@ -29,6 +29,13 @@
       "when": 1787410571654,
       "tag": "0003_zippy_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787412163024,
+      "tag": "0004_sleepy_sentinel",
+      "breakpoints": true
     }
   ]
 }

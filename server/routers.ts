@@ -53,6 +53,12 @@ export const appRouter = router({
         email: user.email,
         whatsappPhone: user.whatsappPhone,
         commercialRegister: user.commercialRegister,
+        agencyName: user.agencyName,
+        agencyLogoUrl: user.agencyLogoUrl,
+        agencyPhone: user.agencyPhone,
+        agencyEmail: user.agencyEmail,
+        agencyAddress: user.agencyAddress,
+        agencyWebsite: user.agencyWebsite,
         loginMethod: user.loginMethod,
         role: user.role,
       };
@@ -79,6 +85,50 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+  }),
+
+  agency: router({
+    settings: ownerProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+      const rows = await db.select({
+        agencyName: users.agencyName,
+        agencyLogoUrl: users.agencyLogoUrl,
+        agencyPhone: users.agencyPhone,
+        agencyEmail: users.agencyEmail,
+        agencyAddress: users.agencyAddress,
+        agencyWebsite: users.agencyWebsite,
+        commercialRegister: users.commercialRegister,
+        whatsappPhone: users.whatsappPhone,
+      }).from(users).where(eq(users.id, ctx.user!.id)).limit(1);
+      return rows[0] ?? null;
+    }),
+    updateSettings: ownerProcedure
+      .input(z.object({
+        agencyName: z.string().trim().max(180).optional().nullable(),
+        agencyPhone: z.string().trim().max(32).optional().nullable(),
+        agencyEmail: z.string().trim().email().max(320).optional().nullable(),
+        agencyAddress: z.string().trim().max(255).optional().nullable(),
+        agencyWebsite: z.string().trim().url().max(255).optional().nullable(),
+        commercialRegister: z.string().trim().max(120).optional().nullable(),
+        whatsappPhone: z.string().trim().max(32).optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const normalize = (value?: string | null) => value?.trim() || null;
+        await db.update(users).set({
+          agencyName: normalize(input.agencyName),
+          agencyPhone: normalize(input.agencyPhone),
+          agencyEmail: normalize(input.agencyEmail),
+          agencyAddress: normalize(input.agencyAddress),
+          agencyWebsite: normalize(input.agencyWebsite),
+          commercialRegister: normalize(input.commercialRegister),
+          whatsappPhone: normalize(input.whatsappPhone),
+        }).where(eq(users.id, ctx.user!.id));
+        await writeAuditLog({ actorId: ctx.user!.id, action: "agency.settings.updated", entityType: "user", entityId: ctx.user!.id, afterData: { agencyName: normalize(input.agencyName), agencyPhone: normalize(input.agencyPhone), agencyEmail: normalize(input.agencyEmail) } });
+        return { success: true as const };
+      }),
   }),
 
   notifications: router({
@@ -196,6 +246,24 @@ export const appRouter = router({
   }),
 
   storage: router({
+    uploadAgencyLogo: ownerProcedure
+      .input(z.object({
+        fileName: z.string().trim().min(1).max(160),
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        contentBase64: z.string().min(1).max(8_500_000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "agency-logo";
+        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+        if (imageBuffer.length === 0 || imageBuffer.length > 3 * 1024 * 1024) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الشعار يجب ألا يتجاوز 3 ميجابايت." });
+        }
+        const uploaded = await storagePut(`users/${ctx.user!.id}/agency/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
+        await getDb().then(async db => {
+          if (db) await db.update(users).set({ agencyLogoUrl: uploaded.url }).where(eq(users.id, ctx.user!.id));
+        });
+        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType };
+      }),
     uploadImage: ownerProcedure
       .input(z.object({
         fileName: z.string().trim().min(1).max(160),

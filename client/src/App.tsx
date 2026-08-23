@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 
 // Lazy-loaded pages and global widgets keep the initial mobile bundle small.
 const HostDashboard = lazy(() => import("./pages/HostDashboard"));
+const AgencySettingsPage = lazy(() => import("./pages/AgencySettings"));
 const AIChatWidget = lazy(() => import('./components/AIChatWidget'));
 
 const HomePage = lazy(() => import("./pages/Home"));
@@ -99,6 +100,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/host">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
       <Route path="/host-dashboard">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
+      <Route path="/host/settings">{() => <AccessGuard area="host"><Suspense fallback={<div className="min-h-[50vh] grid place-items-center">جاري تحميل إعدادات الوكالة...</div>}><AgencySettingsPage /></Suspense></AccessGuard>}</Route>
       <Route path="/partner">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
       <Route path="/partner-dashboard">{() => <AccessGuard area="host"><HostDashboard /></AccessGuard>}</Route>
       <Route path="/add-car">{() => <AccessGuard area="host"><AddCarPage /></AccessGuard>}</Route>

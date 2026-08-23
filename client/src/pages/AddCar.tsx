@@ -5,6 +5,9 @@ import { CheckCircle2, ArrowRight, Car } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdvancedMediaUpload } from '@/components/AdvancedMediaUpload';
 import { trpc } from '@/lib/trpc';
+import { Checkbox } from '@/components/ui/checkbox';
+import { persistLegalConsent } from '@/lib/legalDisclosure';
+import { Link } from 'wouter';
 
 export default function AddCar() {
   const [, setLocation] = useLocation();
@@ -27,6 +30,7 @@ export default function AddCar() {
   const [city, setCity] = useState('مراكش');
   const [transmission, setTransmission] = useState('أوتوماتيك');
   const [seats, setSeats] = useState('5 مقاعد');
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +38,11 @@ export default function AddCar() {
       toast.error('يرجى ملء كافة الحقول الإجبارية');
       return;
     }
+    if (!acceptedLegal) {
+      toast.error('يرجى الموافقة على الشروط والأحكام وسياسة الخصوصية قبل نشر العرض');
+      return;
+    }
+    persistLegalConsent();
     
     const numericPrice = Number(price);
     if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
@@ -166,6 +175,14 @@ export default function AddCar() {
               <div className="space-y-2 text-right">
                 <label className="text-xs font-bold text-slate-300">صورة السيارة الرئيسية</label>
                 <AdvancedMediaUpload onImagesUploaded={(urls) => setImageUrl(urls[0] ?? '')} />
+              </div>
+
+              <div className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/70 p-4 text-right">
+                <Checkbox id="listing-legal-consent" checked={acceptedLegal} onCheckedChange={(value) => setAcceptedLegal(value === true)} className="mt-1 border-slate-500 data-[state=checked]:bg-amber-500 data-[state=checked]:text-slate-950" />
+                <label htmlFor="listing-legal-consent" className="text-xs leading-6 text-slate-300 cursor-pointer">
+                  أوافق على الشروط والأحكام وسياسة الخصوصية الخاصين بـ B2-Rent، وأقر بأن معلومات العرض وصوره أصلية ودقيقة.
+                  <span className="block mt-1 text-slate-400"><Link href="/terms" className="text-amber-400 hover:underline">الشروط والأحكام</Link>{' '}و{' '}<Link href="/privacy" className="text-amber-400 hover:underline">سياسة الخصوصية</Link></span>
+                </label>
               </div>
 
               <Button

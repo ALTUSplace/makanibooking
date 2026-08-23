@@ -405,6 +405,18 @@ export const appRouter = router({
         }
         const verification = await verifyOriginalListingImage({ base64: input.contentBase64, mimeType: input.mimeType });
         if (!verification.accepted) {
+          const notificationTitle = "تم رفض صورة الإعلان / Image refusée";
+          const notificationMessage = `${ORIGINAL_IMAGE_REJECTION_MESSAGE}\n\nالأسباب: ${verification.reasons.join("، ") || "لم تستوفِ الصورة معايير الأصالة."}`;
+          await safeNotifyUser({
+            userId: ctx.user!.id,
+            type: "listing_rejected",
+            title: notificationTitle,
+            message: notificationMessage,
+            href: "/host",
+            entityType: "listing_image_verification",
+            dedupeKey: `listing-image-rejected:${ctx.user!.id}:${normalizedName}:${verification.confidence}`,
+            email: ctx.user!.email ? { to: ctx.user!.email, subject: notificationTitle, ...buildEmailContent(notificationTitle, notificationMessage, "/host") } : undefined,
+          });
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: ORIGINAL_IMAGE_REJECTION_MESSAGE,
@@ -885,9 +897,21 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
         if (!verifyImageVerificationProof({ proof: input.imageVerificationProof, ownerId: ctx.user!.id, url: input.imageUrl })) {
+          const notificationTitle = "تعذر نشر إعلانك / Annonce refusée";
+          const notificationMessage = "تعذر نشر الإعلان لأن إثبات فحص الصورة غير صالح. يرجى رفع الصورة من خلال أداة الفحص ثم المحاولة مجدداً.\n\nLa publication a été refusée car la preuve de vérification de l'image est invalide. Veuillez téléverser l'image via l'outil de vérification.";
+          await safeNotifyUser({
+            userId: ctx.user!.id,
+            type: "listing_rejected",
+            title: notificationTitle,
+            message: notificationMessage,
+            href: "/host",
+            entityType: "listing_image_verification",
+            dedupeKey: `listing-proof-rejected:${ctx.user!.id}:${input.imageUrl}`,
+            email: ctx.user!.email ? { to: ctx.user!.email, subject: notificationTitle, ...buildEmailContent(notificationTitle, notificationMessage, "/host") } : undefined,
+          });
           throw new TRPCError({ code: "BAD_REQUEST", message: "يجب رفع الصورة عبر أداة الفحص الآمن قبل نشر الإعلان." });
         }
-        await db.insert(listings).values({
+        const [inserted] = await db.insert(listings).values({
           ownerId: ctx.user!.id,
           title: input.title,
           description: input.description,
@@ -900,7 +924,21 @@ export const appRouter = router({
           amenities: input.amenities?.join(',') || null,
           status: "Published",
         });
-        return { success: true };
+        const listingId = Number(inserted.insertId);
+        const notificationTitle = "تم نشر إعلانك / Annonce publiée";
+        const notificationMessage = `تم نشر إعلان «${input.title}» مباشرة بعد اجتياز فحص الصور.\n\nL'annonce «${input.title}» est publiée après validation automatique des images.`;
+        await safeNotifyUser({
+          userId: ctx.user!.id,
+          type: "listing_approved",
+          title: notificationTitle,
+          message: notificationMessage,
+          href: "/host",
+          entityType: "listing",
+          entityId: listingId,
+          dedupeKey: `listing-approved:${ctx.user!.id}:${listingId}`,
+          email: ctx.user!.email ? { to: ctx.user!.email, subject: notificationTitle, ...buildEmailContent(notificationTitle, notificationMessage, "/host") } : undefined,
+        });
+        return { success: true, listingId };
       }),
 
     update: ownerProcedure

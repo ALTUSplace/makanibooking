@@ -141,6 +141,20 @@
       "when": 1787492374248,
       "tag": "0019_omniscient_mother_askani",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1787519556312,
+      "tag": "0020_puzzling_slipstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1787520116837,
+      "tag": "0021_fine_rockslide",
+      "breakpoints": true
     }
   ]
 }

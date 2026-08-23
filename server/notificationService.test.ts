@@ -15,6 +15,22 @@ describe("notificationService", () => {
     expect(content.text).toContain("Ligne française");
   });
 
+  it("supports the listing approval and rejection notification types in bilingual content", () => {
+    const approved = buildEmailContent(
+      "تم نشر إعلانك / Annonce publiée",
+      "تم نشر إعلان السيارة بنجاح.\n\nVotre annonce est publiée.",
+    );
+    const rejected = buildEmailContent(
+      "تم رفض صورة الإعلان / Image refusée",
+      "يرجى رفع صورة أصلية.\n\nVeuillez téléverser une image originale.",
+    );
+
+    expect(approved.text).toContain("Annonce publiée");
+    expect(rejected.text).toContain("Image refusée");
+    expect(approved.html).toContain("B2-Rent Morocco");
+    expect(rejected.html).toContain("B2-Rent Morocco");
+  });
+
   it("does not attempt external delivery until the provider is configured", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
     vi.stubEnv("RESEND_FROM_EMAIL", "");

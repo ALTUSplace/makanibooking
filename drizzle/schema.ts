@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, index } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, index, uniqueIndex } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -145,7 +145,7 @@ export const commercialLeaseContracts = mysqlTable("commercial_lease_contracts",
 export const notifications = mysqlTable("notifications", {
   id: int("notification_id").autoincrement().primaryKey(),
   userId: int("user_id").notNull(),
-  type: mysqlEnum("type", ["booking_new", "booking_accepted", "booking_rejected", "lease_expiring", "voucher_issued", "system"]).notNull(),
+  type: mysqlEnum("type", ["booking_new", "booking_accepted", "booking_rejected", "listing_approved", "listing_rejected", "lease_expiring", "voucher_issued", "system"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
   href: varchar("href", { length: 512 }),
@@ -154,10 +154,12 @@ export const notifications = mysqlTable("notifications", {
   readAt: timestamp("read_at"),
   emailStatus: mysqlEnum("email_status", ["not_sent", "sent", "skipped", "failed"]).default("not_sent").notNull(),
   emailSentAt: timestamp("email_sent_at"),
+  dedupeKey: varchar("dedupe_key", { length: 191 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   userCreatedIdx: index("notifications_user_created_idx").on(table.userId, table.createdAt),
   userUnreadIdx: index("notifications_user_unread_idx").on(table.userId, table.readAt),
+  notificationDedupeIdx: uniqueIndex("notifications_dedupe_idx").on(table.userId, table.dedupeKey),
 }));
 
 export const bookingMessages = mysqlTable("booking_messages", {

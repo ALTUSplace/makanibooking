@@ -6,6 +6,8 @@ export type NotificationType =
   | "booking_new"
   | "booking_accepted"
   | "booking_rejected"
+  | "listing_approved"
+  | "listing_rejected"
   | "lease_expiring"
   | "voucher_issued"
   | "system";
@@ -25,6 +27,7 @@ type NotificationInput = {
   href?: string;
   entityType?: string;
   entityId?: number;
+  dedupeKey?: string;
   email?: EmailInput;
 };
 
@@ -92,6 +95,15 @@ export async function notifyUser(input: NotificationInput): Promise<number | nul
     return null;
   }
 
+  if (input.dedupeKey) {
+    const [existing] = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(and(eq(notifications.userId, input.userId), eq(notifications.dedupeKey, input.dedupeKey)))
+      .limit(1);
+    if (existing) return existing.id;
+  }
+
   const [inserted] = await db.insert(notifications).values({
     userId: input.userId,
     type: input.type,
@@ -100,6 +112,7 @@ export async function notifyUser(input: NotificationInput): Promise<number | nul
     href: input.href,
     entityType: input.entityType,
     entityId: input.entityId,
+    dedupeKey: input.dedupeKey,
     emailStatus: input.email ? "not_sent" : "skipped",
   });
 

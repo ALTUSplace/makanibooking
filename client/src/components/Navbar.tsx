@@ -331,8 +331,14 @@ export default function Navbar() {
                       الإشعارات والتحديثات
                     </h2>
                     {unreadCount > 0 && (
-                      <button type="button" onClick={markAllAsRead} className="text-[10px] font-bold text-amber-700 hover:underline dark:text-amber-300">
-                        تحديد الكل كمقروء
+                      <button
+                        type="button"
+                        onClick={markAllAsRead}
+                        disabled={markAllMutation.isPending}
+                        aria-busy={markAllMutation.isPending}
+                        className="text-[10px] font-bold text-amber-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-amber-300"
+                      >
+                        {markAllMutation.isPending ? "جارٍ التحديث…" : "تحديد الكل كمقروء"}
                       </button>
                     )}
                   </div>

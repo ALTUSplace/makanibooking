@@ -22,6 +22,7 @@ describe("agency dashboard authorization", () => {
 
     const caller = appRouter.createCaller(ctx);
     await expect(caller.agency.overview()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.agency.exportAnalyticsCsv()).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.agency.listings()).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.listings.toggleAvailability({ listingId: 1, available: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.listings.remove({ id: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });

@@ -184,6 +184,39 @@ export const appRouter = router({
         netRevenue: bookingRows.filter((booking) => booking.status === "Confirmed").reduce((sum, booking) => sum + Number(booking.netProfit), 0),
       };
     }),
+    exportAnalyticsCsv: ownerProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+      const owned = await db.select({
+        id: listings.id,
+        title: listings.title,
+        category: listings.category,
+        status: listings.status,
+        createdAt: listings.createdAt,
+      }).from(listings).where(eq(listings.ownerId, ctx.user!.id)).orderBy(desc(listings.createdAt));
+      const eventRows = owned.length
+        ? await db.select({ listingId: listingAnalyticsEvents.listingId, eventType: listingAnalyticsEvents.eventType, total: count() })
+          .from(listingAnalyticsEvents)
+          .where(inArray(listingAnalyticsEvents.listingId, owned.map((listing) => listing.id)))
+          .groupBy(listingAnalyticsEvents.listingId, listingAnalyticsEvents.eventType)
+        : [];
+      const counts = new Map<number, { views: number; whatsappClicks: number; contactClicks: number }>();
+      for (const event of eventRows) {
+        const current = counts.get(event.listingId) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 };
+        if (event.eventType === "view") current.views = Number(event.total);
+        if (event.eventType === "whatsapp_click") current.whatsappClicks = Number(event.total);
+        if (event.eventType === "contact_click") current.contactClicks = Number(event.total);
+        counts.set(event.listingId, current);
+      }
+      const csvField = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+      const header = ["listing_id", "title", "category", "status", "views", "whatsapp_clicks", "contact_clicks", "total_contact_clicks", "created_at"];
+      const rows = owned.map((listing) => {
+        const analytics = counts.get(listing.id) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 };
+        return [listing.id, listing.title, listing.category, listing.status, analytics.views, analytics.whatsappClicks, analytics.contactClicks, analytics.whatsappClicks + analytics.contactClicks, listing.createdAt?.toISOString?.() ?? ""].map(csvField).join(",");
+      });
+      const date = new Date().toISOString().slice(0, 10);
+      return { filename: `b2-rent-agency-analytics-${date}.csv`, csv: `\uFEFF${header.map(csvField).join(",")}\n${rows.join("\n")}` };
+    }),
   }),
 
   notifications: router({

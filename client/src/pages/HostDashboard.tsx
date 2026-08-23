@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { Building2, CalendarCheck, Check, Plus, TrendingUp, X, Trash2, WalletCards, Pencil, MessageCircle, RefreshCw, Copy, Eye, Phone, Power, BarChart3 } from "lucide-react";
+import { Building2, CalendarCheck, Check, Plus, TrendingUp, X, Trash2, WalletCards, Pencil, MessageCircle, RefreshCw, Copy, Eye, Phone, Power, BarChart3, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AdvancedMediaUpload } from "@/components/AdvancedMediaUpload";
@@ -18,6 +18,7 @@ export default function HostDashboard() {
   const { user, loading } = useAuth();
   const listings = trpc.agency.listings.useQuery(undefined, { enabled: !!user });
   const overview = trpc.agency.overview.useQuery(undefined, { enabled: !!user });
+  const analyticsCsv = trpc.agency.exportAnalyticsCsv.useQuery(undefined, { enabled: false });
   const bookings = trpc.bookings.ownerList.useQuery(undefined, { enabled: !!user });
   const createListing = trpc.listings.create.useMutation({ onSuccess: async () => { await Promise.all([listings.refetch(), overview.refetch()]); toast.success("تم نشر العرض مباشرة بعد اجتياز الفحص."); setShowForm(false); } });
   const updateStatus = trpc.bookings.ownerUpdateStatus.useMutation({ onSuccess: () => { bookings.refetch(); toast.success("تم تحديث حالة الحجز"); } });
@@ -40,6 +41,24 @@ export default function HostDashboard() {
   const fallbackMonthlyRevenue = useMemo(() => (bookings.data ?? []).filter((b) => b.status === "Confirmed").reduce((sum, b) => sum + Number(b.netProfit ?? b.totalPrice ?? 0), 0), [bookings.data]);
   const activeBookings = overview.data?.activeBookings ?? fallbackActiveBookings;
   const monthlyRevenue = overview.data?.netRevenue ?? fallbackMonthlyRevenue;
+  const downloadAnalyticsCsv = async () => {
+    try {
+      const result = await analyticsCsv.refetch();
+      if (!result.data) return toast.error("تعذر إنشاء ملف الإحصائيات");
+      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = result.data.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success("تم تنزيل ملف إحصائيات الوكالة");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر تنزيل الملف");
+    }
+  };
 
   if (loading) return <div className="container py-24 text-center">جاري تحميل لوحة المالك...</div>;
   if (!user) return <div className="container py-24 text-center">يرجى تسجيل الدخول للوصول إلى لوحة المالك.</div>;
@@ -57,7 +76,7 @@ export default function HostDashboard() {
   const toggleAmenity = (value: string) => setForm((current) => ({ ...current, amenities: current.amenities.includes(value) ? current.amenities.filter((item) => item !== value) : [...current.amenities, value] }));
 
   return <div className="container py-8 space-y-8" dir="rtl">
-    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-sm text-muted-foreground">مساحة المالك</p><h1 className="text-3xl font-black">لوحة إدارة المكاتب</h1></div><div className="flex flex-wrap gap-2"><Link href="/host/settings"><Button type="button" variant="outline"><Building2 className="ml-2 h-4 w-4" />إعدادات الوكالة</Button></Link><Button onClick={() => setShowForm((value) => !value)} className="bg-[var(--brand-amber)] text-white"><Plus className="ml-2 h-4 w-4" />إضافة مكتب جديد</Button></div></div>
+    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-sm text-muted-foreground">مساحة المالك</p><h1 className="text-3xl font-black">لوحة إدارة المكاتب</h1></div><div className="flex flex-wrap gap-2"><Link href="/host/settings"><Button type="button" variant="outline"><Building2 className="ml-2 h-4 w-4" />إعدادات الوكالة</Button></Link><Button type="button" variant="outline" onClick={downloadAnalyticsCsv} disabled={analyticsCsv.isFetching}><Download className="ml-2 h-4 w-4" />{analyticsCsv.isFetching ? "جاري التصدير..." : "تصدير CSV"}</Button><Button onClick={() => setShowForm((value) => !value)} className="bg-[var(--brand-amber)] text-white"><Plus className="ml-2 h-4 w-4" />إضافة مكتب جديد</Button></div></div>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><Stat icon={<TrendingUp />} title="الصافي المؤكد" value={`${Number(monthlyRevenue).toLocaleString("fr-MA")} MAD`} /><Stat icon={<CalendarCheck />} title="الحجوزات النشطة" value={String(activeBookings)} /><Stat icon={<Building2 />} title="إجمالي العروض" value={String(overview.data?.totalListings ?? listings.data?.length ?? 0)} /><Stat icon={<Eye />} title="المشاهدات" value={String(overview.data?.views ?? 0)} /><Stat icon={<MessageCircle />} title="نقرات التواصل" value={String((overview.data?.whatsappClicks ?? 0) + (overview.data?.contactClicks ?? 0))} /></div>
     <section className="grid gap-4 md:grid-cols-3"><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><MessageCircle className="h-4 w-4 text-emerald-600" />نقرات واتساب</div><p className="mt-3 text-3xl font-black">{overview.data?.whatsappClicks ?? 0}</p><p className="mt-1 text-xs text-muted-foreground">إجمالي النقرات على مراسلة الوكالة</p></div><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><Phone className="h-4 w-4 text-blue-600" />نقرات الاتصال</div><p className="mt-3 text-3xl font-black">{overview.data?.contactClicks ?? 0}</p><p className="mt-1 text-xs text-muted-foreground">إجمالي طلبات الاتصال المسجلة</p></div><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><Power className="h-4 w-4 text-amber-600" />حالة التوفر</div><p className="mt-3 text-3xl font-black">{overview.data?.availableListings ?? 0}<span className="text-base font-medium text-muted-foreground"> متاح</span></p><p className="mt-1 text-xs text-muted-foreground">{overview.data?.unavailableListings ?? 0} عرض غير متاح حالياً</p></div></section>
     <section className="rounded-3xl border bg-card p-6 shadow-sm"><div className="mb-4 flex items-center gap-2"><WalletCards className="h-5 w-5 text-[var(--brand-amber)]" /><h2 className="text-xl font-bold">الأرباح والتسويات</h2></div><div className="grid gap-4 sm:grid-cols-4"><Stat title="الإجمالي" value={`${Number(financials.data?.gross ?? 0).toLocaleString("fr-MA")} MAD`} /><Stat title="عمولة المنصة" value={`${Number(financials.data?.platformFees ?? 0).toLocaleString("fr-MA")} MAD`} /><Stat title="الصافي" value={`${Number(financials.data?.net ?? 0).toLocaleString("fr-MA")} MAD`} /><Stat title="المصروف" value={`${Number(financials.data?.paid ?? 0).toLocaleString("fr-MA")} MAD`} /></div><form className="mt-5 grid gap-3 sm:grid-cols-[1fr_180px_auto]" onSubmit={(event) => { event.preventDefault(); const amount = Number(payoutAmount); if (!amount || amount <= 0) return toast.error("أدخل مبلغاً صحيحاً"); requestPayout.mutate({ amount, method: payoutMethod }); }}><input type="number" min="1" className="rounded-xl border bg-background p-3" placeholder="مبلغ السحب بالدرهم" value={payoutAmount} onChange={(event) => setPayoutAmount(event.target.value)} /><select className="rounded-xl border bg-background p-3" value={payoutMethod} onChange={(event) => setPayoutMethod(event.target.value as typeof payoutMethod)}><option value="bank_transfer">تحويل بنكي</option><option value="cash_plus">Cash Plus</option><option value="wafacash">وفاكاش</option></select><Button type="submit" disabled={requestPayout.isPending}>طلب سحب المستحقات</Button></form></section>

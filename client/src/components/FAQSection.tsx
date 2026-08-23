@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, HelpCircle, ShieldCheck, Car, Building2, CreditCard } from 'lucide-react';
+import { ChevronDown, HelpCircle, ShieldCheck, Car, Building2 } from 'lucide-react';
 
 export function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -10,12 +10,6 @@ export function FAQSection() {
       icon: Car,
       question: "كيف يمكنني حجز سيارة أو عقار عبر منصة B2-Rent؟",
       answer: "يمكنك بكل سهولة تصفح السيارات أو العقارات المتاحة، اختيار تواريخ الاستلام والتسليم، ثم الضغط على 'احجز الآن'. سيتم توجيهك لملء تفاصيل الحجز وإتمام الدفع الآمن لعربون الضمان عبر بواباتنا المعتمدة."
-    },
-    {
-      category: "الأسعار والعروض",
-      icon: CreditCard,
-      question: "ما هي ميزة الباقة المدمجة (Bundle Discount)؟",
-      answer: "عندما تقوم بحجز سيارة وعقار معاً في نفس الفترة، تمنحك المنصة خصماً تلقائياً بنسبة 15% على إجمالي قيمة الحجز، مما يوفر لك تجربة متكاملة وبأفضل سعر في السوق المغربي."
     },
     {
       category: "الأمان والضمان",
@@ -49,7 +43,7 @@ export function FAQSection() {
             كل ما ترغب في معرفته حول خدمات B2-Rent
           </h2>
           <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            إجابات شاملة وواضحة عن عمليات الحجز، الدفع، الباقات المدمجة، وحقوق الشركاء والزبناء في المغرب.
+            إجابات شاملة وواضحة عن عمليات الحجز والدفع وحقوق الشركاء والزبناء في المغرب.
           </p>
         </div>
 

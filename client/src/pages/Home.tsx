@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
-import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { FAQSection } from '@/components/FAQSection';
@@ -490,7 +490,7 @@ export default function Home() {
 
       {/* Trust & Features Banner */}
       <section className="py-16 bg-[#0B3C5D] text-white mt-0">
-        <div className="container mx-auto max-w-6xl px-4 grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+        <div className="container mx-auto max-w-6xl px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           <div className="space-y-3">
             <div className="w-14 h-14 bg-[#E57C23] text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg">
               <ShieldCheck className="w-7 h-7" />
@@ -511,13 +511,6 @@ export default function Home() {
             </div>
             <h4 className="font-bold text-lg">دعم فني على مدار الساعة</h4>
             <p className="text-xs text-slate-300">فريق خدمة عملاء متواجد دائماً لمساعدتك.</p>
-          </div>
-          <div className="space-y-3">
-            <div className="w-14 h-14 bg-[#E57C23] text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-              <Sparkles className="w-7 h-7" />
-            </div>
-            <h4 className="font-bold text-lg">خصومات الباقات المدمجة</h4>
-            <p className="text-xs text-slate-300">وفر 15% عند حجز سيارة وعقار معاً في نفس الرحلة.</p>
           </div>
         </div>
       </section>

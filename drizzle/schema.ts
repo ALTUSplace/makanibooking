@@ -31,7 +31,7 @@ export const listings = mysqlTable("listings", {
   category: varchar("category", { length: 64 }).notNull(), // car أو real_estate
   pricePerDay: int("price_per_day").notNull(),
   imageUrl: text("image_url"),
-  status: mysqlEnum("status", ["Pending", "Approved", "Available", "Rented", "Rejected"]).default("Pending").notNull(),
+  status: mysqlEnum("status", ["Pending", "Approved", "Available", "Rented", "Rejected", "Published"]).default("Published").notNull(),
   city: varchar("city", { length: 64 }).default("الدار البيضاء").notNull(),
   fuelType: varchar("fuel_type", { length: 32 }).default("ديزل"),
   transmission: varchar("transmission", { length: 32 }).default("أوتوماتيك"),

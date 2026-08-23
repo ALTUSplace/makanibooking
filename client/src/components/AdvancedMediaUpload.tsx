@@ -108,7 +108,7 @@ export function AdvancedMediaUpload({ onImagesUploaded }: AdvancedMediaUploadPro
         setUploadProgress(Math.round(((index + 1) / selectedFiles.length) * 100));
       }
       onImagesUploaded(uploadedUrls);
-      toast.success('تم رفع الصور إلى التخزين الآمن بنجاح.');
+      toast.success('تم فحص الصور الأصلية ورفعها إلى التخزين الآمن بنجاح.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'تعذر رفع الصور حالياً.');
       setUploadProgress(0);
@@ -126,11 +126,11 @@ export function AdvancedMediaUpload({ onImagesUploaded }: AdvancedMediaUploadPro
           </div>
           <div>
             <h3 className="text-lg font-bold text-white">رفع صور الإعلان</h3>
-            <p className="text-xs text-slate-400">تتم معاينة الصور محلياً ثم رفعها إلى التخزين الآمن عند الضغط على زر الرفع.</p>
+            <p className="text-xs text-slate-400">تُفحص الصور تلقائياً للتأكد من أنها واقعية وأصلية قبل حفظها ونشر العرض.</p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
-          <Shield className="w-3.5 h-3.5" /> رفع محمي
+          <Shield className="w-3.5 h-3.5" /> فحص أصالة محمي
         </div>
       </div>
 
@@ -149,7 +149,7 @@ export function AdvancedMediaUpload({ onImagesUploaded }: AdvancedMediaUploadPro
           </div>
           <div>
             <p className="text-sm font-bold text-slate-200">اسحب الصور وأفلتها هنا، أو اضغط للاختيار</p>
-            <p className="text-xs text-slate-400 mt-1">PNG وJPG وWEBP، حتى 5 صور و10 ميجابايت إجمالاً</p>
+            <p className="text-xs text-slate-400 mt-1">PNG وJPG وWEBP، حتى 5 صور و10 ميجابايت إجمالاً. تُرفض الصور الترويجية أو المولدة آلياً.</p>
           </div>
         </div>
       </div>
@@ -177,7 +177,7 @@ export function AdvancedMediaUpload({ onImagesUploaded }: AdvancedMediaUploadPro
           {isUploading && (
             <div className="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800" aria-live="polite">
               <div className="flex justify-between text-xs font-semibold text-slate-300">
-                <span>جاري رفع الصور إلى التخزين الآمن...</span>
+                <span>جاري فحص الصور ثم رفعها إلى التخزين الآمن...</span>
                 <span>{uploadProgress}%</span>
               </div>
               <Progress value={uploadProgress} className="h-2 bg-slate-800" />

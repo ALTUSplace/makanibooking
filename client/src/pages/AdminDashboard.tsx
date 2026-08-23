@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, Users, Building2, CalendarDays, WalletCards, CheckCircle2, XCircle, ShieldAlert, Loader2, ArrowLeft, LifeBuoy, ClipboardList, RotateCcw, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, CalendarDays, WalletCards, ShieldAlert, Loader2, ArrowLeft, LifeBuoy, ClipboardList, RotateCcw, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,15 +33,7 @@ export default function AdminDashboard() {
   const [ticketResponses, setTicketResponses] = useState<Record<number, string>>({});
   const updateCommission = trpc.admin.updateCommission.useMutation({ onSuccess: async () => { toast.success('تم تحديث عمولة المنصة'); await commissionSettings.refetch(); }, onError: error => toast.error(error.message) });
   const reviewPayout = trpc.admin.reviewPayout.useMutation({ onSuccess: async () => { toast.success('تم تحديث طلب السحب'); await payouts.refetch(); }, onError: error => toast.error(error.message) });
-  const utils = trpc.useUtils();
   const cancelBooking = trpc.admin.cancelBooking.useMutation({ onSuccess: async () => { toast.success('تم إلغاء الحجز الطارئ'); await adminBookings.refetch(); }, onError: error => toast.error(error.message) });
-  const moderate = trpc.admin.moderateListing.useMutation({
-    onSuccess: async () => {
-      toast.success('تم تحديث حالة الإعلان');
-      await Promise.all([utils.admin.listings.invalidate(), utils.admin.overview.invalidate()]);
-    },
-    onError: error => toast.error(error.message),
-  });
 
   useEffect(() => {
     if (!loading && user && user.role !== 'admin') navigate('/');
@@ -69,7 +61,7 @@ export default function AdminDashboard() {
           {([
             { label: 'المستخدمون', value: stats?.users ?? 0, icon: Users },
             { label: 'الإعلانات', value: stats?.listings ?? 0, icon: Building2 },
-            { label: 'قيد المراجعة', value: stats?.pendingListings ?? 0, icon: ShieldAlert },
+            { label: 'إعلانات منشورة', value: stats?.listings ?? 0, icon: Building2 },
             { label: 'عمولات مؤكدة', value: money(stats?.platformFees ?? 0), icon: WalletCards },
           ] as Array<{ label: string; value: string | number; icon: LucideIcon }>).map(({ label, value, icon: StatIcon }) => {
             return <Card key={String(label)} className="border-0 shadow-sm"><CardContent className="p-4"><StatIcon className="mb-3 h-5 w-5 text-amber-600" /><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-black text-[#0B3C5D]">{value}</p></CardContent></Card>;
@@ -79,7 +71,7 @@ export default function AdminDashboard() {
         <Tabs value={tab} onValueChange={setTab} dir="rtl">
           <TabsList className="grid h-auto w-full grid-cols-2 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-3 lg:grid-cols-9">
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="overview">نظرة عامة</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="listings">مراجعة الإعلانات</TabsTrigger>
+            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="listings">الإعلانات</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="users">المستخدمون</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="bookings">الحجوزات</TabsTrigger>
             <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="finance">المالية</TabsTrigger>
@@ -97,11 +89,11 @@ export default function AdminDashboard() {
             </CardContent></Card>
           </TabsContent>
           <TabsContent value="listings" className="mt-4">
-            <Card><CardHeader><CardTitle>مراجعة الإعلانات قبل نشرها</CardTitle></CardHeader><CardContent className="space-y-3">
+            <Card><CardHeader><CardTitle>الإعلانات المنشورة فورياً</CardTitle></CardHeader><CardContent className="space-y-3">
               {listings.isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : listings.data?.length ? listings.data.map(item => (
                 <div key={item.id} className="flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div><p className="font-bold text-[#0B3C5D]">{item.title}</p><p className="text-xs text-slate-500">{item.category} · المالك: {item.ownerName || `#${item.ownerId}`} · {money(item.pricePerDay)}</p></div>
-                  <div className="flex items-center gap-2"><Badge variant={item.status === 'Approved' ? 'default' : 'secondary'}>{item.status}</Badge>{item.status === 'Pending' && <><Button size="sm" onClick={() => moderate.mutate({ listingId: item.id, status: 'Approved' })} disabled={moderate.isPending} className="bg-emerald-600 hover:bg-emerald-700"><CheckCircle2 className="ml-1 h-4 w-4" />قبول</Button><Button size="sm" variant="destructive" onClick={() => moderate.mutate({ listingId: item.id, status: 'Rejected' })} disabled={moderate.isPending}><XCircle className="ml-1 h-4 w-4" />رفض</Button></>}</div>
+                  <div className="flex items-center gap-2"><Badge variant={item.status === 'Published' ? 'default' : 'secondary'}>{item.status}</Badge><span className="text-xs text-slate-500">يتم النشر بعد اجتياز فحص الصور</span></div>
                 </div>
               )) : <p className="py-8 text-center text-sm text-slate-500">لا توجد إعلانات مسجلة.</p>}
             </CardContent></Card>

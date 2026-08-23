@@ -14,7 +14,7 @@ export default function AddCar() {
   const createListing = trpc.listings.create.useMutation({
     onSuccess: () => {
       setSubmitted(true);
-      toast.success('تم إرسال السيارة إلى مراجعة الإدارة بنجاح!');
+      toast.success('تم نشر السيارة مباشرة بعد اجتياز فحص الصور بنجاح!');
       window.setTimeout(() => setLocation('/host'), 1500);
     },
     onError: (error) => toast.error(error.message),
@@ -71,14 +71,14 @@ export default function AddCar() {
             </span>
             <h1 className="text-3xl font-black text-white">إضافة سيارة جديدة إلى إعلاناتك</h1>
             <p className="text-slate-400 text-xs leading-relaxed">
-              أدخل تفاصيل المركبة والمواصفات والسعر لإرسال الإعلان إلى مراجعة الإدارة قبل ظهوره للعملاء.
+              أدخل تفاصيل المركبة والمواصفات والسعر. سيُنشر الإعلان مباشرة بعد اجتياز فحص الصور الأصلية والواقعية.
             </p>
           </div>
 
           {submitted ? (
             <div className="bg-emerald-500/15 border border-emerald-500/30 p-8 rounded-2xl text-center space-y-4">
               <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto animate-bounce" />
-              <h2 className="text-xl font-bold text-white">تم إرسال المركبة إلى مراجعة الإدارة بنجاح!</h2>
+              <h2 className="text-xl font-bold text-white">تم نشر المركبة مباشرة بنجاح!</h2>
               <p className="text-slate-300 text-xs">جاري تحويلك إلى لوحة تحكم المالك...</p>
             </div>
           ) : (
@@ -173,7 +173,7 @@ export default function AddCar() {
                 disabled={createListing.isPending}
                 className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black py-4 rounded-xl text-xs shadow-xl shadow-amber-500/20 transition-all"
               >
-                {createListing.isPending ? 'جاري إرسال الإعلان...' : 'إرسال السيارة إلى مراجعة الإدارة'}
+                {createListing.isPending ? 'جاري الفحص والنشر...' : 'فحص الصور ونشر السيارة'}
               </Button>
             </form>
           )}

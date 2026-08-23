@@ -19,6 +19,7 @@ import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUr
 import { escapeIcal, parseIcalEvents, validateIcalImportUrl } from "../shared/ical";
 import { syncListingIcal } from "./ical";
 import { CANCELLATION_POLICY_VERSION, CANCELLATION_POLICY_TEXT, CANCELLATION_POLICY_FINGERPRINT } from "../shared/cancellationPolicySnapshot";
+import { ORIGINAL_IMAGE_REJECTION_MESSAGE, verifyOriginalListingImage } from "./imageVerification";
 
 async function writeAuditLog(input: {
   actorId: number;
@@ -276,8 +277,16 @@ export const appRouter = router({
         if (imageBuffer.length === 0 || imageBuffer.length > 6 * 1024 * 1024) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الصورة يجب أن يكون بين 1 بايت و6 ميجابايت." });
         }
+        const verification = await verifyOriginalListingImage({ base64: input.contentBase64, mimeType: input.mimeType });
+        if (!verification.accepted) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: ORIGINAL_IMAGE_REJECTION_MESSAGE,
+            cause: { confidence: verification.confidence, reasons: verification.reasons },
+          });
+        }
         const uploaded = await storagePut(`users/${ctx.user!.id}/listings/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
-        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType };
+        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType, verification: { confidence: verification.confidence } };
       }),
   }),
 
@@ -365,7 +374,7 @@ export const appRouter = router({
         db.select({ value: count() }).from(users).where(eq(users.role, 'owner')),
         db.select({ value: count() }).from(users).where(eq(users.role, 'renter')),
         db.select({ value: count() }).from(listings),
-        db.select({ value: count() }).from(listings).where(eq(listings.status, 'Pending')),
+        db.select({ value: count() }).from(listings).where(eq(listings.status, 'Published')),
         db.select({ value: count() }).from(bookings),
         db.select({ gross: bookings.totalPrice, fees: bookings.commissionFee }).from(bookings).where(eq(bookings.status, 'Confirmed')),
       ]);
@@ -410,14 +419,6 @@ export const appRouter = router({
       return db.select({ id: listings.id, title: listings.title, category: listings.category, status: listings.status, pricePerDay: listings.pricePerDay, ownerId: listings.ownerId, ownerName: users.name, createdAt: listings.createdAt })
         .from(listings).leftJoin(users, eq(listings.ownerId, users.id)).orderBy(desc(listings.createdAt)).limit(200);
     }),
-    moderateListing: adminProcedure
-      .input(z.object({ listingId: z.number().int().positive(), status: z.enum(['Approved', 'Rejected']) }))
-      .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new Error('Database unavailable');
-        await db.update(listings).set({ status: input.status }).where(eq(listings.id, input.listingId));
-        return { success: true };
-      }),
     commissionSettings: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return { commissionRateBasisPoints: 1000, vatRateBasisPoints: 2000 };
@@ -602,7 +603,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) return [];
-        const allListings = await db.select({ listing: listings, ownerName: users.name }).from(listings).leftJoin(users, eq(listings.ownerId, users.id)).where(inArray(listings.status, ['Approved', 'Available'])).orderBy(desc(listings.createdAt));
+        const allListings = await db.select({ listing: listings, ownerName: users.name }).from(listings).leftJoin(users, eq(listings.ownerId, users.id)).where(inArray(listings.status, ['Published', 'Available'])).orderBy(desc(listings.createdAt));
 
         // Dynamic Pricing Engine calculation
         return allListings.map(({ listing: item, ownerName }) => {
@@ -738,7 +739,7 @@ export const appRouter = router({
           officeType: input.officeType,
           rentalPeriod: input.rentalPeriod,
           amenities: input.amenities?.join(',') || null,
-          status: "Pending",
+          status: "Published",
         });
         return { success: true };
       }),
@@ -762,7 +763,7 @@ export const appRouter = router({
         const owned = await db.select({ id: listings.id }).from(listings)
           .where(and(eq(listings.id, id), eq(listings.ownerId, ctx.user!.id))).limit(1);
         if (!owned[0]) throw new Error('الإعلان غير موجود ضمن ممتلكاتك.');
-        await db.update(listings).set({ ...fields, ...(amenities ? { amenities: amenities.join(',') } : {}), status: 'Pending' }).where(eq(listings.id, id));
+        await db.update(listings).set({ ...fields, ...(amenities ? { amenities: amenities.join(',') } : {}), status: 'Published' }).where(eq(listings.id, id));
         return { success: true };
       }),
 

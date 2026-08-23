@@ -74,6 +74,16 @@ export default function Home() {
           <p className="text-slate-300 text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
             B2-Rent منصة وسيطة ذكية تربطك بأرقى شركات كراء السيارات والوكالات العقارية المستقلة عبر المدن المغربية، مع عقود رقمية وتوقيع إلكتروني فوري.
           </p>
+          
+          <div className="flex justify-center gap-4 mt-6">
+            <Button 
+              onClick={() => window.open('/slides_project/cover_slide.html', '_blank')}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
+            >
+              <Award className="w-4 h-4" />
+              <span>عرض مراجعة الأعمال 2025</span>
+            </Button>
+          </div>
 
           {/* Tabbed Search Bar (Cars vs Properties) */}
           <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-2xl border border-white/20 p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl text-right">

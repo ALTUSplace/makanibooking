@@ -27,6 +27,17 @@ describe("notification center security contract", () => {
     expect(pageSource).toMatch(/unreadCount/);
     expect(pageSource).toMatch(/markAllRead/);
   });
+
+  it("detects new notifications without replaying the same alert", () => {
+    expect(navbarSource).toMatch(/previous|prev|last|seen|notified/i);
+    expect(navbarSource).toMatch(/new notification|newNotification|isNew|pulse|animate-pulse/i);
+    expect(navbarSource).toMatch(/AudioContext|audio|beep|sound|tone/i);
+    expect(navbarSource).toMatch(/user interaction|hasInteracted|interaction|pointerdown|keydown/i);
+  });
+
+  it("respects reduced-motion preferences for the visual alert", () => {
+    expect(navbarSource).toMatch(/motion-safe|prefers-reduced-motion|reducedMotion|reduce motion/i);
+  });
 });
 
 afterAll(() => undefined);

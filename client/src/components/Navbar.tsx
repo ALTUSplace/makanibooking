@@ -22,6 +22,8 @@ import {
   X,
   BookmarkCheck,
   MessageSquare,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -73,7 +75,14 @@ export default function Navbar() {
   const [cmiModalOpen, setCmiModalOpen] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [twoFaModalOpen, setTwoFaModalOpen] = useState(false);
+  const [notificationPulse, setNotificationPulse] = useState(false);
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("b2rent-notification-sound") !== "off";
+  });
   const notificationRef = useRef<HTMLDivElement>(null);
+  const previousNotificationIdsRef = useRef<Set<number>>(new Set());
+  const hasInteractedRef = useRef(false);
   const mobileMenuRef = useRef<HTMLElement>(null);
 
   const { theme, toggleTheme } = useTheme();
@@ -101,6 +110,59 @@ export default function Navbar() {
   });
   const notifications = notificationQuery.data ?? [];
   const unreadCount = unreadQuery.data ?? 0;
+
+  useEffect(() => {
+    const markInteracted = () => {
+      hasInteractedRef.current = true;
+    };
+    document.addEventListener("pointerdown", markInteracted, { once: true });
+    document.addEventListener("keydown", markInteracted, { once: true });
+    return () => {
+      document.removeEventListener("pointerdown", markInteracted);
+      document.removeEventListener("keydown", markInteracted);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      previousNotificationIdsRef.current.clear();
+      setNotificationPulse(false);
+      return;
+    }
+
+    const currentIds = new Set(notifications.map((notification) => notification.id));
+    const previousIds = previousNotificationIdsRef.current;
+    const hasNewNotification = previousIds.size > 0 && notifications.some((notification) => !previousIds.has(notification.id));
+
+    if (hasNewNotification) {
+      setNotificationPulse(true);
+      if (notificationSoundEnabled && hasInteractedRef.current && typeof window !== "undefined") {
+        try {
+          const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+          if (AudioContextClass) {
+            const audioContext = new AudioContextClass();
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.045, audioContext.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.18);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+            oscillator.addEventListener("ended", () => void audioContext.close(), { once: true });
+          }
+        } catch {
+          // Browsers may block audio until a user gesture; the visual indicator still works.
+        }
+      }
+    }
+
+    previousNotificationIdsRef.current = currentIds;
+  }, [isAuthenticated, notificationSoundEnabled, notifications]);
 
   const currentSection = useMemo(() => {
     if (location.startsWith("/search")) return "search";
@@ -172,6 +234,14 @@ export default function Navbar() {
   const markAllAsRead = () => {
     if (!isAuthenticated || unreadCount === 0) return;
     markAllMutation.mutate();
+  };
+
+  const toggleNotificationSound = () => {
+    setNotificationSoundEnabled((enabled) => {
+      const nextEnabled = !enabled;
+      window.localStorage.setItem("b2rent-notification-sound", nextEnabled ? "on" : "off");
+      return nextEnabled;
+    });
   };
 
   const selectCurrency = (nextCurrency: Currency) => {
@@ -308,8 +378,11 @@ export default function Navbar() {
             <div className="relative" ref={notificationRef}>
               <button
                 type="button"
-                className="b2-icon-button relative border border-border bg-muted text-foreground hover:bg-background"
-                onClick={() => setNotificationsOpen((open) => !open)}
+                className={`b2-icon-button relative border border-border bg-muted text-foreground hover:bg-background ${notificationPulse ? "ring-2 ring-rose-400/70 ring-offset-2 ring-offset-background motion-safe:animate-pulse" : ""}`}
+                onClick={() => {
+                  setNotificationsOpen((open) => !open);
+                  setNotificationPulse(false);
+                }}
                 aria-expanded={notificationsOpen}
                 aria-haspopup="dialog"
                 aria-label={`الإشعارات${unreadCount ? `، ${unreadCount} غير مقروءة` : ""}`}
@@ -330,7 +403,18 @@ export default function Navbar() {
                       <Bell className="h-4 w-4 text-amber-600 dark:text-amber-300" />
                       الإشعارات والتحديثات
                     </h2>
-                    {unreadCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleNotificationSound}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-muted-foreground hover:text-foreground"
+                        aria-pressed={notificationSoundEnabled}
+                        title={notificationSoundEnabled ? "إيقاف صوت الإشعارات" : "تفعيل صوت الإشعارات"}
+                      >
+                        {notificationSoundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                        <span className="hidden sm:inline">{notificationSoundEnabled ? "الصوت مفعّل" : "الصوت متوقف"}</span>
+                      </button>
+                      {unreadCount > 0 && (
                       <button
                         type="button"
                         onClick={markAllAsRead}
@@ -340,7 +424,8 @@ export default function Navbar() {
                       >
                         {markAllMutation.isPending ? "جارٍ التحديث…" : "تحديد الكل كمقروء"}
                       </button>
-                    )}
+                      )}
+                    </div>
                   </div>
                   <div className="max-h-64 space-y-2.5 overflow-y-auto py-3">
                     {!isAuthenticated ? (

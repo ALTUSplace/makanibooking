@@ -26,7 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRole } from "@/contexts/RoleContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Language, useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency, Currency } from "@/contexts/CurrencyContext";
 const CMIPaymentModal = lazy(() => import("./CMIPaymentModal").then((module) => ({ default: module.CMIPaymentModal })));
 const WhatsAppNotificationModal = lazy(() => import("./WhatsAppNotificationModal").then((module) => ({ default: module.WhatsAppNotificationModal })));
@@ -179,14 +179,14 @@ export default function Navbar() {
     toast.success(`تم تبديل العملة بنجاح إلى ${nextCurrency}`);
   };
 
-  const selectLanguage = (nextLanguage: "ar" | "fr") => {
+  const selectLanguage = (nextLanguage: Language) => {
     setLanguage(nextLanguage);
     toast.success(
       nextLanguage === "ar"
         ? "تم التبديل إلى اللغة العربية"
         : nextLanguage === "fr"
-          ? "Passé au Français avec succès"
-          : "Passé au Français avec succès",
+          ? "Passé au français avec succès"
+          : "Switched to English successfully",
     );
   };
 
@@ -259,7 +259,7 @@ export default function Navbar() {
 
             <div className="b2-segmented-control" aria-label="اختيار اللغة">
               <Globe className="mx-1 h-4 w-4 text-amber-600 dark:text-amber-300" aria-hidden="true" />
-              {(["ar", "fr"] as const).map((item) => (
+              {(["ar", "fr", "en"] as const).map((item) => (
                 <button
                   key={item}
                   type="button"
@@ -267,7 +267,7 @@ export default function Navbar() {
                   onClick={() => selectLanguage(item)}
                   className={language === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}
                 >
-                  {item === "ar" ? "عربي" : "FR"}
+                  {item === "ar" ? "عربي" : item === "fr" ? "FR" : "EN"}
                 </button>
               ))}
             </div>
@@ -354,7 +354,7 @@ export default function Navbar() {
                         >
                           <div className="flex items-center justify-between gap-2 font-bold">
                             <span>{item.title}</span>
-                            <span className="shrink-0 text-[10px] text-muted-foreground">{new Date(item.createdAt).toLocaleString(language === "ar" ? "ar-MA" : "fr-MA", { dateStyle: "short", timeStyle: "short" })}</span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground">{new Date(item.createdAt).toLocaleString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-MA" : "en-GB", { dateStyle: "short", timeStyle: "short" })}</span>
                           </div>
                           <p className="whitespace-pre-line text-[11px] text-muted-foreground">{item.message}</p>
                         </div>
@@ -452,10 +452,10 @@ export default function Navbar() {
               </div>
 
               <div>
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Globe className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> لغة التصفح</p>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Globe className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> {t("language")}</p>
                 <div className="b2-segmented-control w-full">
-                  {(["ar", "fr"] as const).map((item) => (
-                    <button key={item} type="button" aria-pressed={language === item} onClick={() => selectLanguage(item)} className={language === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}>{item === "ar" ? "العربية" : "Français"}</button>
+                  {(["ar", "fr", "en"] as const).map((item) => (
+                    <button key={item} type="button" aria-pressed={language === item} onClick={() => selectLanguage(item)} className={language === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}>{item === "ar" ? "العربية" : item === "fr" ? "Français" : "English"}</button>
                   ))}
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-export type Language = "ar" | "fr";
+export type Language = "ar" | "fr" | "en";
 
 interface LanguageContextType {
   language: Language;
@@ -200,14 +200,126 @@ const translations: Record<Language, Record<string, string>> = {
     hideMap: "Masquer la carte interactive",
     availableOffers: "offre(s) disponible(s)",
   },
+  en: {
+    home: "Home",
+    cars: "Car rentals",
+    properties: "Properties",
+    search: "Search & listings",
+    admin: "Admin dashboard",
+    dashboard: "Agency dashboard",
+    addCar: "Add listing",
+    myBookings: "My bookings",
+    favorites: "Favorites",
+    profile: "Profile",
+    help: "Help & support",
+    about: "About B2-Rent",
+    blog: "Blog",
+    notifications: "Notifications",
+    kyc: "Identity verification",
+    heroTitle: "Your trusted gateway to car and property rentals in Morocco",
+    heroSubtitle: "Discover carefully selected offers from trusted agencies, with easy booking, digital contracts, and transparent billing.",
+    aiSearchPlaceholder: "Example: I want an SUV in Agadir or a luxury apartment in Marrakech...",
+    searchNow: "Search now",
+    bookNow: "Book now",
+    viewDetails: "View details",
+    city: "City",
+    propertyType: "Property type",
+    price: "Price",
+    dates: "Dates",
+    language: "Language",
+    currency: "Currency",
+    chooseLanguage: "Choose language",
+    arabic: "العربية",
+    french: "Français",
+    english: "English",
+    switchArabic: "Switch to Arabic",
+    switchFrench: "Passer au français",
+    switchEnglish: "Switch to English",
+    cmiPayment: "CMI payment",
+    bankTransfer: "Bank transfer",
+    invoice: "Invoice",
+    vat: "VAT",
+    kycTitle: "Verify your identity securely",
+    kycSubtitle: "Upload your national ID or commercial register so our team can review your account.",
+    cni: "National identity card",
+    commercialRegister: "Commercial register",
+    submitDocument: "Submit document for review",
+    pendingReview: "Under review",
+    approved: "Verified",
+    rejected: "Rejected",
+    selectFile: "Choose a file",
+    noFile: "No file selected",
+    maxFile: "PDF, JPG, or PNG, up to 8 MB",
+    save: "Save",
+    cancel: "Cancel",
+    close: "Close",
+    back: "Back",
+    loading: "Loading...",
+    allRights: "All rights reserved",
+    officeSpaces: "Business spaces",
+    officeType: "Space type",
+    privateOffice: "Private office",
+    coworking: "Coworking space",
+    meetingRoom: "Meeting room",
+    companyHeadquarters: "Company headquarters",
+    rentalType: "Rental period",
+    daily: "Daily",
+    monthly: "Monthly",
+    yearly: "Yearly",
+    amenities: "Amenities and services",
+    fiber: "Fiber optic internet",
+    airConditioning: "Air conditioning",
+    reception: "Reception",
+    parking: "Parking",
+    security: "Security",
+    all: "All",
+    resultsFound: "available offer(s)",
+    officeOnly: "Offices only",
+    allSectors: "All sectors",
+    detailsAndBooking: "Details and booking",
+    resetFilters: "Reset filters",
+    advancedFilters: "Advanced filters",
+    naturalSearch: "Natural-language search",
+    searchPlaceholder: "Search for what you need...",
+    sector: "Sector",
+    carsOnly: "Cars only",
+    propertiesOnly: "Properties only",
+    maxPrice: "Maximum price",
+    allCities: "All cities",
+    offersFoundPrefix: "Found",
+    sortBy: "Sort by",
+    lowestPrice: "Price: low to high",
+    highestPrice: "Price: high to low",
+    loadingListings: "Loading listings",
+    listingsLoadError: "Listings are temporarily unavailable. Please try again.",
+    noMatchingListings: "No listings match the current filters. Try widening the city, price, or office type.",
+    showMap: "Show interactive map",
+    hideMap: "Hide interactive map",
+    availableOffers: "available offer(s)",
+  },
 };
+
+export const SUPPORTED_LANGUAGES = ["ar", "fr", "en"] as const;
+
+export function getDirectionForLanguage(language: Language): "rtl" | "ltr" {
+  return language === "ar" ? "rtl" : "ltr";
+}
+
+export function getLocaleForLanguage(language: Language) {
+  return language === "ar" ? "ar-MA" : language === "fr" ? "fr-MA" : "en-GB";
+}
+
+export function getTranslation(language: Language, key: string) {
+  return translations[language][key] ?? translations.en[key] ?? translations.ar[key] ?? key;
+}
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
     if (typeof window === "undefined") return "ar";
-    return window.localStorage.getItem("b2rent-language") === "fr" ? "fr" : "ar";
+    const saved = window.localStorage.getItem("b2rent-language");
+    return saved === "fr" || saved === "en" ? saved : "ar";
   });
 
   const setLanguage = (nextLanguage: Language) => {
@@ -215,7 +327,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem("b2rent-language", nextLanguage);
   };
 
-  const direction: "rtl" | "ltr" = language === "ar" ? "rtl" : "ltr";
+  const direction = getDirectionForLanguage(language);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -227,7 +339,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     language,
     direction,
     setLanguage,
-    t: (key: string) => translations[language][key] ?? translations.ar[key] ?? key,
+    t: (key: string) => getTranslation(language, key),
   }), [direction, language]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

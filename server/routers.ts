@@ -7,7 +7,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { listings, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers, bookingMessages, auditLogs, refundRequests } from "../drizzle/schema";
+import { listings, listingAnalyticsEvents, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers, bookingMessages, auditLogs, refundRequests } from "../drizzle/schema";
 import { eq, and, lte, gte, lt, gt, desc, count, isNull, inArray, ne, sql } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
@@ -99,6 +99,9 @@ export const appRouter = router({
         agencyEmail: users.agencyEmail,
         agencyAddress: users.agencyAddress,
         agencyWebsite: users.agencyWebsite,
+        agencyLatitude: users.agencyLatitude,
+        agencyLongitude: users.agencyLongitude,
+        agencyHours: users.agencyHours,
         commercialRegister: users.commercialRegister,
         whatsappPhone: users.whatsappPhone,
       }).from(users).where(eq(users.id, ctx.user!.id)).limit(1);
@@ -111,6 +114,9 @@ export const appRouter = router({
         agencyEmail: z.string().trim().email().max(320).optional().nullable(),
         agencyAddress: z.string().trim().max(255).optional().nullable(),
         agencyWebsite: z.string().trim().url().max(255).optional().nullable(),
+        agencyLatitude: z.string().trim().regex(/^-?\d{1,2}(?:\.\d{1,8})?$/).max(32).optional().nullable(),
+        agencyLongitude: z.string().trim().regex(/^-?\d{1,3}(?:\.\d{1,8})?$/).max(32).optional().nullable(),
+        agencyHours: z.string().trim().max(2000).optional().nullable(),
         commercialRegister: z.string().trim().max(120).optional().nullable(),
         whatsappPhone: z.string().trim().max(32).optional().nullable(),
       }))
@@ -124,12 +130,60 @@ export const appRouter = router({
           agencyEmail: normalize(input.agencyEmail),
           agencyAddress: normalize(input.agencyAddress),
           agencyWebsite: normalize(input.agencyWebsite),
+          agencyLatitude: normalize(input.agencyLatitude),
+          agencyLongitude: normalize(input.agencyLongitude),
+          agencyHours: normalize(input.agencyHours),
           commercialRegister: normalize(input.commercialRegister),
           whatsappPhone: normalize(input.whatsappPhone),
         }).where(eq(users.id, ctx.user!.id));
         await writeAuditLog({ actorId: ctx.user!.id, action: "agency.settings.updated", entityType: "user", entityId: ctx.user!.id, afterData: { agencyName: normalize(input.agencyName), agencyPhone: normalize(input.agencyPhone), agencyEmail: normalize(input.agencyEmail) } });
         return { success: true as const };
       }),
+    listings: ownerProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const owned = await db.select().from(listings).where(eq(listings.ownerId, ctx.user!.id)).orderBy(desc(listings.createdAt));
+      if (!owned.length) return [];
+      const events = await db.select({ listingId: listingAnalyticsEvents.listingId, eventType: listingAnalyticsEvents.eventType, total: count() })
+        .from(listingAnalyticsEvents)
+        .where(inArray(listingAnalyticsEvents.listingId, owned.map((listing) => listing.id)))
+        .groupBy(listingAnalyticsEvents.listingId, listingAnalyticsEvents.eventType);
+      const counts = new Map<number, { views: number; whatsappClicks: number; contactClicks: number }>();
+      for (const event of events) {
+        const current = counts.get(event.listingId) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 };
+        if (event.eventType === "view") current.views = Number(event.total);
+        if (event.eventType === "whatsapp_click") current.whatsappClicks = Number(event.total);
+        if (event.eventType === "contact_click") current.contactClicks = Number(event.total);
+        counts.set(event.listingId, current);
+      }
+      return owned.map((listing) => ({ ...listing, analytics: counts.get(listing.id) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 } }));
+    }),
+    overview: ownerProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalListings: 0, availableListings: 0, unavailableListings: 0, activeBookings: 0, views: 0, whatsappClicks: 0, contactClicks: 0, grossRevenue: 0, netRevenue: 0 };
+      const owned = await db.select({ id: listings.id, status: listings.status }).from(listings).where(eq(listings.ownerId, ctx.user!.id));
+      const listingIds = owned.map((listing) => listing.id);
+      if (!listingIds.length) return { totalListings: 0, availableListings: 0, unavailableListings: 0, activeBookings: 0, views: 0, whatsappClicks: 0, contactClicks: 0, grossRevenue: 0, netRevenue: 0 };
+      const [eventRows, bookingRows] = await Promise.all([
+        db.select({ eventType: listingAnalyticsEvents.eventType, total: count() }).from(listingAnalyticsEvents).where(inArray(listingAnalyticsEvents.listingId, listingIds)).groupBy(listingAnalyticsEvents.eventType),
+        db.select({ status: bookings.status, totalPrice: bookings.totalPrice, netProfit: bookings.netProfit }).from(bookings).where(inArray(bookings.listingId, listingIds)),
+      ]);
+      const eventTotals = { views: 0, whatsappClicks: 0, contactClicks: 0 };
+      for (const row of eventRows) {
+        if (row.eventType === "view") eventTotals.views = Number(row.total);
+        if (row.eventType === "whatsapp_click") eventTotals.whatsappClicks = Number(row.total);
+        if (row.eventType === "contact_click") eventTotals.contactClicks = Number(row.total);
+      }
+      return {
+        totalListings: owned.length,
+        availableListings: owned.filter((listing) => listing.status === "Published" || listing.status === "Available").length,
+        unavailableListings: owned.filter((listing) => listing.status === "Rented" || listing.status === "Rejected").length,
+        activeBookings: bookingRows.filter((booking) => booking.status === "Pending" || booking.status === "Confirmed").length,
+        ...eventTotals,
+        grossRevenue: bookingRows.filter((booking) => booking.status === "Confirmed").reduce((sum, booking) => sum + Number(booking.totalPrice), 0),
+        netRevenue: bookingRows.filter((booking) => booking.status === "Confirmed").reduce((sum, booking) => sum + Number(booking.netProfit), 0),
+      };
+    }),
   }),
 
   notifications: router({
@@ -634,6 +688,21 @@ export const appRouter = router({
         });
       }),
 
+    trackEvent: publicProcedure
+      .input(z.object({ listingId: z.number().int().positive(), eventType: z.enum(["view", "whatsapp_click", "contact_click"]), visitorKey: z.string().trim().min(16).max(128).optional() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { recorded: false as const };
+        const listing = await db.select({ id: listings.id }).from(listings).where(and(eq(listings.id, input.listingId), inArray(listings.status, ["Published", "Available"]))).limit(1);
+        if (!listing[0]) return { recorded: false as const };
+        if (input.eventType === "view" && input.visitorKey) {
+          const previous = await db.select({ id: listingAnalyticsEvents.id }).from(listingAnalyticsEvents).where(and(eq(listingAnalyticsEvents.listingId, input.listingId), eq(listingAnalyticsEvents.eventType, "view"), eq(listingAnalyticsEvents.visitorKey, input.visitorKey))).limit(1);
+          if (previous[0]) return { recorded: false as const, reason: "duplicate" as const };
+        }
+        await db.insert(listingAnalyticsEvents).values({ listingId: input.listingId, eventType: input.eventType, visitorKey: input.visitorKey ?? null });
+        return { recorded: true as const };
+      }),
+
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
@@ -659,6 +728,19 @@ export const appRouter = router({
           ...parseRanges(listingRows[0]?.availability, "manual"),
           ...parseRanges(listingRows[0]?.icalImportedRanges, "ical"),
         ];
+      }),
+
+    toggleAvailability: ownerProcedure
+      .input(z.object({ listingId: z.number().int().positive(), available: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const owned = await db.select({ id: listings.id, status: listings.status }).from(listings).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!owned[0]) throw new TRPCError({ code: "NOT_FOUND", message: "الإعلان غير موجود ضمن ممتلكاتك." });
+        const status = input.available ? "Available" : "Rented";
+        await db.update(listings).set({ status }).where(and(eq(listings.id, input.listingId), eq(listings.ownerId, ctx.user!.id)));
+        await writeAuditLog({ actorId: ctx.user!.id, action: "listing.availability.updated", entityType: "listing", entityId: input.listingId, beforeData: { status: owned[0].status }, afterData: { status } });
+        return { success: true as const, status };
       }),
 
     setAvailability: ownerProcedure

@@ -134,6 +134,13 @@
       "when": 1787490102024,
       "tag": "0018_regular_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1787492374248,
+      "tag": "0019_omniscient_mother_askani",
+      "breakpoints": true
     }
   ]
 }

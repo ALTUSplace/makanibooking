@@ -45,6 +45,28 @@ export const legalDisclosure = {
       },
     ],
   },
+  en: {
+    title: "B2-Rent platform protection terms",
+    summary: "I agree to read and accept the platform protection terms before creating an account or completing any transaction.",
+    sections: [
+      {
+        title: "Nature of the service",
+        body: "B2-Rent is an advertising and technology intermediary connecting service providers, including car-rental agencies and property owners, with tenants. The platform does not own or operate the vehicles or properties and does not replace the Partner during inspection or handover.",
+      },
+      {
+        title: "Legal responsibility",
+        body: "The Partner is responsible for listing accuracy, the vehicle's mechanical condition and safety, and the property's cleanliness and conformity with its photos and description. To the extent permitted by Moroccan law and without limiting mandatory rights, B2-Rent is not responsible for defects, accidents, theft, or damage occurring during the rental. The final relationship is governed by the written contract signed by the Partner and Client at handover.",
+      },
+      {
+        title: "Payments",
+        body: "The booking confirmation amount represents the platform's technical service and connection fee. Cancellation and non-refund terms are displayed before payment. Non-refundability does not apply where it conflicts with a mandatory legal right or binding refund policy.",
+      },
+      {
+        title: "Disputes and refunds",
+        body: "If the Partner fails to provide the agreed service despite the Client paying the commission, the platform reviews the case through the dispute center and may refund the service fee according to the applicable policy, with possible suspension or banning of the breaching Partner.",
+      },
+    ],
+  },
 } as const;
 
 export const cancellationRefundPolicy = {
@@ -64,6 +86,15 @@ export const cancellationRefundPolicy = {
       "Les frais de confirmation payés sur la plateforme rémunèrent le service technique et la mise en relation. Ils peuvent être non remboursables en cas d'annulation ou de non-présentation du Client, sauf disposition contraire de la réservation ou d'une règle impérative.",
       "Si le Partenaire ne peut pas fournir le service convenu malgré le paiement du Client, celui-ci peut ouvrir un litige. La plateforme examine le dossier et peut rembourser les frais de service selon la politique publiée et le contrat.",
       "Les autres montants, dépôts de garantie et frais d'annulation sont régis par le contrat écrit entre le Partenaire et le Client. Cette page ne remplace ni le contrat ni les droits impératifs applicables.",
+    ],
+  },
+  en: {
+    title: "Cancellation and refund policy",
+    summary: "The confirmation fee covers the technical service and connection. Applicable conditions are displayed before payment.",
+    points: [
+      "The confirmation fee paid on the platform remunerates the technical service and connection. It may be non-refundable if the Client cancels or does not attend, unless the booking terms or a mandatory legal rule provide otherwise.",
+      "If the Partner cannot provide the agreed service despite the Client's payment, the Client may open a dispute. The platform reviews the case and may refund the service fee according to the published policy and contract.",
+      "Other amounts, security deposits, and cancellation charges are governed by the written contract between the Partner and Client. This page does not replace the contract or applicable mandatory rights.",
     ],
   },
 } as const;

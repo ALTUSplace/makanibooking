@@ -4,14 +4,14 @@ import { ArrowUpRight, Bell, CheckCircle2, Clock3, Loader2, Mail, Settings, Shie
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Language, useLanguage } from "@/contexts/LanguageContext";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
 
 type Filter = "all" | "unread";
 
-function notificationTime(value: Date | string, language: "ar" | "fr") {
-  return new Date(value).toLocaleString(language === "ar" ? "ar-MA" : "fr-MA", {
+function notificationTime(value: Date | string, language: Language) {
+  return new Date(value).toLocaleString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-MA" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   });

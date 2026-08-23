@@ -13,6 +13,9 @@ export const users = mysqlTable("users", {
   agencyEmail: varchar("agency_email", { length: 320 }),
   agencyAddress: varchar("agency_address", { length: 255 }),
   agencyWebsite: varchar("agency_website", { length: 255 }),
+  agencyLatitude: varchar("agency_latitude", { length: 32 }),
+  agencyLongitude: varchar("agency_longitude", { length: 32 }),
+  agencyHours: text("agency_hours"),
   loginMethod: varchar("loginMethod", { length: 64 }),
   passwordHash: varchar("passwordHash", { length: 255 }),
   role: mysqlEnum("role", ["renter", "owner", "admin", "user"]).default("user").notNull(),
@@ -48,6 +51,17 @@ export const listings = mysqlTable("listings", {
   icalSyncError: varchar("ical_sync_error", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+export const listingAnalyticsEvents = mysqlTable("listing_analytics_events", {
+  id: int("event_id").autoincrement().primaryKey(),
+  listingId: int("listing_id").notNull(),
+  eventType: mysqlEnum("event_type", ["view", "whatsapp_click", "contact_click"]).notNull(),
+  visitorKey: varchar("visitor_key", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  listingEventIdx: index("listing_analytics_listing_event_idx").on(table.listingId, table.eventType),
+  listingCreatedIdx: index("listing_analytics_listing_created_idx").on(table.listingId, table.createdAt),
+}));
 
 export const bookings = mysqlTable("bookings", {
   id: int("booking_id").autoincrement().primaryKey(),
@@ -281,6 +295,8 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Listing = typeof listings.$inferSelect;
 export type InsertListing = typeof listings.$inferInsert;
+export type ListingAnalyticsEvent = typeof listingAnalyticsEvents.$inferSelect;
+export type InsertListingAnalyticsEvent = typeof listingAnalyticsEvents.$inferInsert;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = typeof bookings.$inferInsert;
 export type Review = typeof reviews.$inferSelect;

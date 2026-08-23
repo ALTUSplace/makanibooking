@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 type LocalSignals = {
   favorites: string[];
@@ -87,7 +88,7 @@ export function SmartRecommendations() {
               <Card key={item.id} className="group overflow-hidden border border-border/60 bg-card transition-all duration-300 hover:border-amber-500/50 hover:shadow-xl">
                 <div className="relative h-48 overflow-hidden bg-muted">
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    <OptimizedImage src={item.imageUrl} alt={item.title} width={640} height={360} widthHint={640} sizes="(max-width: 768px) 100vw, 33vw" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">لا توجد صورة</div>
                   )}

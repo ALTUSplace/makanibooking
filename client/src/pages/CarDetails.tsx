@@ -5,6 +5,7 @@ import InteractiveCalendar from '@/components/InteractiveCalendar';
 import { Star, ShieldCheck, Users, Car as CarIcon, Fuel, MapPin, Phone, CheckCircle2, Award, Calendar, ChevronRight, Share2, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 export default function CarDetails() {
   const [, params] = useRoute('/car/:id');
@@ -169,7 +170,7 @@ export default function CarDetails() {
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
               <div className="relative h-96">
-                <img src={car.image} alt={car.name} className="w-full h-full object-cover" />
+                <OptimizedImage src={car.image} alt={car.name} width={1200} height={675} widthHint={1200} sizes="(max-width: 1024px) 100vw, 66vw" className="w-full h-full object-cover" />
                 <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-4 py-1.5 rounded-2xl text-xs border border-amber-500/30">
                   {car.cityName}
                 </div>

@@ -8,6 +8,7 @@ import { Car, Building2, Plus, DollarSign, CheckCircle2, XCircle, Clock, Upload,
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
 import { AdvancedMediaUpload } from '@/components/AdvancedMediaUpload';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 const monthlyPartnerData = [
   { name: 'يناير', الأرباح: 8400, الحجوزات: 6 },
@@ -319,7 +320,7 @@ export default function PartnerDashboard() {
                 {listings.map((item: any) => (
                   <Card key={item.id} className="overflow-hidden border-border hover:shadow-md transition-shadow">
                     <div className="relative h-48 bg-muted">
-                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                      <OptimizedImage src={item.imageUrl} alt={item.title} width={900} height={520} widthHint={900} sizes="(max-width: 768px) 100vw, 50vw" className="w-full h-full object-cover" />
                       <Badge className="absolute top-3 right-3 bg-primary text-primary-foreground font-bold">
                         {item.category === 'car' ? 'سيارة' : 'عقار'}
                       </Badge>

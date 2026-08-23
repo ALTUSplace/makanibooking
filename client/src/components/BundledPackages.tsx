@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Car, Building2, Sparkles, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 export const BUNDLED_PACKAGES = [
   {
@@ -59,8 +60,8 @@ export default function BundledPackages() {
             <Card key={pkg.id} className="overflow-hidden border-border flex flex-col justify-between hover:shadow-xl transition-all duration-300">
               <div>
                 <div className="grid grid-cols-2 h-40 relative">
-                  <img src={pkg.imageRealEstate} alt="Real Estate" className="w-full h-full object-cover" />
-                  <img src={pkg.imageCar} alt="Car" className="w-full h-full object-cover" />
+                  <OptimizedImage src={pkg.imageRealEstate} alt="عقار ضمن الباقة" width={600} height={320} widthHint={600} sizes="(max-width: 1024px) 100vw, 33vw" className="w-full h-full object-cover" />
+                  <OptimizedImage src={pkg.imageCar} alt="سيارة ضمن الباقة" width={600} height={320} widthHint={600} sizes="(max-width: 1024px) 100vw, 33vw" className="w-full h-full object-cover" />
                   <Badge className="absolute top-3 right-3 bg-rose-600 text-white font-bold shadow-md">
                     وفر {pkg.savings} د.م
                   </Badge>

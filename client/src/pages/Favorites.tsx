@@ -4,6 +4,7 @@ import { LISTINGS, ListingItem } from '@/data/b2rent';
 import { Button } from '@/components/ui/button';
 import { Heart, MapPin, Trash2, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 export default function Favorites() {
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -106,7 +107,7 @@ export default function Favorites() {
             {favoriteItems.map(item => (
               <div key={item.id} className="bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-xl hover:border-amber-500/50 transition-all flex flex-col group">
                 <div className="relative h-52 overflow-hidden bg-slate-900">
-                  <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <OptimizedImage src={item.image} alt={item.title} width={640} height={360} widthHint={640} sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-slate-800">
                     {item.category}
                   </div>

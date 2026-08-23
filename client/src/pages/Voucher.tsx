@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, MapPin, MessageCircle, Phone, CalendarDays, Copy, Download, ArrowLeft, Ticket } from 'lucide-react';
 import { toast } from 'sonner';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 export default function VoucherPage() {
   const { code = '' } = useParams<{ code: string }>();
@@ -27,7 +28,7 @@ export default function VoucherPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">B2-Rent Morocco</p><h1 className="mt-1 text-3xl font-black text-[#0B3C5D]">الوصول الذكي · Smart Access</h1></div><Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"><CheckCircle2 className="mr-1 h-4 w-4" /> تذكرة صالحة</Badge></div>
       <div className="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
         <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-[#0B3C5D]"><Ticket className="h-5 w-5 text-amber-600" /> تفاصيل الحجز</CardTitle></CardHeader><CardContent className="space-y-5">
-          {data.listingImageUrl && <img src={data.listingImageUrl} alt={data.listingTitle} width={900} height={300} className="h-48 w-full rounded-xl object-cover" />}
+          {data.listingImageUrl && <OptimizedImage src={data.listingImageUrl} alt={data.listingTitle} width={900} height={300} widthHint={900} sizes="(max-width: 1024px) 100vw, 60vw" className="h-48 w-full rounded-xl object-cover" />}
           <div><p className="text-sm text-slate-500">السيارة أو العقار</p><h2 className="text-2xl font-bold text-slate-900">{data.listingTitle}</h2><p className="mt-1 flex items-center gap-1 text-slate-600"><MapPin className="h-4 w-4 text-amber-600" />{data.listingCity} · {data.listingCategory === 'car' ? 'سيارة' : 'عقار'}</p></div>
           <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">بداية الحجز</p><p className="mt-1 flex items-center gap-2 font-semibold"><CalendarDays className="h-4 w-4 text-amber-600" />{start}</p></div><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">نهاية الحجز</p><p className="mt-1 flex items-center gap-2 font-semibold"><CalendarDays className="h-4 w-4 text-amber-600" />{end}</p></div></div>
           <div className="border-t pt-4"><p className="text-sm text-slate-500">الشريك المؤجر</p><p className="font-bold text-slate-900">{data.ownerName || 'الشريك'}</p><div className="mt-3 flex flex-wrap gap-2"><a href={data.mapsUrl} target="_blank" rel="noreferrer"><Button variant="outline" size="sm"><MapPin className="mr-1 h-4 w-4" /> Google Maps</Button></a>{phone && <a href={`tel:${phone}`}><Button variant="outline" size="sm"><Phone className="mr-1 h-4 w-4" /> اتصال مباشر</Button></a>}{whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noreferrer"><Button size="sm" className="bg-[#25D366] text-white hover:bg-[#1ebe5d]"><MessageCircle className="mr-1 h-4 w-4" /> WhatsApp</Button></a>}</div><p className="mt-3 text-xs text-slate-500">ملاحظة: رابط الخرائط الافتراضي مبني على اسم الإعلان والمدينة، ويمكن للشريك لاحقاً إضافة موقع دقيق.</p></div>

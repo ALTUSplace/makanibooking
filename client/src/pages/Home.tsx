@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Sparkles, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
@@ -310,7 +311,7 @@ export default function Home() {
               </div>
             </div>
             <div className="mt-8 relative z-10">
-              <img 
+              <OptimizedImage 
                 src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" 
                 alt="Cars Fleet" 
                 className="rounded-2xl shadow-2xl object-cover h-48 w-full group-hover:scale-105 transition-transform duration-500 border border-white/10"
@@ -338,7 +339,7 @@ export default function Home() {
               </div>
             </div>
             <div className="mt-6">
-              <img
+              <OptimizedImage
                 src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=70&w=800"
                 srcSet="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=65&w=480 480w, https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=70&w=800 800w"
                 sizes="(max-width: 768px) 100vw, 50vw"
@@ -375,7 +376,7 @@ export default function Home() {
           {activeListings.slice(0, 6).map((item) => (
             <article key={item.id} className="b2-card b2-touch-card shadow-md hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col group">
               <div className="relative h-56 overflow-hidden">
-                <img
+                <OptimizedImage
                   src={item.image}
                   alt={item.title}
                   loading="lazy"
@@ -441,7 +442,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-48 overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" alt="Car rental" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" alt="Car rental" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-6 flex-1 flex flex-col justify-between space-y-3">
                 <span className="text-xs font-bold text-[#E57C23]">دليل السفر</span>
@@ -455,7 +456,7 @@ export default function Home() {
 
             <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-48 overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" alt="Real Estate" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" alt="Real Estate" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-6 flex-1 flex flex-col justify-between space-y-3">
                 <span className="text-xs font-bold text-[#E57C23]">استثمار عقاري</span>
@@ -469,7 +470,7 @@ export default function Home() {
 
             <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-48 overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" alt="Driving" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" alt="Driving" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-6 flex-1 flex flex-col justify-between space-y-3">
                 <span className="text-xs font-bold text-[#E57C23]">نصائح قيادة</span>

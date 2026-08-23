@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 export default function BookingPage() {
   const [, setLocation] = useLocation();
@@ -61,7 +62,7 @@ export default function BookingPage() {
           <CardHeader><CardTitle>مراجعة طلب الحجز</CardTitle></CardHeader>
           <CardContent className="space-y-6">
             <div className="flex gap-4 items-center">
-              {listingQuery.data.imageUrl && <img src={listingQuery.data.imageUrl} alt="" className="w-24 h-20 rounded-lg object-cover" />}
+              {listingQuery.data.imageUrl && <OptimizedImage src={listingQuery.data.imageUrl} alt={listingQuery.data.title} width={192} height={160} widthHint={192} sizes="96px" className="w-24 h-20 rounded-lg object-cover" />}
               <div><h2 className="font-bold">{listingQuery.data.title}</h2><p className="text-sm text-muted-foreground">{listingQuery.data.city} · {listingQuery.data.pricePerDay} درهم / اليوم</p></div>
             </div>
             <div className="grid sm:grid-cols-2 gap-3 text-sm">

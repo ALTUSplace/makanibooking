@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download, Receipt, MessageCircle } from 'lucide-react';
 import type { InvoicePdfInput } from '@/lib/invoicePdf';
+import { OptimizedImage } from '@/components/OptimizedImage';
 
 const formatDate = (value: string | Date) => new Date(value).toLocaleDateString('fr-MA');
 const formatMoney = (value: number) => new Intl.NumberFormat('fr-MA').format(value);
@@ -74,7 +75,7 @@ export default function MyBookings() {
               return (
                 <div key={booking.id} className="bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-center gap-6">
                   <div className="w-full md:w-48 h-32 rounded-2xl overflow-hidden border border-slate-800 shrink-0 bg-slate-900">
-                    {listing?.imageUrl && <img src={listing.imageUrl} alt={listing.title} loading="lazy" decoding="async" width={640} height={320} sizes="(max-width: 768px) 100vw, 192px" className="w-full h-full object-cover" />}
+                    {listing?.imageUrl && <OptimizedImage src={listing.imageUrl} alt={listing.title} width={640} height={320} widthHint={640} sizes="(max-width: 768px) 100vw, 192px" className="w-full h-full object-cover" />}
                   </div>
                   <div className="flex-1 space-y-3 text-right w-full">
                     <div className="flex items-center justify-between gap-3">

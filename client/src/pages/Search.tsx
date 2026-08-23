@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { ListingItem } from '@/data/b2rent';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
+import { OptimizedImage } from '@/components/OptimizedImage';
 import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, MapPin, Scale, X, Eye, Home, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { MapSearchView } from '@/components/MapSearchView';
@@ -409,7 +410,7 @@ export default function Search() {
                   >
                     <div className="relative h-56 overflow-hidden">
                       {item.image ? (
-                        <img
+                        <OptimizedImage
                           src={item.image}
                           srcSet={`${item.image} 800w`}
                           sizes="(max-width: 768px) 100vw, 50vw"
@@ -495,7 +496,7 @@ export default function Search() {
             </button>
 
             <div className="relative h-64 rounded-2xl overflow-hidden">
-              <img
+              <OptimizedImage
                 src={quickViewItem.image}
                 srcSet={`${quickViewItem.image} 800w`}
                 sizes="(max-width: 768px) 100vw, 672px"
@@ -592,7 +593,7 @@ export default function Search() {
             <div className="grid grid-cols-2 gap-6">
               {compareList.map(c => (
                 <div key={c.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                  <img
+                  <OptimizedImage
                     src={c.image}
                     srcSet={`${c.image} 640w`}
                     sizes="(max-width: 768px) 100vw, 320px"

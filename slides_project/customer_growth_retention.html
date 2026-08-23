@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; overflow: hidden; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F4F6F8;
+            position: relative;
+            padding-top: 60px;
+            padding-left: 80px;
+            padding-right: 80px;
+        }
+        .header-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 64px;
+            font-weight: 800;
+            color: #0B3C5D;
+            text-align: right;
+        }
+        .horizontal-rule {
+            width: 100%;
+            height: 1px;
+            background-color: #0B3C5D;
+        }
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 60px;
+            margin-top: 40px;
+        }
+        .highlight-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .oversized-number {
+            font-size: 140px;
+            font-weight: 800;
+            color: #E57C23;
+            line-height: 1;
+        }
+        .highlight-label {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0B3C5D;
+            margin-top: 10px;
+        }
+        .highlight-sub {
+            font-size: 20px;
+            color: #4A5568;
+            margin-top: 5px;
+        }
+        .data-col {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: right;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0B3C5D;
+            padding: 12px 0;
+            border-top: 1px solid #0B3C5D;
+            border-bottom: 1px solid #0B3C5D;
+        }
+        td {
+            padding: 15px 0;
+            font-size: 18px;
+            color: #4A5568;
+            border-bottom: 1px solid rgba(11, 60, 93, 0.1);
+        }
+        .trend-up { color: #E57C23; font-weight: 700; }
+        .trend-down { color: #2D3748; font-weight: 700; }
+        
+        .funnel-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .funnel-step {
+            height: 45px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .step-1 { background-color: #0B3C5D; width: 100%; }
+        .step-2 { background-color: #1A4D70; width: 80%; }
+        .step-3 { background-color: #E57C23; width: 41%; }
+        
+        .footer-insight {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #0B3C5D;
+            font-size: 18px;
+            color: #4A5568;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-section">
+            <h2>نمو العملاء والاحتفاظ بهم</h2>
+        </div>
+        <div class="horizontal-rule"></div>
+        
+        <div class="content-grid">
+            <div class="highlight-col">
+                <div class="oversized-number">41%</div>
+                <div class="highlight-label">معدل الاحتفاظ</div>
+                <div class="highlight-sub">بعد أول حجز (زيادة +7 نقاط)</div>
+                
+                <div class="funnel-container">
+                    <div class="funnel-step step-1">الزيارات النشطة (100%)</div>
+                    <div class="funnel-step step-2">الحجز الأول (80%)</div>
+                    <div class="funnel-step step-3">الحجز المتكرر (41%)</div>
+                </div>
+            </div>
+            
+            <div class="data-col">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>المقياس</th>
+                            <th>2024</th>
+                            <th>2025</th>
+                            <th>الإشارة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>عملاء جدد</td>
+                            <td>10.8 ألف</td>
+                            <td>14.2 ألف</td>
+                            <td class="trend-up">توسع الطلب</td>
+                        </tr>
+                        <tr>
+                            <td>عملاء متكررون</td>
+                            <td>3.1 ألف</td>
+                            <td>5.4 ألف</td>
+                            <td class="trend-up">+74%</td>
+                        </tr>
+                        <tr>
+                            <td>الاحتفاظ بعد أول حجز</td>
+                            <td>34%</td>
+                            <td>41%</td>
+                            <td class="trend-up">تحسن الثقة</td>
+                        </tr>
+                        <tr>
+                            <td>تكلفة اكتساب العميل (CAC)</td>
+                            <td>168 د.م</td>
+                            <td>151 د.م</td>
+                            <td class="trend-down">-10% (كفاءة)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="footer-insight">
+                    الرؤية الإدارية: كل نقطة تحسن في الاحتفاظ تقلل الاعتماد على الإنفاق المدفوع وتزيد من القيمة الحيوية للعميل (LTV).
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

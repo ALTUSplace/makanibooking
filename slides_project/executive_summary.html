@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; overflow: hidden; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F4F6F8;
+            position: relative;
+            padding-top: 60px;
+            padding-left: 80px;
+            padding-right: 80px;
+        }
+        .header-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 40px;
+        }
+        h2 {
+            font-size: 64px;
+            font-weight: 800;
+            color: #0B3C5D;
+            text-align: right;
+        }
+        .horizontal-rule {
+            width: 100%;
+            height: 1px;
+            background-color: #0B3C5D;
+            margin-top: 20px;
+        }
+        .columns-container {
+            display: flex;
+            gap: 40px;
+            margin-top: 20px; /* reduced to pull columns up */
+            min-height: 350px;
+        }
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .metric-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #E57C23;
+            margin-bottom: 10px;
+        }
+        .big-number {
+            font-size: 96px;
+            font-weight: 800;
+            color: #0B3C5D;
+            line-height: 1;
+            margin-bottom: 6px; /* slightly reduced spacing */
+        }
+        .unit {
+            font-size: 24px;
+            font-weight: 500;
+            color: #4A5568;
+        }
+        .metric-desc {
+            font-size: 20px;
+            font-weight: 500;
+            color: #4A5568;
+            line-height: 1.6;
+        }
+        .decision-section {
+            margin-top: 20px; /* reduced to bring decision block up */
+            padding-top: 10px; /* slightly reduced inner padding */
+            border-top: 1px solid #0B3C5D;
+        }
+        .decision-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #E57C23;
+            margin-bottom: 10px;
+        }
+        .decision-text {
+            font-size: 22px;
+            font-weight: 500;
+            color: #0B3C5D;
+            background-color: rgba(229, 124, 35, 0.05);
+            padding: 12px; /* slightly reduced padding */
+            border-right: 4px solid #E57C23;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-section">
+            <h2>الملخص التنفيذي</h2>
+        </div>
+        <div class="horizontal-rule"></div>
+        
+        <div class="columns-container">
+            <div class="column">
+                <div class="metric-title">النمو</div>
+                <div class="big-number">34<span class="unit">%</span></div>
+                <p class="metric-desc">ارتفعت قيمة الحجوزات الإجمالية إلى 28.4 مليون درهم، مدفوعة بزيادة الطلب في المدن السياحية الرئيسية.</p>
+            </div>
+            
+            <div class="column">
+                <div class="metric-title">الربحية</div>
+                <div class="big-number">18.6<span class="unit">%</span></div>
+                <p class="metric-desc">تحسن هامش المساهمة بفضل تحسين قنوات الاستحواذ والتركيز على الخدمات عالية القيمة.</p>
+            </div>
+            
+            <div class="column">
+                <div class="metric-title">العملاء</div>
+                <div class="big-number">18.6<span class="unit">ألف</span></div>
+                <p class="metric-desc">وصول عدد العملاء النشطين إلى مستوى قياسي مع تحسن ملحوظ في معدل الاحتفاظ بعد أول حجز.</p>
+            </div>
+        </div>
+        
+        <div class="decision-section">
+            <div class="decision-title">القرار الإداري المطلوب</div>
+            <div class="decision-text">
+                اعتماد أولويات الربع القادم حول تكرار الحجز، جودة العرض، وضبط تكلفة الاستحواذ لضمان استدامة النمو.
+            </div>
+        </div>
+        <!-- Removed bottom horizontal rule to prevent overflow -->
+    </div>
+</body>
+</html>

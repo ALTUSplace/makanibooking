@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; overflow: hidden; }
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background-color: #F4F6F8;
+            position: relative;
+            padding-top: 60px;
+            padding-left: 80px;
+            padding-right: 80px;
+        }
+        .header-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 64px;
+            font-weight: 800;
+            color: #0B3C5D;
+            text-align: right;
+        }
+        .horizontal-rule {
+            width: 100%;
+            height: 1px;
+            background-color: #0B3C5D;
+            margin-top: 10px;
+        }
+        .content-grid {
+            display: flex;
+            gap: 40px;
+            margin-top: 40px;
+        }
+        .chart-container {
+            flex: 2;
+            height: 400px;
+            background: transparent;
+        }
+        .sidebar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .insight-box {
+            border-top: 1px solid #0B3C5D;
+            padding-top: 15px;
+        }
+        .insight-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #E57C23;
+            margin-bottom: 10px;
+        }
+        .insight-text {
+            font-size: 18px;
+            color: #4A5568;
+            line-height: 1.6;
+        }
+        .stat-card {
+            margin-top: 10px;
+        }
+        .stat-value {
+            font-size: 48px;
+            font-weight: 800;
+            color: #0B3C5D;
+        }
+        .stat-label {
+            font-size: 16px;
+            color: #4A5568;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <div class="header-section">
+            <h2>تحليل الإيرادات والربحية</h2>
+        </div>
+        <div class="horizontal-rule"></div>
+
+        <div class="content-grid">
+            <div class="chart-container">
+                <div style="height: 400px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="insight-box">
+                    <div class="insight-title">رؤية إدارية</div>
+                    <p class="insight-text">
+                        تحسن الربحية في النصف الثاني من السنة بسبب مزيج أفضل من المدن، ارتفاع الحجز المتكرر، وتحسن عمولة المزودين.
+                    </p>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">21.0%</div>
+                    <div class="stat-label">أعلى هامش مساهمة (Q4 2025)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">5.4 <span style="font-size: 20px;">م د.م</span></div>
+                    <div class="stat-label">إجمالي الإيرادات الصافية 2025</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="horizontal-rule" style="margin-top: 40px;"></div>
+        <p style="margin-top: 15px; font-size: 14px; color: #4A5568; text-align: left;">* البيانات الواردة نموذجية لأغراض العرض الاستراتيجي.</p>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['الربع الأول', 'الربع الثاني', 'الربع الثالث', 'الربع الرابع'],
+                datasets: [
+                    {
+                        label: 'إيرادات 2025 (مليون درهم)',
+                        data: [1.05, 1.26, 1.61, 1.48],
+                        backgroundColor: '#0B3C5D',
+                        order: 2
+                    },
+                    {
+                        label: 'إيرادات 2024 (مليون درهم)',
+                        data: [0.78, 0.92, 1.14, 0.96],
+                        backgroundColor: 'rgba(11, 60, 93, 0.2)',
+                        order: 3
+                    },
+                    {
+                        label: 'هامش المساهمة 2025 (%)',
+                        data: [16.4, 17.6, 19.2, 21.0],
+                        type: 'line',
+                        borderColor: '#E57C23',
+                        borderWidth: 4,
+                        pointBackgroundColor: '#E57C23',
+                        yAxisID: 'y1',
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'الإيرادات (مليون درهم)',
+                            font: { family: 'Cairo', size: 14 }
+                        }
+                    },
+                    y1: {
+                        beginAtZero: false,
+                        position: 'left',
+                        grid: { drawOnChartArea: false },
+                        title: {
+                            display: true,
+                            text: 'الهامش (%)',
+                            font: { family: 'Cairo', size: 14 }
+                        }
+                    },
+                    x: {
+                        ticks: { font: { family: 'Cairo', size: 14 } }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { family: 'Cairo', size: 12 } }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

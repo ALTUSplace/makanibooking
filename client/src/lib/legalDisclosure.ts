@@ -110,6 +110,7 @@ export function persistLegalConsent() {
   if (typeof document === "undefined") return;
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `b2_legal_consent=${LEGAL_CONSENT_VERSION}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  window.dispatchEvent(new CustomEvent("b2rent:legal-consent"));
 }
 
 export function clearLegalConsent() {

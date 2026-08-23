@@ -9,6 +9,7 @@ import { CurrencyProvider } from "./contexts/CurrencyContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BottomNavigationBar from "./components/BottomNavigationBar";
+import ConsentAnalytics from "./components/ConsentAnalytics";
 import BreadcrumbNav from "./components/BreadcrumbNav";
 import { PageTransition } from "./components/PageTransition";
 import { lazy, Suspense } from "react";
@@ -45,6 +46,7 @@ const KycVerificationPage = lazy(() => import("./pages/KycVerification"));
 const VoucherPage = lazy(() => import("./pages/Voucher"));
 const BookingMessagesPage = lazy(() => import("./pages/BookingMessages"));
 const RegisterPage = lazy(() => import("./pages/Register"));
+const LocationLandingPage = lazy(() => import("./pages/LocationLanding"));
 
 function AccessGuard({ area, children }: { area: 'admin' | 'host'; children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -71,6 +73,8 @@ function Router() {
         )}
       </Route>
       <Route path="/property/:id" component={PropertyDetailPage} />
+      <Route path="/locations/marrakech-car-rental">{() => <Suspense fallback={<div className="min-h-[50vh] grid place-items-center">جاري تحميل الصفحة...</div>}><LocationLandingPage location="marrakech" /></Suspense>}</Route>
+      <Route path="/locations/mohammed-v-airport-car-rental">{() => <Suspense fallback={<div className="min-h-[50vh] grid place-items-center">جاري تحميل الصفحة...</div>}><LocationLandingPage location="casablancaAirport" /></Suspense>}</Route>
       <Route path="/car/:id">
         {params => (
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background text-foreground"><div className="animate-spin text-amber-500 font-bold text-lg">جاري تحميل التفاصيل...</div></div>}>
@@ -134,6 +138,7 @@ export default function App() {
             <CurrencyProvider>
               <TooltipProvider>
                 <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
+                  <ConsentAnalytics />
                   <Navbar />
                   <BreadcrumbNav />
                   <main className="b2-main-content flex-1 pb-16 md:pb-0">

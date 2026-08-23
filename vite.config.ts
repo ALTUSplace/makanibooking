@@ -171,18 +171,37 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
-          if (id.includes("react-dom")) return "react-dom-vendor";
-          if (id.includes("react") || id.includes("scheduler")) return "react-vendor";
-          if (id.includes("@trpc") || id.includes("@tanstack")) return "data-vendor";
-          if (id.includes("@radix-ui")) return "ui-vendor";
-          if (id.includes("recharts")) return "charts-vendor";
-          if (id.includes("jspdf")) return "pdf-vendor";
-          if (id.includes("framer-motion")) return "motion-vendor";
-          if (id.includes("streamdown")) return "content-vendor";
-          if (id.includes("lucide-react")) return "icons-vendor";
-          if (id.includes("date-fns") || id.includes("zod") || id.includes("superjson")) return "utils-vendor";
+
+          // pnpm encodes package names in the first node_modules segment
+          // (for example @radix-ui+react-dialog), while the resolved package
+          // path appears after the final node_modules segment. Always classify
+          // the actual package path so scoped dependencies do not fall into the
+          // catch-all vendor chunk.
+          const normalized = id.replaceAll("\\\\", "/");
+          const marker = "/node_modules/";
+          const packagePath = normalized.slice(normalized.lastIndexOf(marker) + marker.length);
+          const packageName = packagePath.startsWith("@")
+            ? packagePath.split("/").slice(0, 2).join("/")
+            : packagePath.split("/")[0];
+
+          if (packageName === "react-dom") return "react-dom-vendor";
+          if (packageName === "react" || packageName === "scheduler") return "react-vendor";
+          if (packageName.startsWith("@trpc/") || packageName.startsWith("@tanstack/")) return "data-vendor";
+          if (packageName.startsWith("@radix-ui/")) return "ui-vendor";
+          if (packageName === "recharts") return "charts-vendor";
+          if (packageName === "jspdf") return "pdf-vendor";
+          if (packageName === "framer-motion") return "motion-vendor";
+          if (packageName === "streamdown") return "content-vendor";
+          if (packageName === "lucide-react") return "icons-vendor";
+          if (["date-fns", "zod", "superjson", "clsx", "tailwind-merge", "class-variance-authority"].includes(packageName)) return "utils-vendor";
+          if (["@hookform/resolvers", "react-hook-form"].includes(packageName)) return "forms-vendor";
+          if (["cmdk", "embla-carousel-react", "input-otp", "react-resizable-panels", "vaul"].includes(packageName)) return "interactive-vendor";
+          if (["wouter", "sonner"].includes(packageName)) return "navigation-vendor";
+          if (["use-callback-ref", "use-sidecar", "react-remove-scroll", "react-style-singleton", "react-remove-scroll-bar", "aria-hidden", "get-nonce", "detect-node-es", "is-what", "copy-anything"].includes(packageName) || packageName.startsWith("@floating-ui/")) return "ui-vendor";
+          if (["@babel/runtime", "tslib", "use-sync-external-store"].includes(packageName)) return "shared-vendor";
           return "vendor";
         },
+        onlyExplicitManualChunks: true,
       },
     },
   },

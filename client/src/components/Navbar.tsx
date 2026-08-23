@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -28,9 +28,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCurrency, Currency } from "@/contexts/CurrencyContext";
-import { CMIPaymentModal } from "./CMIPaymentModal";
-import { WhatsAppNotificationModal } from "./WhatsAppNotificationModal";
-import { TwoFactorAuthModal } from "./TwoFactorAuthModal";
+const CMIPaymentModal = lazy(() => import("./CMIPaymentModal").then((module) => ({ default: module.CMIPaymentModal })));
+const WhatsAppNotificationModal = lazy(() => import("./WhatsAppNotificationModal").then((module) => ({ default: module.WhatsAppNotificationModal })));
+const TwoFactorAuthModal = lazy(() => import("./TwoFactorAuthModal").then((module) => ({ default: module.TwoFactorAuthModal })));
 import { toast } from "sonner";
 
 type NavLink = {
@@ -406,28 +406,30 @@ export default function Navbar() {
         </div>
       </header>
 
-      <CMIPaymentModal
-        isOpen={cmiModalOpen}
-        onClose={() => setCmiModalOpen(false)}
-        onSuccess={() => setCmiModalOpen(false)}
-        amount={1500}
-      />
-      <WhatsAppNotificationModal
-        isOpen={whatsappModalOpen}
-        onClose={() => setWhatsappModalOpen(false)}
-        bookingDetails={{
-          id: "B2R-9942",
-          carName: "Dacia Duster 2026",
-          customerName: "محمد العلوي",
-          customerPhone: "",
-          totalPrice: 1500,
-        }}
-      />
-      <TwoFactorAuthModal
-        isOpen={twoFaModalOpen}
-        onClose={() => setTwoFaModalOpen(false)}
-        onSuccess={() => setTwoFaModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <CMIPaymentModal
+          isOpen={cmiModalOpen}
+          onClose={() => setCmiModalOpen(false)}
+          onSuccess={() => setCmiModalOpen(false)}
+          amount={1500}
+        />
+        <WhatsAppNotificationModal
+          isOpen={whatsappModalOpen}
+          onClose={() => setWhatsappModalOpen(false)}
+          bookingDetails={{
+            id: "B2R-9942",
+            carName: "Dacia Duster 2026",
+            customerName: "محمد العلوي",
+            customerPhone: "",
+            totalPrice: 1500,
+          }}
+        />
+        <TwoFactorAuthModal
+          isOpen={twoFaModalOpen}
+          onClose={() => setTwoFaModalOpen(false)}
+          onSuccess={() => setTwoFaModalOpen(false)}
+        />
+      </Suspense>
 
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[60] md:hidden" role="presentation">

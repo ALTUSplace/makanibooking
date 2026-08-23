@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { useRef, useState, useEffect } from 'react';
 import { playSuccessSound } from '@/lib/sound';
 import { trpc } from '@/lib/trpc';
-import { generateInvoicePdf } from '@/lib/invoicePdf';
 import { cancellationRefundPolicy } from '@/lib/legalDisclosure';
 
 export default function Success() {
@@ -80,23 +79,31 @@ export default function Success() {
   const invoice = invoiceQuery.data;
   const total = invoice ? String(invoice.total) : '—';
 
-  const handleInvoiceDownload = () => {
+  const handleInvoiceDownload = async () => {
     if (!invoice) {
       toast.info('لم يتم تحميل الفاتورة بعد. يرجى الانتظار أو فتح صفحة حجوزاتك.');
       return;
     }
-    const blob = generateInvoicePdf({
-      ...invoice,
-      cancellationPolicy: cancellationRefundPolicy.fr.points[0],
-      refundPolicy: cancellationRefundPolicy.fr.points[1],
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${invoice.invoiceNumber}.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success('تم تنزيل الفاتورة الإلكترونية بصيغة PDF.');
+    setIsGeneratingPDF(true);
+    try {
+      const { generateInvoicePdf } = await import('@/lib/invoicePdf');
+      const blob = generateInvoicePdf({
+        ...invoice,
+        cancellationPolicy: cancellationRefundPolicy.fr.points[0],
+        refundPolicy: cancellationRefundPolicy.fr.points[1],
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${invoice.invoiceNumber}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('تم تنزيل الفاتورة الإلكترونية بصيغة PDF.');
+    } catch {
+      toast.error('تعذر إنشاء الفاتورة حالياً. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   useEffect(() => {

@@ -171,8 +171,14 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
+          if (id.includes("react-dom")) return "react-dom-vendor";
           if (id.includes("react") || id.includes("scheduler")) return "react-vendor";
           if (id.includes("@trpc") || id.includes("@tanstack")) return "data-vendor";
+          if (id.includes("@radix-ui")) return "ui-vendor";
+          if (id.includes("recharts")) return "charts-vendor";
+          if (id.includes("jspdf")) return "pdf-vendor";
+          if (id.includes("framer-motion")) return "motion-vendor";
+          if (id.includes("streamdown")) return "content-vendor";
           if (id.includes("lucide-react")) return "icons-vendor";
           if (id.includes("date-fns") || id.includes("zod") || id.includes("superjson")) return "utils-vendor";
           return "vendor";

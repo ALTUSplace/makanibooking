@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, FileText, Headphones, Car, Building2, CheckCircle2, Clock, XCircle, Download, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateInvoicePdf } from '@/lib/invoicePdf';
+import type { InvoicePdfInput } from '@/lib/invoicePdf';
 
 export default function RenterDashboard() {
   const { data: user } = trpc.auth.me.useQuery();
@@ -117,8 +117,9 @@ export default function RenterDashboard() {
                           <p className="text-sm text-muted-foreground">رقم الفاتورة: {invoice.invoiceNumber} | الإصدار: {new Date(invoice.issuedAt).toLocaleDateString('ar-MA')}</p>
                           <p className="text-sm font-semibold">القيمة الإجمالية: {invoice.total} {invoice.currency}</p>
                         </div>
-                        <Button variant="outline" size="sm" className="gap-2" onClick={() => {
-                          const blob = generateInvoicePdf({
+                        <Button variant="outline" size="sm" className="gap-2" onClick={async () => {
+                          const { generateInvoicePdf } = await import('@/lib/invoicePdf');
+                          const invoiceInput: InvoicePdfInput = {
                             invoiceNumber: invoice.invoiceNumber,
                             bookingId: invoice.bookingId,
                             subtotal: Number(invoice.subtotal),
@@ -134,7 +135,8 @@ export default function RenterDashboard() {
                             cancellationPolicyVersion: invoice.cancellationPolicyVersion,
                             cancellationPolicyFingerprint: invoice.cancellationPolicyFingerprint,
                             cancellationPolicyAcceptedAt: invoice.cancellationPolicyAcceptedAt,
-                          });
+                          };
+                          const blob = generateInvoicePdf(invoiceInput);
                           const url = URL.createObjectURL(blob);
                           const anchor = document.createElement('a');
                           anchor.href = url;

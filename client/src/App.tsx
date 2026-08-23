@@ -16,9 +16,9 @@ import { useAuth } from "./_core/hooks/useAuth";
 import { startLogin } from "./const";
 import { Button } from "@/components/ui/button";
 
-// Lazy-loaded pages keep the initial mobile bundle small.
-import HostDashboard from "./pages/HostDashboard";
-import AIChatWidget from './components/AIChatWidget';
+// Lazy-loaded pages and global widgets keep the initial mobile bundle small.
+const HostDashboard = lazy(() => import("./pages/HostDashboard"));
+const AIChatWidget = lazy(() => import('./components/AIChatWidget'));
 
 const HomePage = lazy(() => import("./pages/Home"));
 const SearchPage = lazy(() => import("./pages/Search"));
@@ -143,7 +143,9 @@ export default function App() {
                   </main>
                   <Footer />
                   <BottomNavigationBar />
-                  <AIChatWidget />
+                  <Suspense fallback={null}>
+                    <AIChatWidget />
+                  </Suspense>
                 </div>
               </TooltipProvider>
             </CurrencyProvider>

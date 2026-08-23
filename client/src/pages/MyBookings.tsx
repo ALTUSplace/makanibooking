@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download, Receipt, MessageCircle } from 'lucide-react';
-import { generateInvoicePdf } from '@/lib/invoicePdf';
+import type { InvoicePdfInput } from '@/lib/invoicePdf';
 
 const formatDate = (value: string | Date) => new Date(value).toLocaleDateString('fr-MA');
 const formatMoney = (value: number) => new Intl.NumberFormat('fr-MA').format(value);
@@ -22,7 +22,8 @@ export default function MyBookings() {
   const listingById = useMemo(() => new Map(listings.map((listing) => [listing.id, listing])), [listings]);
   const invoiceByBooking = useMemo(() => new Map(invoices.map((invoice) => [invoice.bookingId, invoice])), [invoices]);
 
-  const downloadInvoice = (invoice: Parameters<typeof generateInvoicePdf>[0]) => {
+  const downloadInvoice = async (invoice: InvoicePdfInput) => {
+    const { generateInvoicePdf } = await import('@/lib/invoicePdf');
     const blob = generateInvoicePdf(invoice);
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

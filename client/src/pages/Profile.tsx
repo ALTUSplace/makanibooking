@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
-import { generateInvoicePdf } from "@/lib/invoicePdf";
+import type { InvoicePdfInput } from "@/lib/invoicePdf";
 
 const money = (value: number, currency = "MAD") => `${new Intl.NumberFormat("fr-MA").format(value)} ${currency}`;
 const date = (value: string | Date | null | undefined) => value ? new Date(value).toLocaleDateString("fr-MA") : "—";
@@ -51,7 +51,8 @@ export default function Profile() {
     });
   };
 
-  const downloadInvoice = (invoice: Parameters<typeof generateInvoicePdf>[0]) => {
+  const downloadInvoice = async (invoice: InvoicePdfInput) => {
+    const { generateInvoicePdf } = await import("@/lib/invoicePdf");
     const blob = generateInvoicePdf(invoice);
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

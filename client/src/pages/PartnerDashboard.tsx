@@ -8,7 +8,6 @@ import { Car, Building2, Plus, DollarSign, CheckCircle2, XCircle, Clock, Upload,
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts';
 import { AdvancedMediaUpload } from '@/components/AdvancedMediaUpload';
-import { jsPDF } from 'jspdf';
 
 const monthlyPartnerData = [
   { name: 'يناير', الأرباح: 8400, الحجوزات: 6 },
@@ -83,7 +82,8 @@ export default function PartnerDashboard() {
     toast.success(`تم تقديم طلب سحب مبلغ ${amt} د.م بنجاح وسيتم تحويله لحسابك البنكي خلال 24 ساعة!`);
   };
 
-  const generateGoldCertificate = () => {
+  const generateGoldCertificate = async () => {
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFillColor(10, 25, 47);
     doc.rect(0, 0, 297, 210, 'F');

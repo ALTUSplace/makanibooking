@@ -19,7 +19,7 @@ import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUr
 import { escapeIcal, parseIcalEvents, validateIcalImportUrl } from "../shared/ical";
 import { syncListingIcal } from "./ical";
 import { CANCELLATION_POLICY_VERSION, CANCELLATION_POLICY_TEXT, CANCELLATION_POLICY_FINGERPRINT } from "../shared/cancellationPolicySnapshot";
-import { ORIGINAL_IMAGE_REJECTION_MESSAGE, verifyOriginalListingImage } from "./imageVerification";
+import { createImageVerificationProof, ORIGINAL_IMAGE_REJECTION_MESSAGE, verifyImageVerificationProof, verifyOriginalListingImage } from "./imageVerification";
 
 async function writeAuditLog(input: {
   actorId: number;
@@ -392,7 +392,8 @@ export const appRouter = router({
           });
         }
         const uploaded = await storagePut(`users/${ctx.user!.id}/listings/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
-        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType, verification: { confidence: verification.confidence } };
+        const verificationProof = createImageVerificationProof({ ownerId: ctx.user!.id, url: uploaded.url, bytes: imageBuffer });
+        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType, verification: { confidence: verification.confidence }, verificationProof };
       }),
   }),
 
@@ -760,7 +761,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) return null;
-        const result = await db.select().from(listings).where(and(eq(listings.id, input.id), inArray(listings.status, ['Approved', 'Available']))).limit(1);
+        const result = await db.select().from(listings).where(and(eq(listings.id, input.id), inArray(listings.status, ['Published', 'Available']))).limit(1);
         return result[0] || null;
       }),
 
@@ -852,7 +853,8 @@ export const appRouter = router({
           description: z.string().optional(),
           category: z.string(),
           pricePerDay: z.number(),
-          imageUrl: z.string().optional(),
+          imageUrl: z.string().min(1),
+          imageVerificationProof: z.string().min(1),
           city: z.string(),
           officeType: z.string().optional(),
           rentalPeriod: z.enum(['daily', 'monthly', 'yearly']).optional(),
@@ -862,6 +864,9 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
+        if (!verifyImageVerificationProof({ proof: input.imageVerificationProof, ownerId: ctx.user!.id, url: input.imageUrl })) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "يجب رفع الصورة عبر أداة الفحص الآمن قبل نشر الإعلان." });
+        }
         await db.insert(listings).values({
           ownerId: ctx.user!.id,
           title: input.title,
@@ -886,6 +891,7 @@ export const appRouter = router({
         pricePerDay: z.number().int().nonnegative().optional(),
         city: z.string().min(2).optional(),
         imageUrl: z.string().optional(),
+        imageVerificationProof: z.string().optional(),
         officeType: z.string().optional(),
         rentalPeriod: z.enum(['daily', 'monthly', 'yearly']).optional(),
         amenities: z.array(z.string()).optional(),
@@ -893,10 +899,13 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error('Database unavailable');
-        const { id, amenities, ...fields } = input;
-        const owned = await db.select({ id: listings.id }).from(listings)
+        const { id, amenities, imageVerificationProof, ...fields } = input;
+        const owned = await db.select({ id: listings.id, imageUrl: listings.imageUrl }).from(listings)
           .where(and(eq(listings.id, id), eq(listings.ownerId, ctx.user!.id))).limit(1);
         if (!owned[0]) throw new Error('الإعلان غير موجود ضمن ممتلكاتك.');
+        if (fields.imageUrl !== undefined && (!imageVerificationProof || !verifyImageVerificationProof({ proof: imageVerificationProof, ownerId: ctx.user!.id, url: fields.imageUrl }))) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "يجب إعادة رفع الصورة عبر أداة الفحص الآمن قبل تعديلها." });
+        }
         await db.update(listings).set({ ...fields, ...(amenities ? { amenities: amenities.join(',') } : {}), status: 'Published' }).where(eq(listings.id, id));
         return { success: true };
       }),
@@ -962,7 +971,7 @@ export const appRouter = router({
         if (!booking || (ctx.user!.role !== "admin" && booking.renterId !== ctx.user!.id)) {
           throw new TRPCError({ code: "NOT_FOUND", message: "الحجز غير موجود أو لا يخص حسابك." });
         }
-        return booking;
+        return { ...booking, ownerWhatsApp: booking.status === "Confirmed" ? booking.ownerWhatsApp : null };
       }),
 
     create: protectedProcedure
@@ -1237,7 +1246,7 @@ export const appRouter = router({
 
         let voucher: typeof bookingVouchers.$inferSelect | null = null;
         const requestOrigin = `${ctx.req.protocol}://${ctx.req.get("host")}`;
-        if (paymentStatus === "Succeeded") {
+        if (paymentStatus === "Succeeded" && booking.status === "Confirmed") {
           const existingVoucher = await db.select().from(bookingVouchers)
             .where(eq(bookingVouchers.bookingId, booking.id)).limit(1);
           if (existingVoucher[0]) {
@@ -1330,12 +1339,12 @@ export const appRouter = router({
           .leftJoin(users, eq(listings.ownerId, users.id))
           .where(eq(bookingVouchers.code, input.code)).limit(1);
         const result = rows[0];
-        if (!result || result.voucher.status !== "Issued" || result.bookingStatus === "Cancelled" || (ctx.user!.role !== "admin" && result.renterId !== ctx.user!.id && result.ownerId !== ctx.user!.id)) {
+        if (!result || result.voucher.status !== "Issued" || result.bookingStatus !== "Confirmed" || (ctx.user!.role !== "admin" && result.renterId !== ctx.user!.id && result.ownerId !== ctx.user!.id)) {
           throw new TRPCError({ code: "NOT_FOUND", message: "تذكرة الوصول غير موجودة أو لا تخص حسابك." });
         }
         const qrCodeDataUrl = await QRCode.toDataURL(result.voucher.qrPayload, { width: 320, margin: 2 });
         const mapsUrl = createMapsSearchUrl(result.listingTitle, result.listingCity);
-        return { ...result, qrCodeDataUrl, mapsUrl };
+        return { ...result, ownerWhatsApp: result.bookingStatus === "Confirmed" ? result.ownerWhatsApp : null, qrCodeDataUrl, mapsUrl };
       }),
   }),
 

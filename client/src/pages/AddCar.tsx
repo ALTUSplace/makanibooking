@@ -13,6 +13,7 @@ export default function AddCar() {
   const [, setLocation] = useLocation();
   const [submitted, setSubmitted] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [imageVerificationProof, setImageVerificationProof] = useState('');
 
   const createListing = trpc.listings.create.useMutation({
     onSuccess: () => {
@@ -50,13 +51,19 @@ export default function AddCar() {
       return;
     }
 
+    if (!imageUrl || !imageVerificationProof) {
+      toast.error('يرجى رفع صورة أصلية واجتياز الفحص قبل نشر العرض');
+      return;
+    }
+
     createListing.mutate({
       title: `${brand} ${carName}`.trim(),
       city,
       category: 'car',
       pricePerDay: numericPrice,
       description: `الفئة: ${category} — ناقل الحركة: ${transmission} — ${seats}.`,
-      imageUrl: imageUrl || undefined,
+      imageUrl,
+      imageVerificationProof,
     });
   };
 
@@ -174,7 +181,7 @@ export default function AddCar() {
 
               <div className="space-y-2 text-right">
                 <label className="text-xs font-bold text-slate-300">صورة السيارة الرئيسية</label>
-                <AdvancedMediaUpload onImagesUploaded={(urls) => setImageUrl(urls[0] ?? '')} />
+                <AdvancedMediaUpload onImagesUploaded={(images) => { const first = images[0]; setImageUrl(first?.url ?? ''); setImageVerificationProof(first?.verificationProof ?? ''); }} />
               </div>
 
               <div className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/70 p-4 text-right">

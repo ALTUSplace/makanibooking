@@ -30,6 +30,7 @@ export default function PartnerDashboard() {
   const [price, setPrice] = useState('');
   const [city, setCity] = useState('الدار البيضاء');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageVerificationProof, setImageVerificationProof] = useState('');
   const [description, setDescription] = useState('');
 
   // Wallet and Payout state
@@ -44,6 +45,7 @@ export default function PartnerDashboard() {
       setTitle('');
       setPrice('');
       setImageUrl('');
+      setImageVerificationProof('');
       setDescription('');
     },
     onError: (err) => {
@@ -57,12 +59,17 @@ export default function PartnerDashboard() {
       toast.error('يرجى تعبئة الحقول الإجبارية');
       return;
     }
+    if (!imageUrl || !imageVerificationProof) {
+      toast.error('يرجى رفع صورة أصلية واجتياز الفحص قبل نشر الإعلان');
+      return;
+    }
     createListingMutation.mutate({
       title,
       category,
       pricePerDay: Number(price),
       city,
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
+      imageUrl,
+      imageVerificationProof,
       description: description || 'إعلان معتمد من الشريك الموثوق'
     });
   };
@@ -297,7 +304,7 @@ export default function PartnerDashboard() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">رفع صور الأسطول (مع معاينة وعلامة مائية تلقائية)</label>
-                    <AdvancedMediaUpload onImagesUploaded={(urls) => setImageUrl(urls[0] || '')} />
+                    <AdvancedMediaUpload onImagesUploaded={(images) => { const first = images[0]; setImageUrl(first?.url || ''); setImageVerificationProof(first?.verificationProof || ''); }} />
                   </div>
                   <div className="flex gap-3 pt-2">
                     <Button type="submit" className="font-bold">حفظ ونشر الإعلان</Button>

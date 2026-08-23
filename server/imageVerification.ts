@@ -1,4 +1,6 @@
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { invokeLLM } from "./_core/llm";
+import { ENV } from "./_core/env";
 
 export const ORIGINAL_IMAGE_REJECTION_MESSAGE =
   "عذراً، ينبغي إرفاق صور أصلية وواقعية من تصويركم المباشر لضمان الشفافية ومصداقية العرض على المنصة.";
@@ -8,6 +10,47 @@ export type ImageVerificationResult = {
   confidence: number;
   reasons: string[];
 };
+
+type ImageProofPayload = {
+  ownerId: number;
+  url: string;
+  sha256: string;
+  issuedAt: number;
+};
+
+function proofSignature(payload: string) {
+  if (!ENV.cookieSecret) throw new Error("Image verification signing secret is not configured");
+  return createHmac("sha256", ENV.cookieSecret).update(payload).digest("base64url");
+}
+
+export function createImageVerificationProof(input: { ownerId: number; url: string; bytes: Uint8Array }) {
+  const payload: ImageProofPayload = {
+    ownerId: input.ownerId,
+    url: input.url,
+    sha256: createHash("sha256").update(input.bytes).digest("hex"),
+    issuedAt: Date.now(),
+  };
+  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  return `${encoded}.${proofSignature(encoded)}`;
+}
+
+export function verifyImageVerificationProof(input: { proof: string; ownerId: number; url: string; bytes?: Uint8Array }) {
+  try {
+    const [encoded, signature] = input.proof.split(".");
+    if (!encoded || !signature) return false;
+    const expected = proofSignature(encoded);
+    const actualBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+    if (actualBuffer.length !== expectedBuffer.length || !timingSafeEqual(actualBuffer, expectedBuffer)) return false;
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as ImageProofPayload;
+    if (payload.ownerId !== input.ownerId || payload.url !== input.url) return false;
+    if (!Number.isFinite(payload.issuedAt) || Date.now() - payload.issuedAt > 24 * 60 * 60 * 1000) return false;
+    if (input.bytes && createHash("sha256").update(input.bytes).digest("hex") !== payload.sha256) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const verificationSchema = {
   name: "original_image_verification",

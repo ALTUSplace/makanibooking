@@ -5,8 +5,13 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 
+interface UploadedImage {
+  url: string;
+  verificationProof: string;
+}
+
 interface AdvancedMediaUploadProps {
-  onImagesUploaded: (urls: string[]) => void;
+  onImagesUploaded: (images: UploadedImage[]) => void;
 }
 
 const MAX_FILES = 5;
@@ -94,7 +99,7 @@ export function AdvancedMediaUpload({ onImagesUploaded }: AdvancedMediaUploadPro
     setIsUploading(true);
     setUploadProgress(5);
     try {
-      const uploadedUrls: string[] = [];
+      const uploadedImages: UploadedImage[] = [];
       for (let index = 0; index < selectedFiles.length; index += 1) {
         const file = selectedFiles[index];
         if (!file) continue;
@@ -104,10 +109,10 @@ export function AdvancedMediaUpload({ onImagesUploaded }: AdvancedMediaUploadPro
           mimeType: file.type as AllowedMimeType,
           contentBase64,
         });
-        uploadedUrls.push(uploaded.url);
+        uploadedImages.push({ url: uploaded.url, verificationProof: uploaded.verificationProof });
         setUploadProgress(Math.round(((index + 1) / selectedFiles.length) * 100));
       }
-      onImagesUploaded(uploadedUrls);
+      onImagesUploaded(uploadedImages);
       toast.success('تم فحص الصور الأصلية ورفعها إلى التخزين الآمن بنجاح.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'تعذر رفع الصور حالياً.');

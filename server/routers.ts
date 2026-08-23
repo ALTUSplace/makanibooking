@@ -184,6 +184,25 @@ export const appRouter = router({
         netRevenue: bookingRows.filter((booking) => booking.status === "Confirmed").reduce((sum, booking) => sum + Number(booking.netProfit), 0),
       };
     }),
+    analyticsTimeline: ownerProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const owned = await db.select({ id: listings.id }).from(listings).where(eq(listings.ownerId, ctx.user!.id));
+      const listingIds = owned.map((listing) => listing.id);
+      if (!listingIds.length) return [];
+      const since = new Date();
+      since.setUTCHours(0, 0, 0, 0);
+      since.setUTCDate(since.getUTCDate() - 29);
+      const rows = await db.select({
+        day: sql<string>`DATE(${listingAnalyticsEvents.createdAt})`,
+        eventType: listingAnalyticsEvents.eventType,
+        total: count(),
+      }).from(listingAnalyticsEvents)
+        .where(and(inArray(listingAnalyticsEvents.listingId, listingIds), gte(listingAnalyticsEvents.createdAt, since)))
+        .groupBy(sql`DATE(${listingAnalyticsEvents.createdAt})`, listingAnalyticsEvents.eventType)
+        .orderBy(sql`DATE(${listingAnalyticsEvents.createdAt})`);
+      return rows.map((row) => ({ day: String(row.day), eventType: row.eventType, total: Number(row.total) }));
+    }),
     exportAnalyticsCsv: ownerProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });

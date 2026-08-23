@@ -134,7 +134,7 @@ export default function App() {
                 <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
                   <Navbar />
                   <BreadcrumbNav />
-                  <main className="flex-1 pb-16 md:pb-0">
+                  <main className="b2-main-content flex-1 pb-16 md:pb-0">
                     <PageTransition>
                       <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center bg-background text-foreground"><div className="text-amber-500 font-bold">جاري تحميل الصفحة...</div></div>}>
                         <Router />

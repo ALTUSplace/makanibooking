@@ -470,3 +470,39 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Final mobile rhythm: keep the fixed chrome clear of content on narrow screens. */
+@media (max-width: 640px) {
+  :root {
+    --header-height: 4rem;
+  }
+
+  .glass-header {
+    box-shadow: 0 6px 18px rgba(8, 44, 69, 0.08);
+  }
+
+  .mobile-bottom-nav {
+    padding-inline: 0.5rem;
+    padding-top: 0.35rem;
+  }
+
+  .mobile-bottom-nav__inner {
+    gap: 0.125rem;
+  }
+
+  .mobile-bottom-nav__item {
+    min-height: 3rem;
+    gap: 0.1rem;
+    font-size: 0.64rem;
+  }
+
+  .mobile-bottom-nav__icon {
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 0.65rem;
+  }
+
+  .b2-main-content {
+    padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+  }
+}

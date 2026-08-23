@@ -32,53 +32,54 @@ export function FAQSection() {
   ];
 
   return (
-    <section className="py-16 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
+    <section className="py-10 md:py-16 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
       <div className="container mx-auto px-4 max-w-5xl">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 md:mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm font-medium mb-3">
             <HelpCircle className="w-4 h-4" />
             <span>الأسئلة المتكررة</span>
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
             كل ما ترغب في معرفته حول خدمات B2-Rent
           </h2>
-          <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+          <p className="mt-3 text-sm sm:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
             إجابات شاملة وواضحة عن عمليات الحجز والدفع وحقوق الشركاء والزبناء في المغرب.
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {faqs.map((faq, idx) => {
             const Icon = faq.icon;
             const isOpen = openIndex === idx;
             return (
               <div 
                 key={idx}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200"
+                className="bg-white dark:bg-slate-800 rounded-xl md:rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
-                  className="w-full px-6 py-5 text-right flex items-center justify-between gap-4 focus:outline-none"
+                  aria-expanded={isOpen}
+                  className="w-full px-4 md:px-6 py-4 md:py-5 text-right flex items-center justify-between gap-2 md:gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-inset"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                  <div className="flex min-w-0 items-center gap-3 md:gap-4">
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
                       <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 block mb-1">
                         {faq.category}
                       </span>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      <h3 className="text-sm sm:text-lg font-bold leading-snug text-slate-900 dark:text-white">
                         {faq.question}
                       </h3>
                     </div>
                   </div>
-                  <div className={`w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 bg-amber-500 text-white dark:bg-amber-500 dark:text-white' : ''}`}>
+                  <div className={`w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 bg-amber-500 text-white dark:bg-amber-500 dark:text-white' : ''}`} aria-hidden="true">
                     <ChevronDown className="w-4 h-4" />
                   </div>
                 </button>
                 {isOpen && (
-                  <div className="px-6 pb-6 pt-2 text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-700/50">
+                  <div className="px-4 md:px-6 pb-4 md:pb-6 pt-3 text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-700/50">
                     {faq.answer}
                   </div>
                 )}

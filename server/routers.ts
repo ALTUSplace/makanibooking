@@ -107,6 +107,26 @@ export const appRouter = router({
       }).from(users).where(eq(users.id, ctx.user!.id)).limit(1);
       return rows[0] ?? null;
     }),
+    statusSummary: ownerProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      const empty = { counts: { pending: 0, published: 0, rejected: 0 }, total: 0, listings: [] as Array<{ id: number; title: string; city: string; category: string; status: string; normalizedStatus: "pending" | "published" | "rejected"; createdAt: Date | null }> };
+      if (!db) return empty;
+      const owned = await db.select({ id: listings.id, title: listings.title, city: listings.city, category: listings.category, status: listings.status, createdAt: listings.createdAt })
+        .from(listings).where(eq(listings.ownerId, ctx.user!.id)).orderBy(desc(listings.createdAt));
+      const result = owned.map((listing) => {
+        const normalizedStatus = listing.status === "Rejected" ? "rejected" : listing.status === "Pending" ? "pending" : "published";
+        return { ...listing, normalizedStatus };
+      });
+      return {
+        total: result.length,
+        counts: {
+          pending: result.filter((listing) => listing.normalizedStatus === "pending").length,
+          published: result.filter((listing) => listing.normalizedStatus === "published").length,
+          rejected: result.filter((listing) => listing.normalizedStatus === "rejected").length,
+        },
+        listings: result,
+      };
+    }),
     updateSettings: ownerProcedure
       .input(z.object({
         agencyName: z.string().trim().max(180).optional().nullable(),

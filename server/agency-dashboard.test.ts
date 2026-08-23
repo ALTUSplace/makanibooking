@@ -27,5 +27,6 @@ describe("agency dashboard authorization", () => {
     await expect(caller.agency.listings()).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.listings.toggleAvailability({ listingId: 1, available: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.listings.remove({ id: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.listings.resubmitRejected({ id: 1, title: "اختبار", city: "الدار البيضاء", pricePerDay: 100, imageUrl: "https://example.com/image.jpg", imageVerificationProof: "invalid-proof" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

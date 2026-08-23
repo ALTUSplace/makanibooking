@@ -920,14 +920,43 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error('Database unavailable');
         const { id, amenities, imageVerificationProof, ...fields } = input;
-        const owned = await db.select({ id: listings.id, imageUrl: listings.imageUrl }).from(listings)
+        const owned = await db.select({ id: listings.id, imageUrl: listings.imageUrl, status: listings.status }).from(listings)
           .where(and(eq(listings.id, id), eq(listings.ownerId, ctx.user!.id))).limit(1);
         if (!owned[0]) throw new Error('الإعلان غير موجود ضمن ممتلكاتك.');
         if (fields.imageUrl !== undefined && (!imageVerificationProof || !verifyImageVerificationProof({ proof: imageVerificationProof, ownerId: ctx.user!.id, url: fields.imageUrl }))) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "يجب إعادة رفع الصورة عبر أداة الفحص الآمن قبل تعديلها." });
         }
-        await db.update(listings).set({ ...fields, ...(amenities ? { amenities: amenities.join(',') } : {}), status: 'Published' }).where(eq(listings.id, id));
-        return { success: true };
+        const nextStatus = owned[0].status === "Rejected" ? "Rejected" : "Published";
+        await db.update(listings).set({ ...fields, ...(amenities ? { amenities: amenities.join(',') } : {}), status: nextStatus }).where(eq(listings.id, id));
+        return { success: true, status: nextStatus };
+      }),
+
+    resubmitRejected: ownerProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        title: z.string().min(2),
+        description: z.string().optional(),
+        pricePerDay: z.number().int().nonnegative(),
+        city: z.string().min(2),
+        imageUrl: z.string().min(1),
+        imageVerificationProof: z.string().min(1),
+        officeType: z.string().optional(),
+        rentalPeriod: z.enum(['daily', 'monthly', 'yearly']).optional(),
+        amenities: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error('Database unavailable');
+        const owned = await db.select({ id: listings.id, status: listings.status }).from(listings)
+          .where(and(eq(listings.id, input.id), eq(listings.ownerId, ctx.user!.id))).limit(1);
+        if (!owned[0]) throw new TRPCError({ code: "NOT_FOUND", message: "الإعلان غير موجود ضمن ممتلكاتك." });
+        if (owned[0].status !== "Rejected") throw new TRPCError({ code: "BAD_REQUEST", message: "يمكن إعادة إرسال الإعلانات المرفوضة فقط." });
+        if (!verifyImageVerificationProof({ proof: input.imageVerificationProof, ownerId: ctx.user!.id, url: input.imageUrl })) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "يجب رفع صورة أصلية واجتياز الفحص قبل إعادة الإرسال." });
+        }
+        await db.update(listings).set({ title: input.title, description: input.description, pricePerDay: input.pricePerDay, city: input.city, imageUrl: input.imageUrl, officeType: input.officeType, rentalPeriod: input.rentalPeriod, amenities: input.amenities?.join(',') || null, status: "Pending" }).where(eq(listings.id, input.id));
+        await writeAuditLog({ actorId: ctx.user!.id, action: "listing.resubmitted", entityType: "listing", entityId: input.id, afterData: { status: "Pending" } });
+        return { success: true as const, status: "Pending" as const };
       }),
 
     remove: ownerProcedure

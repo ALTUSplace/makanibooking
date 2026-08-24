@@ -7,6 +7,7 @@ import { createContext } from "./context";
 import { leaseEndReminderHandler } from "../leaseReminder";
 import { icalExportHandler, icalSyncHandler } from "../ical";
 import { getRuntimeReadiness } from "./runtimeReadiness";
+import { inspectSupabasePreview } from "./supabasePreviewHealth";
 
 /**
  * Creates the API application without binding a network port.
@@ -28,6 +29,16 @@ export function createApp(): Express {
       ok: readiness.ready,
       service: "b2-rent-api",
       missing: readiness.missing,
+    });
+  });
+
+  app.get("/api/health/supabase", async (_req, res) => {
+    const health = await inspectSupabasePreview();
+    res.status(health.ready ? 200 : 503).json({
+      ok: health.ready,
+      service: "b2-rent-supabase-preview",
+      configured: health.configured,
+      status: health.status,
     });
   });
 

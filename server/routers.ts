@@ -41,6 +41,13 @@ async function writeAuditLog(input: {
   });
 }
 
+function unavailableCatalogError(): TRPCError {
+  return new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "Catalog service is temporarily unavailable. Please try again later.",
+  });
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -741,7 +748,7 @@ export const appRouter = router({
       )
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) return [];
+        if (!db) throw unavailableCatalogError();
         const allListings = await db.select({ listing: listings, ownerName: users.name }).from(listings).leftJoin(users, eq(listings.ownerId, users.id)).where(inArray(listings.status, ['Published', 'Available'])).orderBy(desc(listings.createdAt));
 
         // Dynamic Pricing Engine calculation
@@ -777,7 +784,7 @@ export const appRouter = router({
       .input(z.object({ listingId: z.number().int().positive(), eventType: z.enum(["view", "whatsapp_click", "contact_click"]), visitorKey: z.string().trim().min(16).max(128).optional() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) return { recorded: false as const };
+        if (!db) throw unavailableCatalogError();
         const listing = await db.select({ id: listings.id }).from(listings).where(and(eq(listings.id, input.listingId), inArray(listings.status, ["Published", "Available"]))).limit(1);
         if (!listing[0]) return { recorded: false as const };
         if (input.eventType === "view" && input.visitorKey) {
@@ -792,7 +799,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) return null;
+        if (!db) throw unavailableCatalogError();
         const result = await db.select().from(listings).where(and(eq(listings.id, input.id), inArray(listings.status, ['Published', 'Available']))).limit(1);
         return result[0] || null;
       }),
@@ -801,7 +808,7 @@ export const appRouter = router({
       .input(z.object({ listingId: z.number() }))
       .query(async ({ input }) => {
         const db = await getDb();
-        if (!db) return [];
+        if (!db) throw unavailableCatalogError();
         const res = await db.select({ start: bookings.startDate, end: bookings.endDate }).from(bookings).where(and(eq(bookings.listingId, input.listingId), eq(bookings.status, "Confirmed")));
         const listingRows = await db.select({ availability: listings.availability, icalImportedRanges: listings.icalImportedRanges }).from(listings).where(eq(listings.id, input.listingId)).limit(1);
         const parseRanges = (value: string | null | undefined, source: "manual" | "ical") => {

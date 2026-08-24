@@ -11,8 +11,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           
           <div className="space-y-4">
-            <div className="h-16 w-45 overflow-hidden flex items-center transition-transform duration-300 hover:scale-105">
-              <img src="/manus-storage/35942_9a6ce071.png" alt="B2-Rent Logo" className="h-full w-full object-contain filter brightness-125" />
+            <div className="inline-flex min-h-16 min-w-36 flex-col justify-center rounded-2xl border border-white/20 bg-white px-4 leading-none shadow-sm transition-transform duration-300 hover:scale-105">
+              <span className="text-xl font-black tracking-tight text-[#0b3c5d]">B2 <span className="text-[#e57c23]">RENT</span></span>
+              <span className="mt-1 text-[10px] font-bold tracking-[0.14em] text-slate-600">بي تو رينت</span>
             </div>
             <p className="text-sm text-slate-300 leading-relaxed">
               منصة B2-Rent الاحترافية لتأجير السيارات والعقارات في المغرب. نربطك بأرقى الوكالات المستقلة المعتمدة مع توفير عقود رقمية وتوقيع إلكتروني فوري.

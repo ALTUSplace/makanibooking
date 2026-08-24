@@ -9,6 +9,7 @@ import { CurrencyProvider } from "./contexts/CurrencyContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BottomNavigationBar from "./components/BottomNavigationBar";
+import HostingReadinessBanner from "./components/HostingReadinessBanner";
 import ConsentAnalytics from "./components/ConsentAnalytics";
 import BreadcrumbNav from "./components/BreadcrumbNav";
 import { PageTransition } from "./components/PageTransition";
@@ -140,6 +141,7 @@ export default function App() {
                 <div className="min-h-screen flex flex-col bg-background text-foreground font-sans">
                   <ConsentAnalytics />
                   <Navbar />
+                  <HostingReadinessBanner />
                   <BreadcrumbNav />
                   <main className="b2-main-content flex-1 pb-16 md:pb-0">
                     <PageTransition>

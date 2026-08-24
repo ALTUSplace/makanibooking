@@ -279,7 +279,7 @@ export default function Navbar() {
               : `flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-bold transition-colors ${
                   active
                     ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                    : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "border-transparent text-[#35566d] hover:bg-[#f6f8fb] hover:text-[#082c45] dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
                 }`
           }
           aria-current={active ? "page" : undefined}
@@ -298,12 +298,9 @@ export default function Navbar() {
         >
         <div className="container mx-auto flex h-16 sm:h-20 items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
           <Link href="/" className="group flex shrink-0 items-center" aria-label="العودة إلى الصفحة الرئيسية">
-            <span className="flex h-12 w-28 sm:h-14 sm:w-36 items-center justify-center overflow-hidden transition-transform group-hover:scale-[1.03]">
-              <img
-                src="/manus-storage/35942_9a6ce071.png"
-                alt="شعار B2-Rent"
-                className="h-full w-full object-contain"
-              />
+            <span className="inline-flex min-h-11 min-w-28 flex-col justify-center rounded-xl border border-[#0b3c5d]/20 bg-white px-3 leading-none shadow-sm transition-transform group-hover:scale-[1.03] dark:border-white/15 dark:bg-slate-950">
+              <span className="font-black tracking-tight text-[#0b3c5d] dark:text-white">B2 <span className="text-[#e57c23]">RENT</span></span>
+              <span className="mt-1 text-[9px] font-bold tracking-[0.12em] text-slate-600 dark:text-slate-300">بي تو رينت</span>
             </span>
           </Link>
 
@@ -526,7 +523,7 @@ export default function Navbar() {
         <div className="fixed inset-0 z-[60] md:hidden" role="presentation">
           <button type="button" className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" aria-label={t("close")} onClick={() => setMobileMenuOpen(false)} />
           <aside ref={mobileMenuRef} id="mobile-navigation" className={`absolute top-0 flex h-full w-[min(88vw,22rem)] flex-col overflow-y-auto bg-background p-4 shadow-2xl ${direction === "rtl" ? "right-0" : "left-0"}`} dir={direction} aria-label={t("search")} aria-modal="true" role="dialog" tabIndex={-1}>
-          <div className="flex items-center justify-between border-b border-border pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex h-10 w-28 items-center"><img src="/manus-storage/35942_9a6ce071.png" alt="شعار B2-Rent" className="h-full w-full object-contain" /></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-border bg-muted" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
+          <div className="flex items-center justify-between border-b border-border pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex min-h-10 min-w-28 flex-col justify-center rounded-lg border border-[#0b3c5d]/20 bg-white px-2.5 leading-none dark:border-white/15 dark:bg-slate-950"><span className="font-black tracking-tight text-[#0b3c5d] dark:text-white">B2 <span className="text-[#e57c23]">RENT</span></span><span className="mt-1 text-[8px] font-bold tracking-[0.1em] text-slate-600 dark:text-slate-300">بي تو رينت</span></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-border bg-muted" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
           <div className="mx-auto flex w-full flex-1 flex-col gap-2 pt-4">
             <nav className="space-y-1" aria-label="التنقل على الهاتف">
               {renderNavLinks(true)}

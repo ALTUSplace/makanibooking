@@ -46,7 +46,7 @@ export default function AdminDashboard() {
 
   const stats = overview.data;
   return (
-    <main dir="rtl" className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-10">
+    <main dir="rtl" className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 rounded-2xl bg-[#0B3C5D] p-6 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -64,21 +64,21 @@ export default function AdminDashboard() {
             { label: 'إعلانات منشورة', value: stats?.listings ?? 0, icon: Building2 },
             { label: 'عمولات مؤكدة', value: money(stats?.platformFees ?? 0), icon: WalletCards },
           ] as Array<{ label: string; value: string | number; icon: LucideIcon }>).map(({ label, value, icon: StatIcon }) => {
-            return <Card key={String(label)} className="border-0 shadow-sm"><CardContent className="p-4"><StatIcon className="mb-3 h-5 w-5 text-amber-600" /><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-black text-[#0B3C5D]">{value}</p></CardContent></Card>;
+            return <Card key={String(label)} className="border border-slate-200 bg-white text-slate-950 shadow-sm"><CardContent className="p-4"><StatIcon className="mb-3 h-5 w-5 text-amber-600" /><p className="text-xs font-semibold text-slate-700">{label}</p><p className="mt-1 text-xl font-black text-[#0B3C5D]">{value}</p></CardContent></Card>;
           })}
         </section>
 
         <Tabs value={tab} onValueChange={setTab} dir="rtl">
-          <TabsList className="grid h-auto w-full grid-cols-2 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-3 lg:grid-cols-9">
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="overview">نظرة عامة</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="listings">الإعلانات</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="users">المستخدمون</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="bookings">الحجوزات</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="finance">المالية</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="disputes">النزاعات</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="support">الدعم</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="refunds">الاستردادات</TabsTrigger>
-            <TabsTrigger className="text-[#0B3C5D] data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="audit">سجل التدقيق</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-2 border border-slate-200 bg-white p-1 text-[#0B3C5D] shadow-sm sm:grid-cols-3 lg:grid-cols-9">
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="overview">نظرة عامة</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="listings">الإعلانات</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="users">المستخدمون</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="bookings">الحجوزات</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="finance">المالية</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="disputes">النزاعات</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="support">الدعم</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="refunds">الاستردادات</TabsTrigger>
+            <TabsTrigger className="min-h-10 font-bold text-[#0B3C5D] hover:bg-slate-100 data-[state=active]:bg-[#0B3C5D] data-[state=active]:text-white" value="audit">سجل التدقيق</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><LayoutDashboard className="h-5 w-5 text-amber-600" />المؤشرات التشغيلية</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-3">

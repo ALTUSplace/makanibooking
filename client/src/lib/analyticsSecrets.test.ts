@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 const ga4Id = process.env.VITE_GA4_MEASUREMENT_ID;
 const metaPixelId = process.env.VITE_META_PIXEL_ID;
 
-describe("analytics configuration", () => {
+(ga4Id && metaPixelId ? describe : describe.skip)("analytics production configuration", () => {
   it("accepts the configured GA4 measurement endpoint and identifiers", async () => {
     expect(ga4Id).toMatch(/^G-[A-Z0-9]+$/);
     expect(metaPixelId).toMatch(/^\d+$/);

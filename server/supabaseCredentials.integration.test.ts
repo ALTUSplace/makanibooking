@@ -8,8 +8,9 @@ const requiredEnvironmentKeys = [
 const hasPooledDatabaseUrl = /^postgres(?:ql)?:\/\//.test(
   process.env.SUPABASE_DB_URL ?? ""
 );
+const hasServiceCredentials = requiredEnvironmentKeys.every(key => Boolean(process.env[key]));
 
-describe("Supabase production credentials", () => {
+(hasServiceCredentials ? describe : describe.skip)("Supabase production credentials", () => {
   it("connects to health and REST metadata endpoints using server-only configuration", async () => {
     for (const key of requiredEnvironmentKeys) {
       expect(process.env[key], `${key} must be configured`).toBeTruthy();

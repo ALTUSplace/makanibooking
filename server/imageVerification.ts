@@ -19,8 +19,9 @@ type ImageProofPayload = {
 };
 
 function proofSignature(payload: string) {
-  if (!ENV.cookieSecret) throw new Error("Image verification signing secret is not configured");
-  return createHmac("sha256", ENV.cookieSecret).update(payload).digest("base64url");
+  const signingSecret = ENV.cookieSecret ?? process.env.JWT_SECRET;
+  if (!signingSecret) throw new Error("Image verification signing secret is not configured");
+  return createHmac("sha256", signingSecret).update(payload).digest("base64url");
 }
 
 export function createImageVerificationProof(input: { ownerId: number; url: string; bytes: Uint8Array }) {

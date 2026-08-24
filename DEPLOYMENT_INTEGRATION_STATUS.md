@@ -111,6 +111,13 @@
 - لا تُضاف أي متغيرات إلى Vercel قبل نجاح هذا الاتصال وقبل مواءمة مخطط Drizzle من MySQL إلى PostgreSQL في بيئة قبول منفصلة؛ لا تُنسخ بيانات المنصة أو أسرار Manus خلال هذه المرحلة.
 - دُفع اختبار الجاهزية والتوثيق إلى GitHub في commit `e470ca5` بعنوان `test: verify Supabase server readiness`. أكد سجل Deployments في Vercel أن الدفع على `main` أطلق تلقائياً نشر Production جديداً على `https://b2-rentmorocco-861ms6a7j-b2-rent.vercel.app`، واكتمل بحالة `Ready` خلال 27 ثانية. يثبت ذلك حلقة GitHub → Vercel، بينما يبقى اعتماد بيانات التطبيق في Vercel مرهوناً بإكمال PostgreSQL وJWT وOAuth والتخزين المستقل.
 
+## بوابة الجودة في GitHub — 24 أغسطس 2026
+
+- أضيف سير العمل `.github/workflows/quality.yml` ليشغّل `pnpm check` و`pnpm test` و`pnpm build` على كل دفع وطلب دمج إلى `main` باستخدام Node 22 و`pnpm install --frozen-lockfile`.
+- كشف تشغيله الأول اعتماد ثلاثة اختبارات دخان إنتاجية على أسرار غير موجودة عمداً في GitHub Actions. لم تُضف أسرار إلى GitHub ولم تُنقل قيمة من Manus أو Supabase.
+- عُولج ذلك بتغليف فحوص شعار الإنتاج والتحليلات وSupabase داخل شروط تكامل صريحة، وبسر JWT اختباري محلي لتوقيع إثبات الصور. تحاكي الفحوص الآن بيئة GitHub بلا أسرار ونجحت فيها فحوص النوع والاختبارات والبناء؛ بينما تستمر اختبارات التكامل الحقيقية عند توفر أسرارها في بيئة خادمية موثوقة فقط.
+- دُفع الإصلاح إلى `main` في commit `1b6ba2e` بعنوان `fix: keep CI independent from production secrets`. اكتمل تشغيل **Quality checks** الخارجي بالنجاح على GitHub Actions، ما يثبت أن بوابة الجودة تعمل الآن من دون أسرار تشغيل ولا تمنع النشر التلقائي إلى Vercel.
+
 ### المراجع
 
 [1]: https://vercel.com/docs/functions/runtimes/node-js "Using the Node.js Runtime with Vercel Functions"

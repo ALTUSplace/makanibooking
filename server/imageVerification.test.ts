@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createImageVerificationProof, verifyImageVerificationProof } from "./imageVerification";
+
+process.env.JWT_SECRET ??= "b2-rent-image-proof-unit-test-secret";
+
+const { createImageVerificationProof, verifyImageVerificationProof } = await import("./imageVerification");
 
 describe("image verification proof security", () => {
   const bytes = new TextEncoder().encode("original-listing-photo");

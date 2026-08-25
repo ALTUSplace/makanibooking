@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { CarListingCard } from '@/components/CarListingCard';
-import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone, BriefcaseBusiness, House } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { FAQSection } from '@/components/FAQSection';
@@ -27,6 +28,26 @@ export default function Home() {
   const [propLocation, setPropLocation] = useState('مراكش');
   const [propType, setPropType] = useState('apartment');
   const [maxPrice, setMaxPrice] = useState('2000');
+  const carCityRef = useRef<HTMLSelectElement>(null);
+  const pickupDateRef = useRef<HTMLInputElement>(null);
+  const dropoffDateRef = useRef<HTMLInputElement>(null);
+  const propertyLocationRef = useRef<HTMLSelectElement>(null);
+
+  const openSelect = (select: HTMLSelectElement | null) => {
+    if (!select) return;
+    select.focus();
+    select.click();
+  };
+
+  const openDatePicker = (input: HTMLInputElement | null) => {
+    if (!input) return;
+    input.focus();
+    try {
+      input.showPicker?.();
+    } catch {
+      input.click();
+    }
+  };
 
   // Database listings formatted as unified items
   const { data: dbListings = [] } = trpc.listings.list.useQuery();
@@ -69,11 +90,11 @@ export default function Home() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight leading-[1.25] md:leading-tight">
-            بوابتك الموثوقة لحجز <span className="text-[var(--brand-orange)]">السيارات</span> و<span className="text-[var(--brand-coral)]">العقارات</span> بكل أمان
+            سيارات موثوقة و<span className="text-[var(--brand-orange)]">عقارات مختارة</span>، في منصة واحدة
           </h1>
 
           <p className="text-slate-300 text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-            B2-Rent منصة وسيطة ذكية تربطك بأرقى شركات كراء السيارات والوكالات العقارية المستقلة عبر المدن المغربية، مع عقود رقمية وتوقيع إلكتروني فوري.
+            اعثر على سيارة تناسب رحلتك أو عقار يلائم إقامتك أو عملك، وتواصل بثقة مع شركاء B2-Rent في المدن المغربية عبر تجربة بحث وحجز موحّدة.
           </p>
 
           <div className="flex justify-center gap-4 mt-6">
@@ -82,7 +103,7 @@ export default function Home() {
               className="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
             >
               <Award className="w-4 h-4" />
-              <span>عرض مراجعة الأعمال 2025</span>
+              <span>عرض مراجعة الأعمال</span>
             </Button>
           </div>
 
@@ -123,8 +144,11 @@ export default function Home() {
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-300">المدينة أو الوكالة</label>
                     <div className="relative">
-                      <MapPin className="absolute right-3.5 top-3.5 w-5 h-5 text-slate-400" />
+                      <button type="button" onClick={() => openSelect(carCityRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح قائمة المدن">
+                        <MapPin className="h-5 w-5" aria-hidden="true" />
+                      </button>
                       <select
+                        ref={carCityRef}
                         value={carCity}
                         onChange={(e) => setCarCity(e.target.value)}
                         className="w-full bg-slate-900/90 text-white border border-white/20 rounded-xl py-3 pr-11 pl-4 text-sm focus:outline-none focus:border-[#E57C23] min-h-12"
@@ -141,8 +165,11 @@ export default function Home() {
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-300">تاريخ الاستلام</label>
                     <div className="relative">
-                      <Calendar className="absolute right-3.5 top-3.5 w-5 h-5 text-slate-400" />
+                      <button type="button" onClick={() => openDatePicker(pickupDateRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح تقويم تاريخ الاستلام">
+                        <Calendar className="h-5 w-5" aria-hidden="true" />
+                      </button>
                       <input
+                        ref={pickupDateRef}
                         type="date"
                         value={pickupDate}
                         onChange={(e) => setPickupDate(e.target.value)}
@@ -154,8 +181,11 @@ export default function Home() {
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-300">تاريخ التسليم</label>
                     <div className="relative">
-                      <Calendar className="absolute right-3.5 top-3.5 w-5 h-5 text-slate-400" />
+                      <button type="button" onClick={() => openDatePicker(dropoffDateRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح تقويم تاريخ التسليم">
+                        <Calendar className="h-5 w-5" aria-hidden="true" />
+                      </button>
                       <input
+                        ref={dropoffDateRef}
                         type="date"
                         value={dropoffDate}
                         onChange={(e) => setDropoffDate(e.target.value)}
@@ -169,8 +199,11 @@ export default function Home() {
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-300">المنطقة / المدينة</label>
                     <div className="relative">
-                      <MapPin className="absolute right-3.5 top-3.5 w-5 h-5 text-slate-400" />
+                      <button type="button" onClick={() => openSelect(propertyLocationRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح قائمة المدن">
+                        <MapPin className="h-5 w-5" aria-hidden="true" />
+                      </button>
                       <select
+                        ref={propertyLocationRef}
                         value={propLocation}
                         onChange={(e) => setPropLocation(e.target.value)}
                         className="w-full bg-slate-900/90 text-white border border-white/20 rounded-xl py-3 pr-11 pl-4 text-sm focus:outline-none focus:border-[#E57C23] min-h-12"
@@ -221,7 +254,7 @@ export default function Home() {
               <div className="pt-1 md:pt-2">
                 <Button
                   type="submit"
-                  className="w-full bg-[#E57C23] hover:bg-[#d46b1d] text-white font-black py-3.5 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base shadow-xl shadow-[#E57C23]/40 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  className="w-full bg-[var(--brand-amber)] hover:bg-[var(--brand-amber-dark)] text-[var(--brand-navy-deep)] font-black py-3.5 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base shadow-xl shadow-[var(--brand-orange)]/35 flex items-center justify-center gap-2 cursor-pointer transition-all"
                 >
                   <Search className="w-5 h-5" />
                   <span>بحث متقدم وعرض النتائج الفورية</span>
@@ -232,58 +265,49 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Car Brands Marquee Section (OneClickDrive Morocco Style) */}
-      <section className="py-7 md:py-10 bg-slate-50 border-y border-slate-200 overflow-hidden">
-        <div className="container mx-auto max-w-6xl px-4 text-center mb-4 md:mb-6">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">أشهر ماركات السيارات العالمية المتوفرة في المنصة</p>
-        </div>
-        <div className="flex overflow-x-auto no-scrollbar gap-3 md:gap-6 px-4 py-2 justify-start md:justify-center items-stretch flex-nowrap md:flex-wrap max-w-6xl mx-auto snap-x">
-          {[
-            { name: "Mercedes-Benz", icon: "⭐", count: "45+ سيارة" },
-            { name: "Range Rover", icon: "🚙", count: "30+ سيارة" },
-            { name: "BMW", icon: "🏎️", count: "40+ سيارة" },
-            { name: "Audi", icon: "🚘", count: "25+ سيارة" },
-            { name: "Dacia", icon: "🚗", count: "80+ سيارة" },
-            { name: "Renault", icon: "🚙", count: "60+ سيارة" },
-            { name: "Hyundai", icon: "🚗", count: "50+ سيارة" },
-            { name: "Volkswagen", icon: "🚘", count: "35+ سيارة" }
-          ].map((brand, idx) => (
-            <Link key={idx} href={`/search?type=car&brand=${brand.name}`}>
-              <div className="bg-white hover:bg-[#0B3C5D] hover:text-white text-[#0B3C5D] border border-slate-200 hover:border-[#0B3C5D] px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl shadow-sm transition-all duration-300 flex items-center gap-2.5 cursor-pointer group min-w-[150px] md:min-w-[160px] shrink-0 snap-start justify-center">
-                <span className="text-2xl group-hover:scale-110 transition-transform">{brand.icon}</span>
-                <div className="text-right">
-                  <h4 className="font-black text-sm">{brand.name}</h4>
-                  <span className="text-[10px] text-slate-400 group-hover:text-slate-200">{brand.count}</span>
-                </div>
+      {/* Balanced service categories */}
+      <section className="border-y border-slate-200 bg-slate-50 py-8 md:py-12">
+        <div className="container mx-auto max-w-6xl px-4">
+          <div className="mb-6 text-center md:mb-8">
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--brand-orange-dark)]">تصفح حسب احتياجك</p>
+            <h2 className="mt-2 text-xl font-black text-[var(--brand-navy)] md:text-2xl">سيارات وعقارات، بتجربة بحث متوازنة</h2>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl border border-[var(--brand-border)] bg-white p-4 md:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[var(--brand-navy)]"><Car className="h-5 w-5" aria-hidden="true" /><h3 className="font-black">ماركات السيارات</h3></div>
+                <Link href="/search?type=car" className="text-xs font-bold text-[var(--brand-orange-dark)] hover:underline">كل السيارات</Link>
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Real Estate Types Marquee Section */}
-      <section className="py-8 bg-white border-b border-slate-200 overflow-hidden">
-        <div className="container mx-auto max-w-6xl px-4 text-center mb-4 md:mb-6">
-          <p className="text-xs font-bold text-[#0B3C5D] uppercase tracking-widest">أنواع العقارات والفلل والشقق المتاحة للإيجار</p>
-        </div>
-        <div className="flex overflow-x-auto no-scrollbar gap-3 md:gap-6 px-4 py-2 justify-start md:justify-center items-stretch flex-nowrap md:flex-wrap max-w-6xl mx-auto snap-x">
-          {[
-            { name: "فلل فاخرة بمسبح", icon: "🏡", count: "25+ عقار" },
-            { name: "شقق مودرن", icon: "🏢", count: "90+ عقار" },
-            { name: "بنتهاوس كورنيش", icon: "🏙️", count: "15+ عقار" },
-            { name: "استوديوهات رجال الأعمال", icon: "🏨", count: "40+ عقار" },
-            { name: "إقامات محروسة", icon: "🏘️", count: "30+ عقار" }
-          ].map((type, idx) => (
-            <Link key={idx} href={`/search?type=property&category=${type.name}`}>
-              <div className="bg-slate-50 hover:bg-[#E57C23] hover:text-white text-[#0B3C5D] border border-slate-200 hover:border-[#E57C23] px-4 md:px-6 py-3 md:py-3.5 rounded-xl md:rounded-2xl shadow-sm transition-all duration-300 flex items-center gap-2.5 cursor-pointer group min-w-[160px] md:min-w-[170px] shrink-0 snap-start justify-center">
-                <span className="text-2xl group-hover:scale-110 transition-transform">{type.icon}</span>
-                <div className="text-right">
-                  <h4 className="font-black text-sm">{type.name}</h4>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-100">{type.count}</span>
-                </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {["Dacia", "Audi", "BMW", "Mercedes-Benz"].map((brand) => (
+                  <Link key={brand} href={`/search?type=car&brand=${brand}`} className="group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2 text-center text-sm font-extrabold text-[var(--brand-navy)] transition-colors hover:border-[var(--brand-navy)] hover:bg-[var(--brand-navy)] hover:text-white">
+                    <Car className="h-5 w-5 stroke-[1.75]" aria-hidden="true" />
+                    <span>{brand}</span>
+                  </Link>
+                ))}
               </div>
-            </Link>
-          ))}
+            </div>
+            <div className="rounded-2xl border border-[var(--brand-border)] bg-white p-4 md:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[var(--brand-navy)]"><Building2 className="h-5 w-5" aria-hidden="true" /><h3 className="font-black">أنواع العقارات</h3></div>
+                <Link href="/search?type=property" className="text-xs font-bold text-[var(--brand-orange-dark)] hover:underline">كل العقارات</Link>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  { title: "شقق", type: "apartment", icon: Building2 },
+                  { title: "فيلات", type: "villa", icon: House },
+                  { title: "مكاتب", type: "office", icon: BriefcaseBusiness },
+                  { title: "استوديوهات", type: "studio", icon: House },
+                ].map((category) => {
+                  const CategoryIcon = category.icon;
+                  return <Link key={category.type} href={`/search?type=property&propType=${category.type}`} className="group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--brand-orange)]/25 bg-[var(--brand-amber-soft)] px-2 text-center text-sm font-extrabold text-[var(--brand-navy)] transition-colors hover:border-[var(--brand-orange)] hover:bg-[var(--brand-amber)]">
+                    <CategoryIcon className="h-5 w-5 stroke-[1.75]" aria-hidden="true" />
+                    <span>{category.title}</span>
+                  </Link>;
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

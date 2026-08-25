@@ -7,6 +7,7 @@ import {
   BookOpen,
   Building2,
   Car,
+  ChevronDown,
   Coins,
   CreditCard,
   Globe,
@@ -17,8 +18,8 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
-  Settings2,
   Sun,
+  UserRound,
   UserCheck,
   X,
   BookmarkCheck,
@@ -45,7 +46,7 @@ type NavLink = {
 const navLinks: NavLink[] = [
   { href: "/", label: "الرئيسية", labelKey: "home" },
   { href: "/search?type=car", label: "تأجير السيارات", labelKey: "cars", icon: Car },
-  { href: "/search?type=property", label: "العقارات الفاخرة", labelKey: "properties", icon: Building2 },
+  { href: "/search?type=property", label: "العقارات", labelKey: "properties", icon: Building2 },
   { href: "/admin", label: "لوحة الإدارة", labelKey: "admin", icon: ShieldAlert },
   { href: "/host", label: "لوحة المالك", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/my-bookings", label: "حجوزاتي", labelKey: "myBookings", icon: BookmarkCheck },
@@ -53,7 +54,8 @@ const navLinks: NavLink[] = [
   { href: "/blog", label: "المدونة", labelKey: "blog", icon: BookOpen },
 ];
 
-const primaryNavLinks = navLinks.filter((link) => ["/", "/search?type=car", "/search?type=property", "/support-tickets", "/blog"].includes(link.href));
+const primaryNavLinks = navLinks.filter((link) => ["/search?type=car", "/search?type=property", "/support-tickets"].includes(link.href));
+const partnerNavLinks = navLinks.filter((link) => ["/admin", "/host", "/my-bookings"].includes(link.href));
 
 function isActiveLink(currentLocation: string, href: string) {
   const [currentPath, currentQuery = ""] = currentLocation.split("?");
@@ -272,15 +274,20 @@ export default function Navbar() {
     toast.success(theme === "dark" ? "تم تفعيل الوضع النهاري" : "تم تفعيل الوضع الليلي");
   };
 
-  const renderNavLinks = (links: NavLink[], mobile = false) =>
+  const renderNavLinks = (links: NavLink[], variant: "desktop" | "mobile" | "dropdown" = "desktop") =>
     links.map((link) => {
       const Icon = link.icon;
       const active = isActiveLink(location, link.href);
+      const mobile = variant === "mobile";
+      const dropdown = variant === "dropdown";
       return (
         <Link
           key={link.href}
           href={link.href}
-          onClick={() => setMobileMenuOpen(false)}
+          onClick={() => {
+            setMobileMenuOpen(false);
+            if (dropdown) setUtilitiesOpen(false);
+          }}
           className={
             mobile
               ? `flex min-h-11 items-center gap-3 rounded-[var(--radius-md)] px-4 py-3 text-sm font-bold transition-colors ${
@@ -288,6 +295,12 @@ export default function Navbar() {
                     ? "bg-[var(--brand-navy)] text-white shadow-sm"
                     : "text-muted-foreground hover:bg-[var(--brand-surface-muted)] hover:text-foreground"
                 }`
+              : dropdown
+                ? `flex min-h-11 items-center gap-2 rounded-[var(--radius-md)] px-3 py-2.5 text-xs font-extrabold transition-colors ${
+                    active
+                      ? "bg-[var(--brand-amber-soft)] text-[var(--brand-orange-dark)]"
+                      : "text-[#35566d] hover:bg-[var(--brand-surface-muted)] hover:text-[#082c45] dark:text-slate-200 dark:hover:text-white"
+                  }`
               : `b2-header-link ${
                   active
                     ? "b2-header-link--active"
@@ -296,7 +309,7 @@ export default function Navbar() {
           }
           aria-current={active ? "page" : undefined}
         >
-          {Icon && <Icon className={mobile ? "h-4 w-4" : "h-3.5 w-3.5"} />}
+          {Icon && <Icon className={mobile ? "h-4 w-4" : dropdown ? "h-4 w-4" : "h-3.5 w-3.5"} />}
           <span>{link.labelKey ? t(link.labelKey) : link.label}</span>
         </Link>
       );
@@ -309,43 +322,37 @@ export default function Navbar() {
           <Link href="/" className="group flex shrink-0 items-center" aria-label="B2-Rent Morocco — العودة إلى الصفحة الرئيسية">
             <img src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg" alt="B2-Rent Morocco" width={1664} height={928} className="h-11 w-32 object-contain sm:h-12 sm:w-40" />
           </Link>
+          <span className="b2-preview-badge hidden sm:inline-flex" title="نسخة تجريبية قيد التطوير">نسخة تجريبية</span>
 
           <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex" aria-label="التنقل الرئيسي">
             {renderNavLinks(primaryNavLinks)}
           </nav>
 
           <div className="hidden shrink-0 items-center gap-1.5 md:flex">
-            <label className="hidden h-11 items-center gap-1 rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] px-3 text-xs font-extrabold text-[var(--brand-navy)] xl:flex">
-              <Globe className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only">{t("language")}</span>
-              <select value={language} onChange={(event) => selectLanguage(event.target.value as Language)} className="cursor-pointer bg-transparent pr-1 text-xs font-extrabold outline-none" aria-label={t("language")}>
-                <option value="ar">العربية</option>
-                <option value="fr">FR</option>
-                <option value="en">EN</option>
-              </select>
-            </label>
+            <Link href="/add-car" className="hidden min-h-11 items-center rounded-full bg-[var(--brand-coral)] px-4 py-2 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-coral-dark)] xl:inline-flex">
+              {t("addCar")}
+            </Link>
 
             <div className="relative" ref={utilitiesRef}>
-              <button type="button" className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface)]" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen} aria-haspopup="dialog" aria-label="إعدادات الحساب والخدمات" title="إعدادات الحساب والخدمات">
-                <Settings2 className="h-5 w-5" />
+              <button type="button" className="b2-header-account" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen} aria-haspopup="dialog" aria-label={t("account")} title={t("account")}>
+                <UserRound className="h-4 w-4" aria-hidden="true" />
+                <span>{t("account")}</span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${utilitiesOpen ? "rotate-180" : ""}`} aria-hidden="true" />
               </button>
               {utilitiesOpen && (
-                <div className="absolute end-0 mt-3 w-72 rounded-[var(--radius-lg)] border border-[var(--brand-border)] bg-popover p-4 text-popover-foreground shadow-[var(--shadow-header)]" role="dialog" aria-label="إعدادات الحساب والخدمات">
+                <div className="absolute end-0 mt-3 w-72 rounded-[var(--radius-lg)] border border-[var(--brand-border)] bg-popover p-4 text-popover-foreground shadow-[var(--shadow-header)]" role="dialog" aria-label={t("account")}>
                   <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-3">
-                    <div><p className="text-sm font-extrabold text-[var(--brand-navy)] dark:text-white">الخدمات والحساب</p><p className="mt-0.5 text-[11px] text-muted-foreground">إعداداتك وخيارات المنصة</p></div>
+                    <div><p className="text-sm font-extrabold text-[var(--brand-navy)] dark:text-white">{t("account")}</p><p className="mt-0.5 text-[11px] text-muted-foreground">{t("partnerArea")}</p></div>
                     <span className="b2-status-badge bg-[var(--brand-amber-soft)] text-[var(--brand-orange-dark)]">{role === "super_admin" ? <ShieldCheck className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}{role === "super_admin" ? "مشرف عام" : "مدير وكالة"}</span>
                   </div>
+                  <nav className="mt-3 grid gap-1" aria-label={t("partnerArea")}>
+                    {renderNavLinks(partnerNavLinks, "dropdown")}
+                  </nav>
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <button type="button" onClick={() => { setTwoFaModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><Shield className="h-4 w-4" />أمان الحساب</button>
                     <button type="button" onClick={() => { setCmiModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><CreditCard className="h-4 w-4" />الدفع CMI</button>
                     <button type="button" onClick={() => { setWhatsappModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><MessageSquare className="h-4 w-4" />WhatsApp / SMS</button>
                     {toggleTheme && <button type="button" onClick={toggleThemeWithFeedback} className="b2-utility-action">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{theme === "dark" ? "الوضع النهاري" : "الوضع الليلي"}</button>}
-                  </div>
-                  <div className="mt-4 border-t border-[var(--brand-border)] pt-3">
-                    <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground"><Coins className="h-3.5 w-3.5" /> العملة</p>
-                    <div className="b2-segmented-control w-full" aria-label="اختيار العملة">
-                      {(["MAD", "EUR", "USD"] as Currency[]).map((item) => <button key={item} type="button" aria-pressed={currency === item} onClick={() => selectCurrency(item)} className={currency === item ? "bg-[var(--brand-navy)] text-white" : "text-muted-foreground hover:bg-white hover:text-foreground dark:hover:bg-slate-800"}>{item}</button>)}
-                    </div>
                   </div>
                 </div>
               )}
@@ -435,9 +442,25 @@ export default function Navbar() {
               )}
             </div>
 
-            <Link href="/add-car" className="hidden min-h-11 items-center rounded-full bg-[var(--brand-coral)] px-4 py-2 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-coral-dark)] lg:inline-flex">
-              {t("addCar")}
-            </Link>
+            <label className="b2-header-select hidden xl:inline-flex">
+              <Coins className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">{t("currency")}</span>
+              <select value={currency} onChange={(event) => selectCurrency(event.target.value as Currency)} aria-label={t("currency")}>
+                <option value="MAD">MAD</option>
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+              </select>
+            </label>
+
+            <label className="b2-header-select hidden xl:inline-flex">
+              <Globe className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">{t("language")}</span>
+              <select value={language} onChange={(event) => selectLanguage(event.target.value as Language)} aria-label={t("language")}>
+                <option value="ar">عربي</option>
+                <option value="fr">FR</option>
+                <option value="en">EN</option>
+              </select>
+            </label>
           </div>
 
           <div className="flex items-center gap-1.5 md:hidden">
@@ -490,7 +513,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex h-12 w-36 items-center"><img src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg" alt="B2-Rent Morocco" width={1664} height={928} className="h-full w-full object-contain" /></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface-muted)]" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
           <div className="mx-auto flex w-full flex-1 flex-col gap-2 pt-4">
             <nav className="space-y-1" aria-label="التنقل على الهاتف">
-              {renderNavLinks(navLinks, true)}
+              {renderNavLinks(navLinks, "mobile")}
             </nav>
 
             <div className="mt-3 space-y-4 border-t border-[var(--brand-border)] pt-4">

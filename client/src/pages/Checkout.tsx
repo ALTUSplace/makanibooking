@@ -110,9 +110,9 @@ export default function CheckoutPage() {
   if (isSubmitting) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <LoadingAnimation 
-          text="جاري تسجيل الحجز والدفع المحاكى عبر CMI..." 
-          subtext="يُحفظ مبلغ الفاتورة من الخادم؛ سيُتاح العقد بعد موافقة المالك" 
+        <LoadingAnimation
+          text="جاري تسجيل الحجز والدفع المحاكى عبر CMI..."
+          subtext="يُحفظ مبلغ الفاتورة من الخادم؛ سيُتاح العقد بعد موافقة المالك"
         />
       </div>
     );
@@ -222,9 +222,9 @@ export default function CheckoutPage() {
 
             {/* Terms checkbox */}
             <div className="flex items-start gap-3 p-4 bg-muted/20 border border-border rounded-2xl">
-              <input 
-                type="checkbox" 
-                id="checkout_terms" 
+              <input
+                type="checkbox"
+                id="checkout_terms"
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
                 className="mt-1 w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-500 cursor-pointer"

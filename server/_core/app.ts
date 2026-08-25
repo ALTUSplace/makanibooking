@@ -9,11 +9,14 @@ import { icalExportHandler, icalSyncHandler } from "../ical";
 import { getRuntimeReadiness } from "./runtimeReadiness";
 import { ENV } from "./env";
 import { getSupabaseHealthServiceName, inspectSupabasePreview } from "./supabasePreviewHealth";
+import { inspectSupabasePrivateStorage } from "./supabasePrivateStorageHealth";
+import type { SupabasePrivateStorageConfig } from "../supabasePrivateStorage";
 import { runVercelCronReconcileDryRun, verifyVercelCronAuthorization } from "./vercelCron";
 
 export type CreateAppOptions = {
   cronSecret?: string;
   runtimeTarget?: string;
+  privateStorageHealthConfig?: SupabasePrivateStorageConfig;
 };
 
 /**
@@ -27,6 +30,11 @@ export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
   const cronSecret = options.cronSecret ?? ENV.cronSecret;
   const runtimeTarget = options.runtimeTarget ?? ENV.runtimeTarget;
+  const privateStorageHealthConfig = options.privateStorageHealthConfig ?? {
+    supabaseUrl: ENV.supabaseUrl,
+    serviceRoleKey: ENV.supabaseServiceRoleKey,
+    bucket: ENV.supabasePrivateStorageBucket,
+  };
 
   app.set("trust proxy", 1);
   app.use(express.json({ limit: "50mb" }));
@@ -46,6 +54,16 @@ export function createApp(options: CreateAppOptions = {}): Express {
     res.status(health.ready ? 200 : 503).json({
       ok: health.ready,
       service: getSupabaseHealthServiceName(runtimeTarget),
+      configured: health.configured,
+      status: health.status,
+    });
+  });
+
+  app.get("/api/health/storage", async (_req, res) => {
+    const health = await inspectSupabasePrivateStorage(privateStorageHealthConfig);
+    res.status(health.ready ? 200 : 503).json({
+      ok: health.ready,
+      service: "b2-rent-supabase-private-storage",
       configured: health.configured,
       status: health.status,
     });

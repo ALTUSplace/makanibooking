@@ -1,14 +1,14 @@
 import type { Server } from "node:http";
-import { afterEach, describe, expect, it } from "vitest";
-import { createApp } from "./_core/app";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createApp, type CreateAppOptions } from "./_core/app";
 import { getSupabaseHealthServiceName } from "./_core/supabasePreviewHealth";
 import { runVercelCronReconcileDryRun, verifyVercelCronAuthorization } from "./_core/vercelCron";
 
 const testCronSecret = "cron-test-value";
 const servers: Server[] = [];
 
-async function requestCron(authorization?: string): Promise<Response> {
-  const server = createApp({ cronSecret: testCronSecret }).listen(0);
+async function requestCron(authorization?: string, options: Omit<CreateAppOptions, "cronSecret"> = {}): Promise<Response> {
+  const server = createApp({ cronSecret: testCronSecret, ...options }).listen(0);
   servers.push(server);
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const address = server.address();
@@ -53,6 +53,57 @@ describe("Vercel Cron authorization", () => {
       effects: { databaseWrites: 0, messagesQueued: 0 },
     });
     expect(JSON.stringify(body)).not.toContain(testCronSecret);
+  });
+
+  it("runs the temporary private-storage acceptance probe only when explicitly enabled", async () => {
+    const storageServerKey = "storage-server-secret";
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response("", { status: 200 }))
+      .mockResolvedValueOnce(new Response("not found", { status: 404 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: "/object/sign/b2rent-private-documents/probe?token=opaque" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response("b2rent-storage-acceptance-probe-v1", { status: 200 }))
+      .mockResolvedValueOnce(new Response("", { status: 200 }));
+
+    const response = await requestCron(`Bearer ${testCronSecret}`, {
+      storageAcceptanceTestEnabled: true,
+      privateStorageAcceptanceConfig: {
+        supabaseUrl: "https://project.supabase.co",
+        serviceRoleKey: storageServerKey,
+        bucket: "b2rent-private-documents",
+        fetchImpl,
+      },
+    });
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(JSON.parse(body)).toEqual({
+      ok: true,
+      mode: "acceptance-probe",
+      effects: { uploaded: 1, signedDownloadVerified: true, publicAccessBlocked: true, removed: 1 },
+    });
+    expect(body).not.toContain(testCronSecret);
+    expect(body).not.toContain(storageServerKey);
+  });
+
+  it("returns a generic failure body when the enabled storage acceptance probe fails", async () => {
+    const storageServerKey = "storage-server-secret";
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response("", { status: 500 }));
+    const response = await requestCron(`Bearer ${testCronSecret}`, {
+      storageAcceptanceTestEnabled: true,
+      privateStorageAcceptanceConfig: {
+        supabaseUrl: "https://project.supabase.co",
+        serviceRoleKey: storageServerKey,
+        bucket: "b2rent-private-documents",
+        fetchImpl,
+      },
+    });
+    const body = await response.text();
+
+    expect(response.status).toBe(503);
+    expect(JSON.parse(body)).toEqual({ ok: false, error: "storage_acceptance_failed" });
+    expect(body).not.toContain(storageServerKey);
+    expect(body).not.toContain("storage_acceptance_upload_failed");
   });
 
   it("keeps the reconcile implementation free of database writes and message dispatch", () => {

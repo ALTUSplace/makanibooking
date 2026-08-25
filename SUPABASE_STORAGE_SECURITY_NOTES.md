@@ -19,3 +19,12 @@
 
 1. [Supabase Storage Buckets – Fundamentals](https://supabase.com/docs/guides/storage/buckets/fundamentals): توضح أن buckets الخاصة تخضع لـ RLS وأن الوثائق الحساسة من حالات الاستخدام المناسبة، مع روابط موقعة مؤقتة للتنزيل.
 2. [Supabase Storage – Serving assets](https://supabase.com/docs/guides/storage/serving/downloads): توضح أن ملفات bucket الخاص لا تملك رابطاً عاماً، وأن إنشاء الرابط الموقّع يجب أن يتم من الخادم بمدة صلاحية محددة.
+
+## تحقق واجهات اختبار القبول المؤقت
+
+راجعت في 25 أغسطس 2026 تنفيذ مكتبة Supabase Storage الرسمية ومصدر خدمة التخزين. يعتمد الاختبار المؤقت فقط على `POST /storage/v1/object/{bucket}/{path}` للرفع، و`POST /storage/v1/object/sign/{bucket}/{path}` لإنشاء رابط تنزيل موقّع قصير الأجل، و`DELETE /storage/v1/object/{bucket}` مع جسم `{"prefixes":[path]}` لحذف الملف المحدد. هذه الصيغة تطابق دالة `remove(paths)` في المكتبة الرسمية، ولا يستخدم الاختبار أي حذف SQL أو حذف واسع للـbucket.
+
+يتحقق الاختبار أيضاً من أن طلب الوصول عبر المسار العام يعيد منعاً متوقعاً (`401` أو `403` أو `404`) وأن رابط التنزيل الموقّع يبقى ضمن مصدر مشروع Supabase نفسه. لذلك لا تُتبع أي URL خارجية صادرة من حمولة غير سليمة.
+
+3. [Supabase Storage JS – StorageFileApi](https://github.com/supabase/storage-js/blob/main/src/packages/StorageFileApi.ts): يبين مسارات الرفع والتوقيع وحمولة `prefixes` المستخدمة في الحذف عبر `remove`.
+4. [Supabase Storage – Delete Objects](https://supabase.com/docs/guides/storage/management/delete-objects): يؤكد أن حذف الكائنات يجب أن يتم عبر Storage API لا عبر SQL.

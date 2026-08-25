@@ -17,5 +17,6 @@ export const ENV = {
   emailFromAddress: process.env.EMAIL_FROM_ADDRESS ?? "",
   visionProviderApiKey: process.env.VISION_PROVIDER_API_KEY ?? "",
   cronSecret: process.env.CRON_SECRET ?? "",
+  storageAcceptanceTestEnabled: process.env.B2RENT_STORAGE_ACCEPTANCE_TEST_ENABLED === "true",
   vercelAdaptersReady: process.env.B2RENT_VERCEL_ADAPTERS_READY === "true",
 };

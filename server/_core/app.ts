@@ -11,12 +11,18 @@ import { ENV } from "./env";
 import { getSupabaseHealthServiceName, inspectSupabasePreview } from "./supabasePreviewHealth";
 import { inspectSupabasePrivateStorage } from "./supabasePrivateStorageHealth";
 import type { SupabasePrivateStorageConfig } from "../supabasePrivateStorage";
+import {
+  runSupabasePrivateStorageAcceptanceProbe,
+  type SupabasePrivateStorageAcceptanceConfig,
+} from "../supabasePrivateStorageAcceptance";
 import { runVercelCronReconcileDryRun, verifyVercelCronAuthorization } from "./vercelCron";
 
 export type CreateAppOptions = {
   cronSecret?: string;
   runtimeTarget?: string;
   privateStorageHealthConfig?: SupabasePrivateStorageConfig;
+  privateStorageAcceptanceConfig?: SupabasePrivateStorageAcceptanceConfig;
+  storageAcceptanceTestEnabled?: boolean;
 };
 
 /**
@@ -35,6 +41,12 @@ export function createApp(options: CreateAppOptions = {}): Express {
     serviceRoleKey: ENV.supabaseServiceRoleKey,
     bucket: ENV.supabasePrivateStorageBucket,
   };
+  const privateStorageAcceptanceConfig = options.privateStorageAcceptanceConfig ?? {
+    supabaseUrl: ENV.supabaseUrl,
+    serviceRoleKey: ENV.supabaseServiceRoleKey,
+    bucket: ENV.supabasePrivateStorageBucket,
+  };
+  const storageAcceptanceTestEnabled = options.storageAcceptanceTestEnabled ?? ENV.storageAcceptanceTestEnabled;
 
   app.set("trust proxy", 1);
   app.use(express.json({ limit: "50mb" }));
@@ -69,10 +81,20 @@ export function createApp(options: CreateAppOptions = {}): Express {
     });
   });
 
-  app.get("/api/cron/reconcile", (req, res) => {
+  app.get("/api/cron/reconcile", async (req, res) => {
     const authorizationHeader = req.get("authorization");
     if (!verifyVercelCronAuthorization(authorizationHeader, cronSecret)) {
       res.status(401).json({ ok: false, error: "unauthorized" });
+      return;
+    }
+
+    if (storageAcceptanceTestEnabled) {
+      try {
+        const result = await runSupabasePrivateStorageAcceptanceProbe(privateStorageAcceptanceConfig);
+        res.status(200).json(result);
+      } catch {
+        res.status(503).json({ ok: false, error: "storage_acceptance_failed" });
+      }
       return;
     }
 

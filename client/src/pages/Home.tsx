@@ -17,7 +17,7 @@ function getListingPath(item: { id: string; type: string }) {
 export default function Home() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<'cars' | 'properties'>('cars');
-  
+
   // Search states for Cars
   const [carCity, setCarCity] = useState('الدار البيضاء');
   const [pickupDate, setPickupDate] = useState('');
@@ -57,11 +57,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col" dir="rtl">
-      
+
       {/* Hero Section with Deep Navy Background (#0B3C5D) and Warm Amber CTA (#E57C23) */}
       <section className="relative pt-8 pb-12 md:pt-12 md:pb-24 px-4 overflow-hidden bg-[#0B3C5D] text-white">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#E57C23_1px,transparent_1px)] [background-size:28px_28px] pointer-events-none"></div>
-        
+
         <div className="container mx-auto max-w-6xl text-center space-y-5 md:space-y-8 relative z-10">
           <div className="inline-flex items-center gap-2 bg-[#E57C23]/20 border border-[#E57C23]/40 px-4 py-1.5 rounded-full text-[#E57C23] text-xs font-bold tracking-wide">
             <ShieldCheck className="w-4 h-4 text-[#E57C23]" />
@@ -75,9 +75,9 @@ export default function Home() {
           <p className="text-slate-300 text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
             B2-Rent منصة وسيطة ذكية تربطك بأرقى شركات كراء السيارات والوكالات العقارية المستقلة عبر المدن المغربية، مع عقود رقمية وتوقيع إلكتروني فوري.
           </p>
-          
+
           <div className="flex justify-center gap-4 mt-6">
-            <Button 
+            <Button
               onClick={() => window.open('/slides_project/cover_slide.html', '_blank')}
               className="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
             >
@@ -322,9 +322,9 @@ export default function Home() {
               </div>
             </div>
             <div className="mt-8 relative z-10">
-              <OptimizedImage 
-                src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" 
-                alt="Cars Fleet" 
+              <OptimizedImage
+                src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800"
+                alt="Cars Fleet"
                 className="rounded-xl md:rounded-2xl shadow-2xl object-cover h-36 sm:h-48 w-full group-hover:scale-105 transition-transform duration-500 border border-white/10"
               />
             </div>

@@ -195,7 +195,7 @@ export default function Search() {
   return (
     <div className="min-h-screen bg-background text-foreground pb-20" dir="rtl">
       <div className="container mx-auto px-4 space-y-8">
-        
+
         {/* شريط عائم للمقارنة */}
         {compareList.length > 0 && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-950/95 backdrop-blur-xl border border-amber-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in-50">
@@ -458,12 +458,12 @@ export default function Search() {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
-                      
+
                       <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
                         {item.city}
                       </div>
 
-    
+
                       {/* زر المقارنة */}
                       <button
                         onClick={() => toggleCompare(item)}

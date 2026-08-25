@@ -4,6 +4,7 @@ import { ListingItem } from '@/data/b2rent';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { CarListingCard } from '@/components/CarListingCard';
 import { Filter, Star, ShieldCheck, Users, Car as CarIcon, ArrowUpDown, Award, MapPin, Scale, X, Eye, Home, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { MapSearchView } from '@/components/MapSearchView';
@@ -403,6 +404,36 @@ export default function Search() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredListings.map((item) => {
                 const isCompared = compareList.some(c => c.id === item.id);
+                if (item.type === 'car') {
+                  return (
+                    <CarListingCard
+                      key={item.id}
+                      item={item}
+                      detailsHref={listingRoute(item)}
+                      className="b2-touch-card"
+                      imageActions={(
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => toggleCompare(item)}
+                            className={`absolute bottom-3 start-3 min-h-10 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${isCompared ? 'bg-amber-400 text-slate-950' : 'bg-slate-950/85 text-white hover:bg-slate-900'}`}
+                          >
+                            <Scale className="me-1 inline h-3.5 w-3.5" aria-hidden="true" />
+                            {isCompared ? (language === 'fr' ? 'Comparé' : language === 'en' ? 'Compared' : 'مضاف للمقارنة') : (language === 'fr' ? 'Comparer' : language === 'en' ? 'Compare' : 'مقارنة')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setQuickViewItem(item)}
+                            className="absolute bottom-3 end-3 min-h-10 rounded-xl border border-white/30 bg-white/90 px-3 py-2 text-xs font-bold text-slate-900 transition-colors hover:bg-white"
+                          >
+                            <Eye className="me-1 inline h-3.5 w-3.5" aria-hidden="true" />
+                            {language === 'fr' ? 'Aperçu' : language === 'en' ? 'Quick view' : 'عرض سريع'}
+                          </button>
+                        </>
+                      )}
+                    />
+                  );
+                }
                 return (
                   <div
                     key={item.id}
@@ -455,7 +486,7 @@ export default function Search() {
                         <div className="text-xs text-slate-400 font-medium flex items-center gap-1">
                           <span>{item.providerName}</span>
                           <span className="text-[10px] bg-slate-900 px-2 py-0.5 rounded text-amber-400">
-                            {item.type === 'car' ? 'سيارة' : item.type === 'office' ? 'مكتب' : 'عقار'}
+                            {item.type === 'office' ? 'مكتب' : 'عقار'}
                           </span>
                         </div>
                         <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { CarListingCard } from '@/components/CarListingCard';
 import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
@@ -383,7 +384,14 @@ export default function Home() {
 
         {/* Listing Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {activeListings.slice(0, 6).map((item) => (
+          {activeListings.slice(0, 6).map((item) => item.type === 'car' ? (
+            <CarListingCard
+              key={item.id}
+              item={item}
+              detailsHref={getListingPath(item)}
+              className="b2-touch-card"
+            />
+          ) : (
             <article key={item.id} className="b2-card b2-touch-card shadow-md hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col group">
               <div className="relative h-48 sm:h-56 overflow-hidden">
                 <OptimizedImage

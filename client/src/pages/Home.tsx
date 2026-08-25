@@ -58,18 +58,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col" dir="rtl">
 
-      {/* Hero Section with Deep Navy Background (#0B3C5D) and Warm Amber CTA (#E57C23) */}
-      <section className="relative pt-8 pb-12 md:pt-12 md:pb-24 px-4 overflow-hidden bg-[#0B3C5D] text-white">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#E57C23_1px,transparent_1px)] [background-size:28px_28px] pointer-events-none"></div>
+      {/* Hero palette follows the B2-Rent Morocco logo: navy, coral, and orange. */}
+      <section className="relative overflow-hidden bg-[var(--brand-navy)] px-4 pb-12 pt-8 text-white md:pb-24 md:pt-12">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(var(--brand-orange)_1px,transparent_1px)] opacity-15 [background-size:28px_28px]"></div>
 
         <div className="container mx-auto max-w-6xl text-center space-y-5 md:space-y-8 relative z-10">
-          <div className="inline-flex items-center gap-2 bg-[#E57C23]/20 border border-[#E57C23]/40 px-4 py-1.5 rounded-full text-[#E57C23] text-xs font-bold tracking-wide">
-            <ShieldCheck className="w-4 h-4 text-[#E57C23]" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-orange)]/40 bg-[var(--brand-orange)]/20 px-4 py-1.5 text-xs font-bold tracking-wide text-[var(--brand-orange)]">
+            <ShieldCheck className="h-4 w-4 text-[var(--brand-orange)]" />
             <span>منصة الوساطة الأولى المعتمدة بين المزودين والزبائن في المغرب</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight leading-[1.25] md:leading-tight">
-            بوابتك الموثوقة لحجز <span className="text-[#E57C23]">السيارات</span> و<span className="text-amber-400">العقارات</span> بكل أمان
+            بوابتك الموثوقة لحجز <span className="text-[var(--brand-orange)]">السيارات</span> و<span className="text-[var(--brand-coral)]">العقارات</span> بكل أمان
           </h1>
 
           <p className="text-slate-300 text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
@@ -95,7 +95,7 @@ export default function Home() {
                 onClick={() => setActiveTab('cars')}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-4 rounded-xl md:rounded-2xl font-bold text-xs sm:text-sm transition-all ${
                   activeTab === 'cars'
-                    ? 'bg-[#E57C23] text-white shadow-lg shadow-[#E57C23]/30'
+                    ? 'bg-[var(--brand-orange)] text-white shadow-lg shadow-[var(--brand-orange)]/30'
                     : 'bg-white/5 text-slate-300 hover:bg-white/10'
                 }`}
               >
@@ -107,7 +107,7 @@ export default function Home() {
                 onClick={() => setActiveTab('properties')}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-4 rounded-xl md:rounded-2xl font-bold text-xs sm:text-sm transition-all ${
                   activeTab === 'properties'
-                    ? 'bg-[#E57C23] text-white shadow-lg shadow-[#E57C23]/30'
+                    ? 'bg-[var(--brand-coral)] text-white shadow-lg shadow-[var(--brand-coral)]/30'
                     : 'bg-white/5 text-slate-300 hover:bg-white/10'
                 }`}
               >

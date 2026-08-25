@@ -297,10 +297,15 @@ export default function Navbar() {
           dir={direction}
         >
         <div className="container mx-auto flex h-16 sm:h-20 items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
-          <Link href="/" className="group flex shrink-0 items-center" aria-label="العودة إلى الصفحة الرئيسية">
-            <span className="inline-flex min-h-11 min-w-28 flex-col justify-center rounded-xl border border-[#0b3c5d]/20 bg-white px-3 leading-none shadow-sm transition-transform group-hover:scale-[1.03] dark:border-white/15 dark:bg-slate-950">
-              <span className="font-black tracking-tight text-[#0b3c5d] dark:text-white">B2 <span className="text-[#e57c23]">RENT</span></span>
-              <span className="mt-1 text-[9px] font-bold tracking-[0.12em] text-slate-600 dark:text-slate-300">بي تو رينت</span>
+          <Link href="/" className="group flex shrink-0 items-center" aria-label="B2-Rent Morocco — العودة إلى الصفحة الرئيسية">
+            <span className="inline-flex h-12 w-36 items-center justify-center rounded-xl border border-[var(--brand-navy)]/15 bg-white px-2 shadow-sm transition-transform group-hover:scale-[1.03] dark:border-white/15">
+              <img
+                src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg"
+                alt="B2-Rent Morocco"
+                width={1664}
+                height={928}
+                className="h-10 w-full object-contain"
+              />
             </span>
           </Link>
 

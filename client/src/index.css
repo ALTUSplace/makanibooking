@@ -3,12 +3,16 @@
 @layer base {
   :root {
     /* B2-Rent design tokens: identity */
-    --brand-navy: #0b3c5d;
-    --brand-navy-deep: #082c45;
-    --brand-amber: #e57c23;
-    --brand-amber-dark: #c96416;
-    --brand-amber-soft: #fff3e8;
-    --brand-ink: #102a43;
+    --brand-navy: #003f70;
+    --brand-navy-deep: #002b4d;
+    --brand-orange: #ff9208;
+    --brand-orange-dark: #e98000;
+    --brand-coral: #ff6b61;
+    --brand-coral-dark: #e85850;
+    --brand-amber: var(--brand-orange);
+    --brand-amber-dark: var(--brand-orange-dark);
+    --brand-amber-soft: #fff4e6;
+    --brand-ink: #002b4d;
     --brand-surface: #ffffff;
     --brand-surface-muted: #f6f8fb;
     --brand-border: #e3eaf1;
@@ -22,31 +26,31 @@
     /* Component tokens */
     --header-height: 5rem;
     --tap-target: 2.75rem;
-    --shadow-header: 0 10px 30px rgba(8, 44, 69, 0.08);
+    --shadow-header: 0 10px 30px rgba(0, 43, 77, 0.09);
     --duration-fast: 160ms;
     --duration-standard: 220ms;
     --ease-standard: cubic-bezier(0.23, 1, 0.32, 1);
 
     /* B2-Rent design tokens: semantic theme values */
-    --background: 210 33% 98%;
-    --foreground: 209 61% 16%;
+    --background: 36 40% 98%;
+    --foreground: 207 100% 15%;
     --card: 0 0% 100%;
     --card-foreground: 209 61% 16%;
     --popover: 0 0% 100%;
     --popover-foreground: 209 61% 16%;
-    --primary: 27 78% 52%;
+    --primary: 35 100% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 204 77% 20%;
+    --secondary: 207 100% 22%;
     --secondary-foreground: 0 0% 100%;
     --muted: 210 30% 96%;
     --muted-foreground: 210 16% 43%;
-    --accent: 27 78% 52%;
+    --accent: 4 100% 69%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 211 30% 91%;
     --input: 211 30% 87%;
-    --ring: 27 78% 52%;
+    --ring: 35 100% 52%;
     --radius: 1rem;
 
     /* B2-Rent design tokens: rhythm and elevation */
@@ -56,9 +60,9 @@
     --radius-md: 0.875rem;
     --radius-lg: 1.25rem;
     --radius-xl: 1.75rem;
-    --shadow-soft: 0 8px 24px rgba(8, 44, 69, 0.06);
-    --shadow-card: 0 14px 34px rgba(8, 44, 69, 0.09);
-    --shadow-amber: 0 12px 28px rgba(229, 124, 35, 0.22);
+    --shadow-soft: 0 8px 24px rgba(0, 43, 77, 0.06);
+    --shadow-card: 0 14px 34px rgba(0, 43, 77, 0.09);
+    --shadow-amber: 0 12px 28px rgba(255, 146, 8, 0.22);
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
@@ -118,7 +122,7 @@
   }
 
   ::selection {
-    background: rgba(229, 124, 35, 0.22);
+    background: rgba(255, 146, 8, 0.22);
     color: var(--brand-navy-deep);
   }
 }
@@ -131,7 +135,7 @@
 
 .b2-focus-surface:focus-within {
   border-color: var(--brand-amber);
-  box-shadow: 0 0 0 4px rgba(229, 124, 35, 0.12);
+  box-shadow: 0 0 0 4px rgba(255, 146, 8, 0.14);
 }
 
 .b2-icon-button {
@@ -141,7 +145,23 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  transition: transform var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  color: var(--brand-navy);
+  transition: transform var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+
+.b2-icon-button:hover {
+  background: var(--brand-amber-soft);
+  color: var(--brand-orange-dark);
+}
+
+.b2-icon-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--brand-orange) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.b2-icon-button[aria-current='page'] {
+  background: color-mix(in srgb, var(--brand-coral) 14%, white);
+  color: var(--brand-coral-dark);
 }
 
 .b2-icon-button:active {

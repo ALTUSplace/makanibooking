@@ -5,13 +5,12 @@ import path from "node:path";
 const componentsRoot = path.resolve(import.meta.dirname);
 
 describe("علامة B2-Rent القابلة للنشر", () => {
-  it("لا تعتمد على مسار تخزين الاستضافة المتكاملة في شريطي التنقل والتذييل", () => {
+  it("تستخدم أصل الشعار الثابت المعتمد في شريطي التنقل والتذييل", () => {
     const navbar = fs.readFileSync(path.join(componentsRoot, "Navbar.tsx"), "utf8");
     const footer = fs.readFileSync(path.join(componentsRoot, "Footer.tsx"), "utf8");
+    const hostedLogo = "/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg";
 
-    expect(navbar).not.toContain("/manus-storage/");
-    expect(footer).not.toContain("/manus-storage/");
-    expect(navbar).toContain("B2");
-    expect(footer).toContain("RENT");
+    expect(navbar).toContain(hostedLogo);
+    expect(footer).toContain(hostedLogo);
   });
 });

@@ -7,7 +7,14 @@ import { createContext } from "./context";
 import { leaseEndReminderHandler } from "../leaseReminder";
 import { icalExportHandler, icalSyncHandler } from "../ical";
 import { getRuntimeReadiness } from "./runtimeReadiness";
-import { inspectSupabasePreview } from "./supabasePreviewHealth";
+import { ENV } from "./env";
+import { getSupabaseHealthServiceName, inspectSupabasePreview } from "./supabasePreviewHealth";
+import { runVercelCronReconcileDryRun, verifyVercelCronAuthorization } from "./vercelCron";
+
+export type CreateAppOptions = {
+  cronSecret?: string;
+  runtimeTarget?: string;
+};
 
 /**
  * Creates the API application without binding a network port.
@@ -16,8 +23,10 @@ import { inspectSupabasePreview } from "./supabasePreviewHealth";
  * Vercel imports the same app as a Node Serverless Function. Keeping route
  * registration here prevents the two environments from drifting apart.
  */
-export function createApp(): Express {
+export function createApp(options: CreateAppOptions = {}): Express {
   const app = express();
+  const cronSecret = options.cronSecret ?? ENV.cronSecret;
+  const runtimeTarget = options.runtimeTarget ?? ENV.runtimeTarget;
 
   app.set("trust proxy", 1);
   app.use(express.json({ limit: "50mb" }));
@@ -36,10 +45,20 @@ export function createApp(): Express {
     const health = await inspectSupabasePreview();
     res.status(health.ready ? 200 : 503).json({
       ok: health.ready,
-      service: "b2-rent-supabase-preview",
+      service: getSupabaseHealthServiceName(runtimeTarget),
       configured: health.configured,
       status: health.status,
     });
+  });
+
+  app.get("/api/cron/reconcile", (req, res) => {
+    const authorizationHeader = req.get("authorization");
+    if (!verifyVercelCronAuthorization(authorizationHeader, cronSecret)) {
+      res.status(401).json({ ok: false, error: "unauthorized" });
+      return;
+    }
+
+    res.status(200).json(runVercelCronReconcileDryRun());
   });
 
   registerStorageProxy(app);

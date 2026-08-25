@@ -8,6 +8,12 @@
       "includeFiles": "{api/_generated/**,server/assets/DejaVuSans.ttf}"
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/reconcile",
+      "schedule": "0 5 * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",

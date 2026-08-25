@@ -1,5 +1,9 @@
 import { Pool, type PoolConfig } from "pg";
 
+export function getSupabaseHealthServiceName(runtimeTarget: string | undefined): string {
+  return runtimeTarget === "vercel" ? "b2-rent-supabase-production" : "b2-rent-supabase-preview";
+}
+
 export type SupabasePreviewHealth = {
   configured: boolean;
   ready: boolean;

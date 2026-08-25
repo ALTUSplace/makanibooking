@@ -1,4 +1,5 @@
 export const ENV = {
+  runtimeTarget: process.env.B2RENT_RUNTIME_TARGET ?? (process.env.VERCEL ? "vercel" : "manus"),
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
@@ -7,4 +8,13 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  supabaseUrl: process.env.SUPABASE_URL ?? "",
+  supabaseDbUrl: process.env.SUPABASE_DB_URL ?? "",
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+  authRedirectUri: process.env.AUTH_REDIRECT_URI ?? "",
+  emailProviderApiKey: process.env.EMAIL_PROVIDER_API_KEY ?? "",
+  emailFromAddress: process.env.EMAIL_FROM_ADDRESS ?? "",
+  visionProviderApiKey: process.env.VISION_PROVIDER_API_KEY ?? "",
+  cronSecret: process.env.CRON_SECRET ?? "",
+  vercelAdaptersReady: process.env.B2RENT_VERCEL_ADAPTERS_READY === "true",
 };

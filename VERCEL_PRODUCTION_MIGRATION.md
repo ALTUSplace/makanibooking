@@ -118,6 +118,14 @@ CRON_SECRET
 
 بعد مزامنة الالتزام `207070b` إلى `main`، وصل النشر الجديد إلى نطاق Vercel. تحقق طلب `GET /api/cron/reconcile` غير الموثق من أن المسار موجود ويعيد `HTTP 401` كما يجب؛ وهو لا ينفذ أي عملية ولا يكشف سبب الرفض. كما أعاد `GET /api/health/supabase` حالة `HTTP 200` مع العقد الآمن `ok:true` و`configured:true` و`status:"ready"`، وباسم الخدمة `b2-rent-supabase-production` المتوافق مع هدف Vercel. لا تعني هذه النتائج أن طبقات Auth أو Storage أو Email أو Vision أو تشغيل حجوزات PostgreSQL أصبحت جاهزة؛ يبقى مسار Cron في وضع `dry-run` إلى حين اكتمال تلك البدائل واختبارات القبول المناسبة.
 
+## طبقة Supabase Storage الخاصة — تحضير فقط
+
+أضيف adapter خادمي مستقل في `server/supabasePrivateStorage.ts` إلى جانب التخزين الحالي، ولم يُربط بمسارات رفع أو تنزيل أو بـ`tRPC`. يقتصر دوره الآن على إنشاء مفاتيح ملفات غير كاشفة للاسم الأصلي ضمن مساحة `b2rent/private/<kind>/<subject>/<uuid>.<ext>`، وقبول ثلاثة أصناف فقط: `kyc` و`contract` و`dispute`. لا تُنقل الملفات ولا تُنشأ buckets ولا تُكتب سياسات ولا يُستدعى Supabase عبر الشبكة ضمن هذه المرحلة.
+
+يفرض adapter أن تكون روابط التنزيل الموقعة مؤقتة بين 60 و900 ثانية، وألا تصدر إلا لمفتاح يطابق المساحة الخاصة التي يولدها التطبيق. كما يرفض معرفات المسار غير الآمنة ومحاولات traversal قبل أي اتصال شبكي، ولا يضع مفتاح الخدمة في الاستجابة أو السجل. هذا ينسجم مع نموذج buckets الخاصة في Supabase، الذي يحمي الملف عبر سياسات الوصول ويوفر الروابط الموقعة المؤقتة للوصول المنضبط.[4] [5]
+
+لا يعني وجود هذا adapter أن التخزين الإنتاجي مفعل. قبل أول اختبار كتابة معزول، يلزم أن ينشئ المالك bucket خاصاً باسم `b2rent-private-documents` في Supabase، ويطبق سياسة RLS تقيّد الملفات، ثم يضيف `SUPABASE_SERVICE_ROLE_KEY` إلى Vercel Production من واجهة الأسرار فقط. بعد ذلك يجرى اختبار لقبول ملف وهمي غير شخصي في Preview، وتثبت عملية التحميل والرابط الموقّع ومنع الوصول العام، قبل التفكير في نقل أي وثيقة حقيقية.
+
 ## مراحل الترحيل المقترحة
 
 ### 1. فصل البنية والبيانات
@@ -159,3 +167,7 @@ CRON_SECRET
 [2]: https://vercel.com/docs/cron-jobs "Vercel — Cron Jobs"
 
 [3]: https://vercel.com/docs/cron-jobs/manage-cron-jobs "Vercel — Managing Cron Jobs"
+
+[4]: https://supabase.com/docs/guides/storage/buckets/fundamentals "Supabase Storage — Buckets Fundamentals"
+
+[5]: https://supabase.com/docs/guides/storage/serving/downloads "Supabase Storage — Serving Downloads"

@@ -11,6 +11,7 @@ export const ENV = {
   supabaseUrl: process.env.SUPABASE_URL ?? "",
   supabaseDbUrl: process.env.SUPABASE_DB_URL ?? "",
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+  supabasePrivateStorageBucket: process.env.SUPABASE_PRIVATE_STORAGE_BUCKET ?? "b2rent-private-documents",
   authRedirectUri: process.env.AUTH_REDIRECT_URI ?? "",
   emailProviderApiKey: process.env.EMAIL_PROVIDER_API_KEY ?? "",
   emailFromAddress: process.env.EMAIL_FROM_ADDRESS ?? "",

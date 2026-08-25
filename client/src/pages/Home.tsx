@@ -5,11 +5,12 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { CarListingCard } from '@/components/CarListingCard';
-import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone, BriefcaseBusiness, House } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone, BriefcaseBusiness, House, Smartphone, Plane } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { FAQSection } from '@/components/FAQSection';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function getListingPath(item: { id: string; type: string }) {
   return item.type === 'property' ? `/property/${item.id}` : `/car/${item.id}`;
@@ -17,7 +18,65 @@ function getListingPath(item: { id: string; type: string }) {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const { language, direction } = useLanguage();
   const [activeTab, setActiveTab] = useState<'cars' | 'properties'>('cars');
+
+  const heroCopy = language === 'fr'
+    ? {
+      cars: 'Location de voitures',
+      properties: 'Immobilier',
+      trust: 'Plateforme de mise en relation entre voyageurs et partenaires au Maroc',
+      eyebrow: 'Réservation fluide sur mobile',
+      title: 'Trouvez une voiture ou un bien au Maroc, rapidement.',
+      subtitle: 'Comparez les offres vérifiées, obtenez un devis immédiat et réservez en quelques étapes.',
+      mobile: 'Réservez facilement depuis votre téléphone',
+      destinations: 'Disponibilités par destination',
+      activeListings: 'Calculé à partir des annonces actives',
+      destinationHint: 'Choisissez une destination pour consulter les offres',
+      availability: 'Annonces actives',
+      explore: 'Explorer les offres',
+      brands: 'Marques et catégories à découvrir',
+      swipe: 'Faites glisser pour explorer',
+      carsCount: 'voiture(s)',
+      propertyCount: 'bien(s) / espace(s)',
+    }
+    : language === 'en'
+      ? {
+        cars: 'Car rentals',
+        properties: 'Real estate',
+        trust: 'A marketplace connecting travellers and rental partners across Morocco',
+        eyebrow: 'Smooth mobile reservations',
+        title: 'Find a car or property in Morocco, fast.',
+        subtitle: 'Compare verified listings, get an instant quote, and book in just a few steps.',
+        mobile: 'Book easily from your phone',
+        destinations: 'Availability by destination',
+        activeListings: 'Calculated from active listings',
+        destinationHint: 'Choose a destination to view listings',
+        availability: 'Active listings',
+        explore: 'Explore listings',
+        brands: 'Brands and property categories to explore',
+        swipe: 'Swipe to explore',
+        carsCount: 'car(s)',
+        propertyCount: 'property / space(s)',
+      }
+      : {
+        cars: 'كراء السيارات',
+        properties: 'العقارات',
+        trust: 'منصة وسيطة تربط المسافرين وشركاء الكراء في المغرب',
+        eyebrow: 'حجز سلس من الهاتف',
+        title: 'ابحث عن سيارة أو عقار في المغرب، بسرعة.',
+        subtitle: 'قارن العروض الموثّقة، واحصل على عرض سعر فوري، وأتمم حجزك في خطوات قليلة.',
+        mobile: 'احجز بسهولة من هاتفك',
+        destinations: 'التوفر حسب الوجهة',
+        activeListings: 'محسوب من الإعلانات النشطة',
+        destinationHint: 'اضغط على الوجهة لعرض العروض',
+        availability: 'إعلانات نشطة',
+        explore: 'اكتشف العروض',
+        brands: 'علامات وفئات جاهزة للاكتشاف',
+        swipe: 'اسحب للتصفح',
+        carsCount: 'سيارة',
+        propertyCount: 'عقار/مساحة',
+      };
 
   // Search states for Cars
   const [carCity, setCarCity] = useState('الدار البيضاء');
@@ -67,73 +126,118 @@ export default function Home() {
     }
   })) : LISTINGS;
 
+  const quickDestinations = [
+    { id: 'casablanca', city: 'الدار البيضاء', label: 'الدار البيضاء', helper: 'الأعمال والإقامات', icon: MapPin },
+    { id: 'marrakech', city: 'مراكش', label: 'مراكش', helper: 'المدينة الحمراء', icon: MapPin },
+    { id: 'tangier', city: 'طنجة', label: 'طنجة', helper: 'البوابة الشمالية', icon: MapPin },
+    { id: 'agadir', city: 'أغادير', label: 'أغادير', helper: 'الساحل والرحلات', icon: MapPin },
+    { id: 'cmn', city: 'الدار البيضاء', label: 'مطار محمد الخامس', helper: 'ضمن نطاق الدار البيضاء', icon: Plane },
+  ] as const;
+
+  const destinationInventory = quickDestinations.map((destination) => {
+    const listingsInCity = activeListings.filter((listing) => listing.city === destination.city);
+    return {
+      ...destination,
+      carCount: listingsInCity.filter((listing) => listing.type === 'car').length,
+      propertyCount: listingsInCity.filter((listing) => listing.type !== 'car').length,
+    };
+  });
+
+  const availableBrands = ['Dacia', 'Renault'].filter((brand) =>
+    activeListings.some((listing) => listing.type === 'car' && listing.title.toLowerCase().includes(brand.toLowerCase())),
+  );
+
+  const browseRailItems = [
+    ...availableBrands.map((brand) => ({ label: brand, href: `/search?type=car&brand=${encodeURIComponent(brand)}`, kind: 'car' as const })),
+    { label: 'شقق', href: `/search?type=property&category=${encodeURIComponent('شقة')}`, kind: 'property' as const },
+    { label: 'فيلات', href: `/search?type=property&category=${encodeURIComponent('فيلا')}`, kind: 'property' as const },
+    { label: 'مكاتب', href: '/search?type=office', kind: 'property' as const },
+  ];
+
+  const propertyCategoryQuery: Record<string, string> = {
+    apartment: 'شقة',
+    villa: 'فيلا',
+    studio: 'استوديو',
+  };
+
+  const selectHeroDestination = (destination: typeof quickDestinations[number]) => {
+    if (destination.id === 'cmn') {
+      setLocation('/locations/mohammed-v-airport-car-rental');
+      return;
+    }
+    setLocation(`/search?city=${encodeURIComponent(destination.city)}`);
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeTab === 'cars') {
-      setLocation(`/search?type=car&city=${encodeURIComponent(carCity)}&pickup=${pickupDate}`);
+      setLocation(`/search?type=car&city=${encodeURIComponent(carCity)}&startDate=${encodeURIComponent(pickupDate)}&endDate=${encodeURIComponent(dropoffDate)}`);
     } else {
-      setLocation(`/search?type=property&city=${encodeURIComponent(propLocation)}&propType=${propType}&maxPrice=${maxPrice}`);
+      setLocation(`/search?type=property&city=${encodeURIComponent(propLocation)}&category=${encodeURIComponent(propertyCategoryQuery[propType])}&maxPrice=${encodeURIComponent(maxPrice)}`);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col" dir={direction}>
 
-      {/* Hero palette follows the B2-Rent Morocco logo: navy, coral, and orange. */}
-      <section className="relative overflow-hidden bg-[var(--brand-navy)] px-4 pb-12 pt-8 text-white md:pb-24 md:pt-12">
+      {/* Hero: a balanced visual entry point for vehicles and real estate. */}
+      <section className="relative isolate overflow-hidden bg-[var(--brand-navy)] px-4 pb-10 pt-7 text-white md:pb-16 md:pt-12">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(var(--brand-orange)_1px,transparent_1px)] opacity-15 [background-size:28px_28px]"></div>
+        <div className="pointer-events-none absolute -right-24 top-14 h-56 w-56 rounded-full bg-[var(--brand-orange)]/20 blur-3xl md:h-80 md:w-80"></div>
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-[var(--brand-coral)]/20 blur-3xl md:h-72 md:w-72"></div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--brand-navy-deep)]/70 to-transparent"></div>
 
-        <div className="container mx-auto max-w-6xl text-center space-y-5 md:space-y-8 relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-orange)]/40 bg-[var(--brand-orange)]/20 px-4 py-1.5 text-xs font-bold tracking-wide text-[var(--brand-orange)]">
+        <div className="container relative z-10 mx-auto max-w-6xl space-y-5 text-center md:space-y-7">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-orange)]/40 bg-[var(--brand-orange)]/15 px-3 py-1.5 text-xs font-bold tracking-wide text-[var(--brand-amber)]">
             <ShieldCheck className="h-4 w-4 text-[var(--brand-orange)]" />
-            <span>منصة الوساطة الأولى المعتمدة بين المزودين والزبائن في المغرب</span>
+            <span>{heroCopy.trust}</span>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
+              <Smartphone className="h-4 w-4 text-[var(--brand-amber)]" aria-hidden="true" />
+              <span>{heroCopy.mobile}</span>
+            </div>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tight leading-[1.25] md:leading-tight">
-            سيارات موثوقة و<span className="text-[var(--brand-orange)]">عقارات مختارة</span>، في منصة واحدة
+          <h1 className="mx-auto max-w-4xl text-3xl font-black leading-[1.25] tracking-tight sm:text-4xl md:text-6xl md:leading-tight">
+            {heroCopy.title}
           </h1>
 
-          <p className="text-slate-300 text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-            اعثر على سيارة تناسب رحلتك أو عقار يلائم إقامتك أو عملك، وتواصل بثقة مع شركاء B2-Rent في المدن المغربية عبر تجربة بحث وحجز موحّدة.
+          <p className="mx-auto max-w-2xl text-xs leading-relaxed text-slate-200 sm:text-sm md:text-base">
+            {heroCopy.subtitle}
           </p>
 
-          <div className="flex justify-center gap-4 mt-6">
-            <Button
-              onClick={() => window.open('/slides_project/cover_slide.html', '_blank')}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
-            >
-              <Award className="w-4 h-4" />
-              <span>عرض مراجعة الأعمال</span>
-            </Button>
-          </div>
-
           {/* Tabbed Search Bar (Cars vs Properties) */}
-          <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-2xl border border-white/20 p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-2xl text-right">
+          <div className="mx-auto max-w-4xl rounded-2xl border border-white/20 bg-white/10 p-3 text-right shadow-2xl backdrop-blur-2xl md:rounded-3xl md:p-6">
             {/* Tabs Header */}
-            <div className="flex gap-2 mb-4 md:mb-6 border-b border-white/10 pb-3 md:pb-4">
+            <div className="mb-4 flex gap-2 border-b border-white/10 pb-3 md:mb-6 md:pb-4" role="tablist" aria-label="نوع الحجز">
               <button
                 type="button"
                 onClick={() => setActiveTab('cars')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-4 rounded-xl md:rounded-2xl font-bold text-xs sm:text-sm transition-all ${
+                role="tab"
+                aria-selected={activeTab === 'cars'}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-2 py-2.5 text-xs font-extrabold transition-all sm:px-4 sm:text-sm ${
                   activeTab === 'cars'
-                    ? 'bg-[var(--brand-orange)] text-white shadow-lg shadow-[var(--brand-orange)]/30'
-                    : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                    ? 'border-[var(--brand-amber)] bg-[var(--brand-amber)] text-[var(--brand-navy-deep)] shadow-lg shadow-[var(--brand-orange)]/30'
+                    : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/10'
                 }`}
               >
-                <Car className="w-5 h-5" />
-                <span>بحث عن السيارات</span>
+                <Car className="h-5 w-5 stroke-[1.9]" aria-hidden="true" />
+                <span>{heroCopy.cars}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('properties')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-4 rounded-xl md:rounded-2xl font-bold text-xs sm:text-sm transition-all ${
+                role="tab"
+                aria-selected={activeTab === 'properties'}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-2 py-2.5 text-xs font-extrabold transition-all sm:px-4 sm:text-sm ${
                   activeTab === 'properties'
-                    ? 'bg-[var(--brand-coral)] text-white shadow-lg shadow-[var(--brand-coral)]/30'
-                    : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                    ? 'border-[var(--brand-amber)] bg-[var(--brand-amber)] text-[var(--brand-navy-deep)] shadow-lg shadow-[var(--brand-orange)]/30'
+                    : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/10'
                 }`}
               >
-                <Building2 className="w-5 h-5" />
-                <span>بحث عن العقارات</span>
+                <Building2 className="h-5 w-5 stroke-[1.9]" aria-hidden="true" />
+                <span>{heroCopy.properties}</span>
               </button>
             </div>
 
@@ -262,6 +366,61 @@ export default function Home() {
               </div>
             </form>
           </div>
+
+          <div className="mx-auto max-w-5xl pt-1 text-right">
+            <div className="mb-3 flex items-end justify-between gap-3 px-1">
+              <div>
+                <p className="text-xs font-bold tracking-wide text-[var(--brand-amber)]">{heroCopy.destinations}</p>
+                <h2 className="mt-1 text-sm font-extrabold text-white sm:text-base">{heroCopy.activeListings}</h2>
+              </div>
+              <span className="hidden text-[11px] text-slate-300 sm:block">{heroCopy.destinationHint}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {destinationInventory.map((destination) => {
+                const DestinationIcon = destination.icon;
+                return (
+                  <button
+                    key={destination.id}
+                    type="button"
+                    onClick={() => selectHeroDestination(destination)}
+                    className="group min-h-28 rounded-2xl border border-white/15 bg-white/10 p-3 text-right backdrop-blur-sm transition-colors hover:border-[var(--brand-amber)] hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-amber)]"
+                    aria-label={`${heroCopy.explore}: ${destination.label}`}
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <DestinationIcon className="h-4 w-4 text-[var(--brand-amber)] stroke-[1.9]" aria-hidden="true" />
+                      <span className="text-[10px] font-bold text-slate-300">{heroCopy.availability}</span>
+                    </div>
+                    <p className="line-clamp-1 text-xs font-extrabold text-white sm:text-sm">{destination.label}</p>
+                    <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-300">{destination.helper}</p>
+                    <p className="mt-2 text-[10px] font-bold text-[var(--brand-amber)]">{destination.carCount} {heroCopy.carsCount} · {destination.propertyCount} {heroCopy.propertyCount}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mx-auto max-w-5xl pt-1 text-right">
+            <div className="mb-2 flex items-center justify-between gap-3 px-1">
+              <p className="text-xs font-bold tracking-wide text-slate-200">{heroCopy.brands}</p>
+              <span className="text-[11px] text-[var(--brand-amber)]">{heroCopy.swipe}</span>
+            </div>
+            <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]" aria-label="علامات السيارات وفئات العقارات">
+              {browseRailItems.map((item) => (
+                <Link
+                  key={`${item.kind}-${item.label}`}
+                  href={item.href}
+                  className={`flex min-h-12 shrink-0 snap-start items-center gap-2 rounded-xl border px-3 text-xs font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-amber)] ${
+                    item.kind === 'car'
+                      ? 'border-white/20 bg-white/10 text-white hover:border-[var(--brand-amber)] hover:bg-white/15'
+                      : 'border-[var(--brand-amber)]/35 bg-[var(--brand-amber)]/10 text-[var(--brand-amber)] hover:bg-[var(--brand-amber)] hover:text-[var(--brand-navy-deep)]'
+                  }`}
+                >
+                  {item.kind === 'car' ? <Car className="h-4 w-4 stroke-[1.9]" aria-hidden="true" /> : <Building2 className="h-4 w-4 stroke-[1.9]" aria-hidden="true" />}
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -294,13 +453,13 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
-                  { title: "شقق", type: "apartment", icon: Building2 },
-                  { title: "فيلات", type: "villa", icon: House },
-                  { title: "مكاتب", type: "office", icon: BriefcaseBusiness },
-                  { title: "استوديوهات", type: "studio", icon: House },
+                  { title: "شقق", href: `/search?type=property&category=${encodeURIComponent('شقة')}`, icon: Building2 },
+                  { title: "فيلات", href: `/search?type=property&category=${encodeURIComponent('فيلا')}`, icon: House },
+                  { title: "مكاتب", href: '/search?type=office', icon: BriefcaseBusiness },
+                  { title: "استوديوهات", href: `/search?type=property&category=${encodeURIComponent('استوديو')}`, icon: House },
                 ].map((category) => {
                   const CategoryIcon = category.icon;
-                  return <Link key={category.type} href={`/search?type=property&propType=${category.type}`} className="group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--brand-orange)]/25 bg-[var(--brand-amber-soft)] px-2 text-center text-sm font-extrabold text-[var(--brand-navy)] transition-colors hover:border-[var(--brand-orange)] hover:bg-[var(--brand-amber)]">
+                  return <Link key={category.title} href={category.href} className="group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--brand-orange)]/25 bg-[var(--brand-amber-soft)] px-2 text-center text-sm font-extrabold text-[var(--brand-navy)] transition-colors hover:border-[var(--brand-orange)] hover:bg-[var(--brand-amber)]">
                     <CategoryIcon className="h-5 w-5 stroke-[1.75]" aria-hidden="true" />
                     <span>{category.title}</span>
                   </Link>;

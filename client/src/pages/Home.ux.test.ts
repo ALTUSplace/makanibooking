@@ -2,13 +2,15 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 describe("home search and service balance", () => {
-  it("keeps cars and real estate equally present in the hero and removes the stale year", async () => {
+  it("keeps cars and real estate equally present in the localized hero", async () => {
     const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("سيارات موثوقة");
-    expect(source).toContain("عقارات مختارة");
-    expect(source).toContain("عرض مراجعة الأعمال</span>");
-    expect(source).not.toContain("عرض مراجعة الأعمال 2025");
+    expect(source).toContain("const heroCopy = language === 'fr'");
+    expect(source).toContain("Trouvez une voiture ou un bien au Maroc, rapidement.");
+    expect(source).toContain("ابحث عن سيارة أو عقار في المغرب، بسرعة.");
+    expect(source).toContain("{heroCopy.cars}");
+    expect(source).toContain("{heroCopy.properties}");
+    expect(source).toContain("dir={direction}");
   });
 
   it("keeps search icons interactive and preserves a high-contrast primary action", async () => {
@@ -29,5 +31,27 @@ describe("home search and service balance", () => {
     expect(source).toContain('title: "شقق"');
     expect(source).toContain('title: "فيلات"');
     expect(source).toContain('title: "مكاتب"');
+  });
+
+  it("derives destination counters from active listings and sends cards to supported searches", async () => {
+    const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("const destinationInventory = quickDestinations.map");
+    expect(source).toContain("carCount: listingsInCity.filter");
+    expect(source).toContain("propertyCount: listingsInCity.filter");
+    expect(source).toContain("const selectHeroDestination");
+    expect(source).toContain("/locations/mohammed-v-airport-car-rental");
+    expect(source).toContain("setLocation(`/search?city=${encodeURIComponent(destination.city)}`)");
+    expect(source).toContain("onClick={() => selectHeroDestination(destination)}");
+  });
+
+  it("uses only search parameters understood by the results page", async () => {
+    const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
+
+    expect(source).not.toContain("propType=");
+    expect(source).toContain("category=${encodeURIComponent(propertyCategoryQuery[propType])}");
+    expect(source).toContain("maxPrice=${encodeURIComponent(maxPrice)}");
+    expect(source).toContain("startDate=${encodeURIComponent(pickupDate)}");
+    expect(source).toContain("endDate=${encodeURIComponent(dropoffDate)}");
   });
 });

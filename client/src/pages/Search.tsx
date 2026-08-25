@@ -111,12 +111,13 @@ export default function Search() {
   const naturalQuery = searchParams.get('q') || '';
   const brandParam = searchParams.get('brand') || '';
   const categoryParam = searchParams.get('category') || '';
+  const rawMaxPrice = Number(searchParams.get('maxPrice'));
   const startDateParam = searchParams.get('startDate') || undefined;
   const endDateParam = searchParams.get('endDate') || undefined;
   const [cityFilter, setCityFilter] = useState(resolvedCity);
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
   const [searchQuery, setSearchQuery] = useState(naturalQuery);
-  const [maxPrice, setMaxPrice] = useState(4000);
+  const [maxPrice, setMaxPrice] = useState(Number.isFinite(rawMaxPrice) && rawMaxPrice > 0 ? rawMaxPrice : 4000);
   const [excellenceOnly, setExcellenceOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc'>('price-asc');
   const [officeTypeFilter, setOfficeTypeFilter] = useState<string>('all');

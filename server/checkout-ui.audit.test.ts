@@ -27,4 +27,12 @@ describe("Checkout simulated CMI UI audit", () => {
     expect(checkoutSource).toContain("ملخص الفاتورة الشفافة");
     expect(checkoutSource).toContain("md:sticky md:top-6");
   });
+
+  it("reads listing title and price from the trusted listing query rather than URL metadata", () => {
+    expect(checkoutSource).toContain("trpc.listings.getById.useQuery");
+    expect(checkoutSource).toContain("const trustedTitle = trustedListing?.title ?? ''");
+    expect(checkoutSource).toContain("const trustedPricePerDay = trustedListing?.pricePerDay ?? 0");
+    expect(checkoutSource).not.toContain("searchParams.get('title')");
+    expect(checkoutSource).not.toContain("searchParams.get('pricePerDay')");
+  });
 });

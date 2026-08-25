@@ -14,22 +14,28 @@ export default function CheckoutPage() {
   const searchParams = new URLSearchParams(searchString);
 
   const listingId = Number(searchParams.get('listingId'));
-  const title = searchParams.get('title') || '';
-  const pricePerDay = Number(searchParams.get('pricePerDay'));
   const startDateParam = searchParams.get('startDate') || '';
   const endDateParam = searchParams.get('endDate') || '';
+  const hasValidListingId = Number.isInteger(listingId) && listingId > 0;
+  const listingQuery = trpc.listings.getById.useQuery(
+    { id: listingId },
+    { enabled: hasValidListingId, retry: false },
+  );
+  const trustedListing = listingQuery.data;
+  const trustedTitle = trustedListing?.title ?? '';
+  const trustedPricePerDay = trustedListing?.pricePerDay ?? 0;
   const parsedStart = startDateParam ? new Date(`${startDateParam}T12:00:00`) : null;
   const parsedEnd = endDateParam ? new Date(`${endDateParam}T12:00:00`) : null;
   const hasValidDates = Boolean(parsedStart && parsedEnd && !Number.isNaN(parsedStart.getTime()) && !Number.isNaN(parsedEnd.getTime()) && parsedEnd > parsedStart);
   const requestedDays = Number(searchParams.get('days'));
   const daysFromDates = hasValidDates ? Math.ceil((parsedEnd!.getTime() - parsedStart!.getTime()) / (1000 * 60 * 60 * 24)) : 0;
   const days = daysFromDates || (Number.isFinite(requestedDays) && requestedDays > 0 ? Math.floor(requestedDays) : 0);
-  const subtotal = Number.isFinite(pricePerDay) && pricePerDay > 0 && days > 0 ? pricePerDay * days : 0;
+  const subtotal = Number.isFinite(trustedPricePerDay) && trustedPricePerDay > 0 && days > 0 ? trustedPricePerDay * days : 0;
   const requestedContractType = searchParams.get('contractType');
   const contractType = requestedContractType === 'commercial' || requestedContractType === 'professional' ? requestedContractType : null;
-  const premises = searchParams.get('premises') || title;
-  const city = searchParams.get('city') || 'المغرب';
-  const landlordName = searchParams.get('landlordName') || 'المالك / الشركة المؤجرة';
+  const premises = trustedTitle || 'العرض المحجوز';
+  const city = trustedListing?.city || 'المغرب';
+  const landlordName = 'الشريك / مقدم الخدمة';
   const formatDate = (value: string) => {
     if (!value) return 'غير محدد';
     const date = new Date(`${value}T12:00:00`);
@@ -50,7 +56,7 @@ export default function CheckoutPage() {
             ? 'تمت محاكاة الدفع بنجاح وإصدار الفاتورة. سيصبح الحجز مؤكداً بعد موافقة المالك.'
             : 'تم تسجيل طلب التحويل البنكي وإنشاء فاتورة قيد المراجعة.');
           const params = new URLSearchParams({
-            title,
+            title: trustedTitle,
             total: String(invoice.total),
             bookingId: String(data.bookingId),
             invoiceId: String(invoice.id),
@@ -83,7 +89,7 @@ export default function CheckoutPage() {
 
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!Number.isInteger(listingId) || listingId <= 0 || !title || !hasValidDates || !Number.isFinite(pricePerDay) || pricePerDay <= 0) {
+    if (!hasValidListingId || !trustedListing || !trustedTitle || !hasValidDates || !Number.isFinite(trustedPricePerDay) || trustedPricePerDay <= 0) {
       toast.error('رابط الحجز غير مكتمل. عد إلى تفاصيل الإعلان واختر تواريخ صحيحة قبل المتابعة.');
       return;
     }
@@ -112,6 +118,17 @@ export default function CheckoutPage() {
     );
   }
 
+  if (listingQuery.isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f4f7fb] px-3 py-10 text-slate-900" dir="rtl">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-[#d9e5ee] bg-white p-8 text-center shadow-lg">
+          <p className="font-bold text-[#0B3C5D]">جاري التحقق من بيانات الإعلان المعتمدة…</p>
+          <p className="mt-2 text-sm text-slate-500">لن يُستخدم عنوان أو سعر واردان من رابط المتصفح في ملخص الدفع.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
       <div className="min-h-screen bg-[#f4f7fb] text-slate-900 py-5 sm:py-10 px-3 sm:px-6 lg:px-8" dir="rtl">
       <div className="max-w-5xl mx-auto space-y-5 sm:space-y-7">
@@ -134,7 +151,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {!Number.isInteger(listingId) || listingId <= 0 || !hasValidDates || !Number.isFinite(pricePerDay) || pricePerDay <= 0 ? (
+        {!hasValidListingId || !trustedListing || !hasValidDates || !Number.isFinite(trustedPricePerDay) || trustedPricePerDay <= 0 ? (
           <Card className="border-red-200 bg-red-50 text-red-900">
             <CardContent className="p-8 text-center">
               <p className="font-bold">لا يمكن فتح الدفع لأن بيانات الحجز ناقصة أو غير صحيحة.</p>
@@ -227,7 +244,7 @@ export default function CheckoutPage() {
               <CardContent className="space-y-4">
                 <div className="p-3 bg-muted/40 rounded-xl">
                   <span className="text-xs text-muted-foreground block">العنصر المحجوز</span>
-                  <span className="font-bold text-sm break-words">{title}</span>
+                  <span className="font-bold text-sm break-words">{trustedTitle}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2" aria-label="ملخص تواريخ الحجز">
@@ -248,7 +265,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">سعر الكراء اليومي:</span>
-                    <span className="font-semibold">{pricePerDay} د.م / يوم</span>
+                    <span className="font-semibold">{trustedPricePerDay} د.م / يوم</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">المجموع الفرعي:</span>

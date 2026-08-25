@@ -17,6 +17,7 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
+  Settings2,
   Sun,
   UserCheck,
   X,
@@ -25,7 +26,6 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRole } from "@/contexts/RoleContext";
 import { Language, useLanguage } from "@/contexts/LanguageContext";
@@ -53,6 +53,8 @@ const navLinks: NavLink[] = [
   { href: "/blog", label: "المدونة", labelKey: "blog", icon: BookOpen },
 ];
 
+const primaryNavLinks = navLinks.filter((link) => ["/", "/search?type=car", "/search?type=property", "/support-tickets", "/blog"].includes(link.href));
+
 function isActiveLink(currentLocation: string, href: string) {
   const [currentPath, currentQuery = ""] = currentLocation.split("?");
   const [targetPath, targetQuery = ""] = href.split("?");
@@ -72,6 +74,7 @@ export default function Navbar() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [utilitiesOpen, setUtilitiesOpen] = useState(false);
   const [cmiModalOpen, setCmiModalOpen] = useState(false);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [twoFaModalOpen, setTwoFaModalOpen] = useState(false);
@@ -81,6 +84,7 @@ export default function Navbar() {
     return window.localStorage.getItem("b2rent-notification-sound") !== "off";
   });
   const notificationRef = useRef<HTMLDivElement>(null);
+  const utilitiesRef = useRef<HTMLDivElement>(null);
   const previousNotificationIdsRef = useRef<Set<number>>(new Set());
   const hasInteractedRef = useRef(false);
   const mobileMenuRef = useRef<HTMLElement>(null);
@@ -172,6 +176,7 @@ export default function Navbar() {
   useEffect(() => {
     setMobileMenuOpen(false);
     setNotificationsOpen(false);
+    setUtilitiesOpen(false);
   }, [location]);
 
   useEffect(() => {
@@ -209,17 +214,18 @@ export default function Navbar() {
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
-      if (
-        notificationRef.current &&
-        !notificationRef.current.contains(event.target as Node)
-      ) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setNotificationsOpen(false);
+      }
+      if (utilitiesRef.current && !utilitiesRef.current.contains(event.target as Node)) {
+        setUtilitiesOpen(false);
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMobileMenuOpen(false);
         setNotificationsOpen(false);
+        setUtilitiesOpen(false);
       }
     };
 
@@ -260,8 +266,14 @@ export default function Navbar() {
     );
   };
 
-  const renderNavLinks = (mobile = false) =>
-    navLinks.map((link) => {
+  const toggleThemeWithFeedback = () => {
+    if (!toggleTheme) return;
+    toggleTheme();
+    toast.success(theme === "dark" ? "تم تفعيل الوضع النهاري" : "تم تفعيل الوضع الليلي");
+  };
+
+  const renderNavLinks = (links: NavLink[], mobile = false) =>
+    links.map((link) => {
       const Icon = link.icon;
       const active = isActiveLink(location, link.href);
       return (
@@ -271,15 +283,15 @@ export default function Navbar() {
           onClick={() => setMobileMenuOpen(false)}
           className={
             mobile
-              ? `flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
+              ? `flex min-h-11 items-center gap-3 rounded-[var(--radius-md)] px-4 py-3 text-sm font-bold transition-colors ${
                   active
-                    ? "bg-amber-500 text-white shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-[var(--brand-navy)] text-white shadow-sm"
+                    : "text-muted-foreground hover:bg-[var(--brand-surface-muted)] hover:text-foreground"
                 }`
-              : `flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-bold transition-colors ${
+              : `b2-header-link ${
                   active
-                    ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                    : "border-transparent text-[#35566d] hover:bg-[#f6f8fb] hover:text-[#082c45] dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
+                    ? "b2-header-link--active"
+                    : "text-[#35566d] hover:text-[#082c45] dark:text-slate-200 dark:hover:text-white"
                 }`
           }
           aria-current={active ? "page" : undefined}
@@ -292,95 +304,57 @@ export default function Navbar() {
 
   return (
     <>
-      <header
-        className="glass-header sticky top-0 z-50 border-b text-foreground shadow-sm"
-          dir={direction}
-        >
-        <div className="container mx-auto flex h-16 sm:h-20 items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
+      <header className="glass-header sticky top-0 z-50 text-foreground" dir={direction}>
+        <div className="container mx-auto flex h-16 items-center justify-between gap-3 px-3 sm:h-[4.5rem] sm:px-4">
           <Link href="/" className="group flex shrink-0 items-center" aria-label="B2-Rent Morocco — العودة إلى الصفحة الرئيسية">
-            <span className="inline-flex h-12 w-36 items-center justify-center rounded-xl border border-[var(--brand-navy)]/15 bg-white px-2 shadow-sm transition-transform group-hover:scale-[1.03] dark:border-white/15">
-              <img
-                src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg"
-                alt="B2-Rent Morocco"
-                width={1664}
-                height={928}
-                className="h-10 w-full object-contain"
-              />
-            </span>
+            <img src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg" alt="B2-Rent Morocco" width={1664} height={928} className="h-11 w-32 object-contain sm:h-12 sm:w-40" />
           </Link>
 
           <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex" aria-label="التنقل الرئيسي">
-            {renderNavLinks()}
+            {renderNavLinks(primaryNavLinks)}
           </nav>
 
-          <div className="hidden shrink-0 items-center gap-2 md:flex">
-            <div className="b2-segmented-control" aria-label="اختيار العملة">
-              <Coins className="mx-1 h-4 w-4 text-amber-600 dark:text-amber-300" aria-hidden="true" />
-              {(["MAD", "EUR", "USD"] as Currency[]).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  aria-pressed={currency === item}
-                  onClick={() => selectCurrency(item)}
-                  className={currency === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}
-                >
-                  {item}
-                </button>
-              ))}
+          <div className="hidden shrink-0 items-center gap-1.5 md:flex">
+            <label className="hidden h-11 items-center gap-1 rounded-full border border-[var(--brand-border)] bg-[var(--brand-surface-muted)] px-3 text-xs font-extrabold text-[var(--brand-navy)] xl:flex">
+              <Globe className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">{t("language")}</span>
+              <select value={language} onChange={(event) => selectLanguage(event.target.value as Language)} className="cursor-pointer bg-transparent pr-1 text-xs font-extrabold outline-none" aria-label={t("language")}>
+                <option value="ar">العربية</option>
+                <option value="fr">FR</option>
+                <option value="en">EN</option>
+              </select>
+            </label>
+
+            <div className="relative" ref={utilitiesRef}>
+              <button type="button" className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface)]" onClick={() => setUtilitiesOpen((open) => !open)} aria-expanded={utilitiesOpen} aria-haspopup="dialog" aria-label="إعدادات الحساب والخدمات" title="إعدادات الحساب والخدمات">
+                <Settings2 className="h-5 w-5" />
+              </button>
+              {utilitiesOpen && (
+                <div className="absolute end-0 mt-3 w-72 rounded-[var(--radius-lg)] border border-[var(--brand-border)] bg-popover p-4 text-popover-foreground shadow-[var(--shadow-header)]" role="dialog" aria-label="إعدادات الحساب والخدمات">
+                  <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-3">
+                    <div><p className="text-sm font-extrabold text-[var(--brand-navy)] dark:text-white">الخدمات والحساب</p><p className="mt-0.5 text-[11px] text-muted-foreground">إعداداتك وخيارات المنصة</p></div>
+                    <span className="b2-status-badge bg-[var(--brand-amber-soft)] text-[var(--brand-orange-dark)]">{role === "super_admin" ? <ShieldCheck className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}{role === "super_admin" ? "مشرف عام" : "مدير وكالة"}</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => { setTwoFaModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><Shield className="h-4 w-4" />أمان الحساب</button>
+                    <button type="button" onClick={() => { setCmiModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><CreditCard className="h-4 w-4" />الدفع CMI</button>
+                    <button type="button" onClick={() => { setWhatsappModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><MessageSquare className="h-4 w-4" />WhatsApp / SMS</button>
+                    {toggleTheme && <button type="button" onClick={toggleThemeWithFeedback} className="b2-utility-action">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{theme === "dark" ? "الوضع النهاري" : "الوضع الليلي"}</button>}
+                  </div>
+                  <div className="mt-4 border-t border-[var(--brand-border)] pt-3">
+                    <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground"><Coins className="h-3.5 w-3.5" /> العملة</p>
+                    <div className="b2-segmented-control w-full" aria-label="اختيار العملة">
+                      {(["MAD", "EUR", "USD"] as Currency[]).map((item) => <button key={item} type="button" aria-pressed={currency === item} onClick={() => selectCurrency(item)} className={currency === item ? "bg-[var(--brand-navy)] text-white" : "text-muted-foreground hover:bg-white hover:text-foreground dark:hover:bg-slate-800"}>{item}</button>)}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-
-            <div className="b2-segmented-control" aria-label="اختيار اللغة">
-              <Globe className="mx-1 h-4 w-4 text-amber-600 dark:text-amber-300" aria-hidden="true" />
-              {(["ar", "fr", "en"] as const).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  aria-pressed={language === item}
-                  onClick={() => selectLanguage(item)}
-                  className={language === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}
-                >
-                  {item === "ar" ? "عربي" : item === "fr" ? "FR" : "EN"}
-                </button>
-              ))}
-            </div>
-
-            <span className="hidden items-center gap-1 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-[11px] font-bold text-amber-700 lg:flex dark:text-amber-300">
-              {role === "super_admin" ? <ShieldCheck className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
-              {role === "super_admin" ? "مشرف عام" : "مدير وكالة"}
-            </span>
-
-            <button
-              type="button"
-              className="b2-icon-button border border-border bg-muted text-foreground hover:bg-background"
-              onClick={() => setTwoFaModalOpen(true)}
-              title="إدارة الأمان والمصادقة الثنائية"
-              aria-label="إدارة الأمان والمصادقة الثنائية"
-            >
-              <Shield className="h-4 w-4 text-amber-600 dark:text-amber-300" />
-            </button>
-            <button
-              type="button"
-              className="b2-icon-button border border-border bg-muted text-foreground hover:bg-background"
-              onClick={() => setCmiModalOpen(true)}
-              title="بوابة الدفع CMI"
-              aria-label="فتح بوابة الدفع CMI"
-            >
-              <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-300" />
-            </button>
-            <button
-              type="button"
-              className="b2-icon-button border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
-              onClick={() => setWhatsappModalOpen(true)}
-              title="إشعار WhatsApp / SMS"
-              aria-label="فتح إشعار واتساب"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
 
             <div className="relative" ref={notificationRef}>
               <button
                 type="button"
-                className={`b2-icon-button relative border border-border bg-muted text-foreground hover:bg-background ${notificationPulse ? "ring-2 ring-rose-400/70 ring-offset-2 ring-offset-background motion-safe:animate-pulse" : ""}`}
+                className={`b2-icon-button relative border border-[var(--brand-border)] bg-[var(--brand-surface)] ${notificationPulse ? "ring-2 ring-[var(--brand-coral)]/60 ring-offset-2 ring-offset-background motion-safe:animate-pulse" : ""}`}
                 onClick={() => {
                   setNotificationsOpen((open) => !open);
                   setNotificationPulse(false);
@@ -390,19 +364,19 @@ export default function Navbar() {
                 aria-label={`الإشعارات${unreadCount ? `، ${unreadCount} غير مقروءة` : ""}`}
                 title="الإشعارات"
               >
-                <Bell className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+                <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--brand-coral)] px-1 text-[9px] font-black text-white">
                     {unreadCount}
                   </span>
                 )}
               </button>
 
               {notificationsOpen && (
-                <div className="absolute left-0 mt-3 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-popover p-4 text-right text-popover-foreground shadow-xl" role="dialog" aria-label="قائمة الإشعارات">
-                  <div className="flex items-center justify-between border-b border-border pb-3">
+                <div className="absolute end-0 mt-3 w-[min(20rem,calc(100vw-2rem))] rounded-[var(--radius-lg)] border border-[var(--brand-border)] bg-popover p-4 text-right text-popover-foreground shadow-[var(--shadow-header)]" role="dialog" aria-label="قائمة الإشعارات">
+                  <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-3">
                     <h2 className="flex items-center gap-1.5 text-xs font-bold">
-                      <Bell className="h-4 w-4 text-amber-600 dark:text-amber-300" />
+                      <Bell className="h-4 w-4 text-[var(--brand-orange-dark)]" />
                       الإشعارات والتحديثات
                     </h2>
                     <div className="flex items-center gap-2">
@@ -422,7 +396,7 @@ export default function Navbar() {
                         onClick={markAllAsRead}
                         disabled={markAllMutation.isPending}
                         aria-busy={markAllMutation.isPending}
-                        className="text-[10px] font-bold text-amber-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-amber-300"
+                        className="text-[10px] font-bold text-[var(--brand-orange-dark)] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {markAllMutation.isPending ? "جارٍ التحديث…" : "تحديد الكل كمقروء"}
                       </button>
@@ -443,7 +417,7 @@ export default function Navbar() {
                           tabIndex={0}
                           onClick={() => unread && markReadMutation.mutate({ notificationId: item.id }, { onSuccess: () => { void notificationQuery.refetch(); void unreadQuery.refetch(); } })}
                           onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (unread) markReadMutation.mutate({ notificationId: item.id }, { onSuccess: () => { void notificationQuery.refetch(); void unreadQuery.refetch(); } }); } }}
-                          className={`space-y-1 rounded-xl border p-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${unread ? "border-amber-500/30 bg-amber-500/10" : "border-border bg-muted"}`}
+                          className={`space-y-1 rounded-[var(--radius-md)] border p-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)] ${unread ? "border-[var(--brand-orange)]/30 bg-[var(--brand-amber-soft)]" : "border-[var(--brand-border)] bg-[var(--brand-surface-muted)]"}`}
                         >
                           <div className="flex items-center justify-between gap-2 font-bold">
                             <span>{item.title}</span>
@@ -454,46 +428,31 @@ export default function Navbar() {
                       );
                     })}
                   </div>
-                  <Link href="/notifications" className="block border-t border-border pt-3 text-center text-xs font-bold text-amber-700 hover:underline dark:text-amber-300">
+                  <Link href="/notifications" className="block border-t border-[var(--brand-border)] pt-3 text-center text-xs font-bold text-[var(--brand-orange-dark)] hover:underline">
                     عرض كل الإشعارات
                   </Link>
                 </div>
               )}
             </div>
 
-            {toggleTheme && (
-              <button
-                type="button"
-                className="b2-icon-button border border-border bg-muted text-foreground hover:bg-background"
-                onClick={() => {
-                  toggleTheme();
-                  toast.success(theme === "dark" ? "تم تفعيل الوضع النهاري" : "تم تفعيل الوضع الليلي");
-                }}
-                aria-label="تبديل الوضع الليلي"
-                title="تبديل الوضع الليلي"
-              >
-                {theme === "dark" ? <Sun className="h-4 w-4 text-amber-600 dark:text-amber-300" /> : <Moon className="h-4 w-4 text-amber-600 dark:text-amber-300" />}
-              </button>
-            )}
-
-            <Link href="/add-car" className="inline-flex min-h-11 items-center rounded-xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-amber-600">
+            <Link href="/add-car" className="hidden min-h-11 items-center rounded-full bg-[var(--brand-coral)] px-4 py-2 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[var(--brand-coral-dark)] lg:inline-flex">
               {t("addCar")}
             </Link>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
-            <Link href="/search" className={`b2-icon-button border border-border bg-muted text-foreground ${currentSection === "search" ? "text-amber-700 dark:text-amber-300" : ""}`} aria-label="فتح البحث" title="البحث">
-              <Car className="h-4 w-4" />
+          <div className="flex items-center gap-1.5 md:hidden">
+            <Link href="/search" className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface)]" aria-current={currentSection === "search" ? "page" : undefined} aria-label="فتح البحث" title="البحث">
+              <Car className="h-5 w-5" />
             </Link>
             <button
               type="button"
               onClick={() => setMobileMenuOpen((open) => !open)}
-              className="b2-icon-button border border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
+              className="b2-icon-button border border-[var(--brand-navy)] bg-[var(--brand-navy)] !text-white hover:border-[var(--brand-navy-deep)] hover:bg-[var(--brand-navy-deep)] hover:!text-white"
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-navigation"
               aria-label={mobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -528,37 +487,40 @@ export default function Navbar() {
         <div className="fixed inset-0 z-[60] md:hidden" role="presentation">
           <button type="button" className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" aria-label={t("close")} onClick={() => setMobileMenuOpen(false)} />
           <aside ref={mobileMenuRef} id="mobile-navigation" className={`absolute top-0 flex h-full w-[min(88vw,22rem)] flex-col overflow-y-auto bg-background p-4 shadow-2xl ${direction === "rtl" ? "right-0" : "left-0"}`} dir={direction} aria-label={t("search")} aria-modal="true" role="dialog" tabIndex={-1}>
-          <div className="flex items-center justify-between border-b border-border pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex min-h-10 min-w-28 flex-col justify-center rounded-lg border border-[#0b3c5d]/20 bg-white px-2.5 leading-none dark:border-white/15 dark:bg-slate-950"><span className="font-black tracking-tight text-[#0b3c5d] dark:text-white">B2 <span className="text-[#e57c23]">RENT</span></span><span className="mt-1 text-[8px] font-bold tracking-[0.1em] text-slate-600 dark:text-slate-300">بي تو رينت</span></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-border bg-muted" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
+          <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex h-12 w-36 items-center"><img src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg" alt="B2-Rent Morocco" width={1664} height={928} className="h-full w-full object-contain" /></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface-muted)]" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
           <div className="mx-auto flex w-full flex-1 flex-col gap-2 pt-4">
             <nav className="space-y-1" aria-label="التنقل على الهاتف">
-              {renderNavLinks(true)}
+              {renderNavLinks(navLinks, true)}
             </nav>
 
-            <div className="mt-3 space-y-4 border-t border-border pt-4">
+            <div className="mt-3 space-y-4 border-t border-[var(--brand-border)] pt-4">
+              <span className="b2-status-badge bg-[var(--brand-amber-soft)] text-[var(--brand-orange-dark)]">{role === "super_admin" ? <ShieldCheck className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}{role === "super_admin" ? "مشرف عام" : "مدير وكالة"}</span>
               <div>
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> العملة</p>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Coins className="h-3.5 w-3.5 text-[var(--brand-orange-dark)]" /> العملة</p>
                 <div className="b2-segmented-control w-full">
                   {(["MAD", "EUR", "USD"] as Currency[]).map((item) => (
-                    <button key={item} type="button" aria-pressed={currency === item} onClick={() => selectCurrency(item)} className={currency === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}>{item}</button>
+                    <button key={item} type="button" aria-pressed={currency === item} onClick={() => selectCurrency(item)} className={currency === item ? "bg-[var(--brand-navy)] text-white" : "text-muted-foreground hover:bg-white hover:text-foreground dark:hover:bg-slate-800"}>{item}</button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Globe className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> {t("language")}</p>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Globe className="h-3.5 w-3.5 text-[var(--brand-orange-dark)]" /> {t("language")}</p>
                 <div className="b2-segmented-control w-full">
                   {(["ar", "fr", "en"] as const).map((item) => (
-                    <button key={item} type="button" aria-pressed={language === item} onClick={() => selectLanguage(item)} className={language === item ? "bg-amber-500 text-white" : "text-muted-foreground hover:bg-background hover:text-foreground"}>{item === "ar" ? "العربية" : item === "fr" ? "Français" : "English"}</button>
+                    <button key={item} type="button" aria-pressed={language === item} onClick={() => selectLanguage(item)} className={language === item ? "bg-[var(--brand-navy)] text-white" : "text-muted-foreground hover:bg-white hover:text-foreground dark:hover:bg-slate-800"}>{item === "ar" ? "العربية" : item === "fr" ? "Français" : "English"}</button>
                   ))}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => { setTwoFaModalOpen(true); setMobileMenuOpen(false); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-xs font-bold text-foreground hover:bg-background"><Shield className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> أمان الحساب</button>
-                <button type="button" onClick={() => { setCmiModalOpen(true); setMobileMenuOpen(false); }} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-muted px-3 py-2 text-xs font-bold text-foreground hover:bg-background"><CreditCard className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" /> الدفع CMI</button>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => { setTwoFaModalOpen(true); setMobileMenuOpen(false); }} className="b2-utility-action"><Shield className="h-4 w-4" /> أمان الحساب</button>
+                <button type="button" onClick={() => { setCmiModalOpen(true); setMobileMenuOpen(false); }} className="b2-utility-action"><CreditCard className="h-4 w-4" /> الدفع CMI</button>
+                <button type="button" onClick={() => { setWhatsappModalOpen(true); setMobileMenuOpen(false); }} className="b2-utility-action"><MessageSquare className="h-4 w-4" /> WhatsApp / SMS</button>
+                {toggleTheme && <button type="button" onClick={() => { toggleThemeWithFeedback(); setMobileMenuOpen(false); }} className="b2-utility-action">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{theme === "dark" ? "الوضع النهاري" : "الوضع الليلي"}</button>}
               </div>
 
-              <Link href="/add-car" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center justify-center rounded-xl bg-amber-500 px-4 py-3 text-sm font-extrabold text-white hover:bg-amber-600">
+              <Link href="/add-car" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center justify-center rounded-full bg-[var(--brand-coral)] px-4 py-3 text-sm font-extrabold text-white hover:bg-[var(--brand-coral-dark)]">
                 {t("addCar")}
               </Link>
             </div>

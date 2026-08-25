@@ -22,6 +22,7 @@
 - أظهر فحص قبول سابق لفرع `supabase-preview-health` حالة `unavailable` ورمز التشخيص المقيد `28P01` فقط، فتمت إعادة تعيين كلمة مرور PostgreSQL بموافقة المالك ثم مواءمة `SUPABASE_DB_URL` يدوياً في **Preview فقط** برابط Transaction pooler. لم يتغير Production أو Development أو `main`.
 - في 25 أغسطس 2026، شغّل الالتزام `f7b4875` نشر Preview جديداً، وأعاد `GET /api/health/supabase` الحالة `200` مع `status: ready` ضمن استجابة مختصرة فقط. لم تتضمن الاستجابة كلمة مرور أو رابط PostgreSQL أو مضيفاً أو بيانات جداول، ولم تُنفذ أي كتابة إلى Supabase.
 - أكدت طلبات القراءة اللاحقة أن الصفحة العامة تعيد `200` وأن `auth.me` غير الموثق يعيد `200/null`. بقي `/api/health` في `503` متوقعاً لأن خدمات Vercel المستقلة الكاملة لا تزال غير مهيأة؛ يبقى Manus هو الإنتاج الرسمي ولا تتغير طبقة MySQL التشغيلية.
+- في 25 أغسطس 2026، دُفع الالتزام `1aae454` إلى `main` لإضافة مستودع قراءة Supabase موازٍ غير موصول بالتشغيل. اكتملت بوابة GitHub Actions بنجاح، ثم أكد `GET /api/health/supabase` على نطاق Vercel Production الحالة المتوقعة `503/not_configured`؛ يثبت ذلك أن سر Preview لم ينتقل إلى Production.
 
 **آخر تحديث:** 25 أغسطس 2026
 

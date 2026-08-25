@@ -51,7 +51,7 @@ describe("Supabase Preview catalog", () => {
     const end = vi.fn().mockResolvedValue(undefined);
     const createClient = vi.fn().mockReturnValue({ query, end });
 
-    const result = await readSupabasePreviewCatalog(500, "postgresql://preview-user:secret@example.test:6543/postgres", createClient);
+    const result = await readSupabasePreviewCatalog(500, "postgresql://preview-user@example.test:6543/postgres", createClient);
 
     expect(createClient).toHaveBeenCalledWith(expect.objectContaining({
       max: 1,
@@ -83,7 +83,7 @@ describe("Supabase Preview catalog", () => {
     const databaseError = Object.assign(new Error("password is secret and host is private"), { code: "28P01" });
     const createClient = vi.fn().mockReturnValue({ query: vi.fn().mockRejectedValue(databaseError), end });
 
-    const result = await readSupabasePreviewCatalog(24, "postgresql://preview-user:secret@example.test:6543/postgres", createClient);
+    const result = await readSupabasePreviewCatalog(24, "postgresql://preview-user@example.test:6543/postgres", createClient);
 
     expect(result).toEqual({ configured: true, ready: false, status: "unavailable", listings: [] });
     expect(warning).toHaveBeenCalledWith("[Supabase preview catalog] read failed", {

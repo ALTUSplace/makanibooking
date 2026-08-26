@@ -684,3 +684,15 @@
 - [x] التحقق من تطبيق الأزرق الداكن والبرتقالي على أزرار الحجز والروابط في الصفحة الرئيسية على سطح المكتب والهاتف، وإصلاح أي استعمال غير متسق.
 - [x] إزالة الخلفية غير الشفافة من أصل شعار MAKANIbooking واستبداله في كل مواضع الواجهة والـfavicon مع التحقق البصري.
 - [x] التحقق من أيقونات وروابط مواقع التواصل وخدمات الدفع في MAKANIbooking على سطح المكتب والهاتف، وإصلاح أيقونات أو روابط غير صحيحة دون اختلاق خدمات غير مفعلة.
+- [ ] حل تعارض تاريخ فرع GitHub مع النسخة المحلية عبر دمج آمن أو موافقة صريحة على اعتماد أحد الفرعين، ثم إعادة ربطه بـ Vercel دون الكتابة فوق تغييرات جلسة أخرى.
+
+# Full GitHub–Supabase–Vercel Automation
+
+- [ ] Audit current repository history, build configuration, deployment state, and external integration status.
+- [ ] Preserve the shared project state and document any GitHub history divergence before synchronization.
+- [ ] Clean production configuration and add safe `.env.example` / local-development templates without committing secrets.
+- [ ] Generate and validate the Supabase PostgreSQL schema/migration assets; apply only verified non-destructive migrations.
+- [ ] Configure Vercel build settings and production environment-variable structure without inventing OAuth or payment secrets.
+- [ ] Establish repeatable GitHub synchronization and CI/CD documentation for future Manus changes.
+- [ ] Run type checks, unit tests, build checks, and production smoke checks after migration changes.
+- [ ] Save a stable checkpoint and report automation completed plus account-level approvals still required.

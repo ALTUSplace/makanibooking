@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { type Language, useLanguage } from '@/contexts/LanguageContext';
 
-const logoPath = '/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg';
+const logoPath = '/manus-storage/b2-rent-morocco-logo-transparent_088c06ab.png';
 const supportPhoneDisplay = '+212 754 382 654';
 const supportPhoneHref = 'tel:+212754382654';
 const supportEmail = 'b2rentt@gmail.com';
@@ -162,7 +162,7 @@ export default function Footer() {
         <div className="grid gap-x-10 gap-y-12 xl:grid-cols-[1.45fr_1fr_1fr_1fr]">
           <section className="max-w-md" aria-label="B2-Rent">
             <Link href="/" onClick={scrollToTop} className="inline-flex rounded-xl bg-white p-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--brand-navy-deep)]">
-              <img src={logoPath} alt="B2-Rent Morocco" width={1664} height={928} className="h-14 w-36 object-contain sm:h-16 sm:w-40" />
+              <img src={logoPath} alt="B2-Rent Morocco" width={2560} height={1440} className="h-14 w-36 object-contain sm:h-16 sm:w-40" />
             </Link>
             <p className="mt-5 text-sm leading-7 text-slate-300">{content.summary}</p>
 

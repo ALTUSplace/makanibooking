@@ -320,7 +320,7 @@ export default function Navbar() {
       <header className="glass-header sticky top-0 z-50 text-foreground" dir={direction}>
         <div className="container mx-auto flex h-16 items-center justify-between gap-3 px-3 sm:h-[4.5rem] sm:px-4">
           <Link href="/" className="group flex shrink-0 items-center" aria-label="B2-Rent Morocco — العودة إلى الصفحة الرئيسية">
-            <img src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg" alt="B2-Rent Morocco" width={1664} height={928} className="h-11 w-32 object-contain sm:h-12 sm:w-40" />
+            <img src="/manus-storage/b2-rent-morocco-logo-transparent_088c06ab.png" alt="B2-Rent Morocco" width={2560} height={1440} className="h-11 w-32 object-contain sm:h-12 sm:w-40" />
           </Link>
           <span className="b2-preview-badge hidden sm:inline-flex" title="نسخة تجريبية قيد التطوير">نسخة تجريبية</span>
 
@@ -510,7 +510,7 @@ export default function Navbar() {
         <div className="fixed inset-0 z-[60] md:hidden" role="presentation">
           <button type="button" className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" aria-label={t("close")} onClick={() => setMobileMenuOpen(false)} />
           <aside ref={mobileMenuRef} id="mobile-navigation" className={`absolute top-0 flex h-full w-[min(88vw,22rem)] flex-col overflow-y-auto bg-background p-4 shadow-2xl ${direction === "rtl" ? "right-0" : "left-0"}`} dir={direction} aria-label={t("search")} aria-modal="true" role="dialog" tabIndex={-1}>
-          <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex h-12 w-36 items-center"><img src="/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg" alt="B2-Rent Morocco" width={1664} height={928} className="h-full w-full object-contain" /></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface-muted)]" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
+          <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex h-12 w-36 items-center"><img src="/manus-storage/b2-rent-morocco-logo-transparent_088c06ab.png" alt="B2-Rent Morocco" width={2560} height={1440} className="h-full w-full object-contain" /></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface-muted)]" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
           <div className="mx-auto flex w-full flex-1 flex-col gap-2 pt-4">
             <nav className="space-y-1" aria-label="التنقل على الهاتف">
               {renderNavLinks(navLinks, "mobile")}

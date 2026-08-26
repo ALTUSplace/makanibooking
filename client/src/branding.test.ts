@@ -6,7 +6,7 @@ const projectFile = (relativePath: string) =>
   readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 
 describe('هوية B2-Rent Morocco', () => {
-  const logoPath = '/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg';
+  const logoPath = '/manus-storage/b2-rent-morocco-logo-transparent_088c06ab.png';
 
   it('يستخدم الشعار المرفوع في موضعي الهوية العامين', () => {
     expect(projectFile('client/src/components/Navbar.tsx')).toContain(logoPath);

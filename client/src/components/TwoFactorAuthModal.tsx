@@ -50,7 +50,7 @@ export function TwoFactorAuthModal({ isOpen, onClose, onSuccess }: TwoFactorAuth
     const element = document.createElement('a');
     const file = new Blob([`MAKANIbooking 2FA Recovery Codes:\n\n` + recoveryCodes.join('\n')], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = 'b2-rent-recovery-codes.txt';
+    element.download = 'makanibooking-recovery-codes.txt';
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);

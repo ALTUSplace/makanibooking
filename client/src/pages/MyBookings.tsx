@@ -6,19 +6,29 @@ import { toast } from 'sonner';
 import { BookmarkCheck, Calendar, FileText, CheckCircle, Clock, Phone, Download, Receipt, MessageCircle } from 'lucide-react';
 import type { InvoicePdfInput } from '@/lib/invoicePdf';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { useAuth } from '@/_core/hooks/useAuth';
 
 const formatDate = (value: string | Date) => new Date(value).toLocaleDateString('fr-MA');
 const formatMoney = (value: number) => new Intl.NumberFormat('fr-MA').format(value);
 
 export default function MyBookings() {
   const [, setLocation] = useLocation();
-  const { data: dbBookings = [], isLoading: bookingsLoading } = trpc.bookings.list.useQuery();
+  const { user, loading: authLoading } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: '/register?next=/my-bookings',
+  });
+  const isAuthenticated = Boolean(user);
+  const { data: dbBookings = [], isLoading: bookingsLoading } = trpc.bookings.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
   const { data: listings = [] } = trpc.listings.list.useQuery();
-  const { data: invoices = [], isLoading: invoicesLoading, isError: invoicesError } = trpc.invoices.list.useQuery();
+  const { data: invoices = [], isLoading: invoicesLoading, isError: invoicesError } = trpc.invoices.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
   const [contractBookingId, setContractBookingId] = useState<number | null>(null);
   const contractQuery = trpc.commercialLeaseContracts.getByBooking.useQuery(
     { bookingId: contractBookingId ?? 0 },
-    { enabled: contractBookingId !== null },
+    { enabled: isAuthenticated && contractBookingId !== null },
   );
   const listingById = useMemo(() => new Map(listings.map((listing) => [listing.id, listing])), [listings]);
   const invoiceByBooking = useMemo(() => new Map(invoices.map((invoice) => [invoice.bookingId, invoice])), [invoices]);
@@ -44,6 +54,22 @@ export default function MyBookings() {
       setContractBookingId(null);
     }
   }, [contractQuery.data, contractQuery.isError]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-[60vh] bg-slate-900 text-slate-100 flex items-center justify-center px-4" dir="rtl">
+        <p className="rounded-2xl border border-slate-800 bg-slate-950 px-6 py-4 text-sm text-slate-300">جاري التحقق من جلسة الدخول...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[60vh] bg-slate-900 text-slate-100 flex items-center justify-center px-4" dir="rtl">
+        <p className="rounded-2xl border border-slate-800 bg-slate-950 px-6 py-4 text-sm text-slate-300">جاري توجيهك إلى صفحة تسجيل الدخول...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-12" dir="rtl">

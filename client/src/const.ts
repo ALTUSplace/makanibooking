@@ -1,8 +1,10 @@
 import { OAUTH_STATE_COOKIE, encodeOAuthState } from "@shared/const";
+import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-// Start the Manus OAuth login. Call this from an event handler or effect at the
+// Start authentication from an event handler. Supabase uses the local auth
+// screen; Manus remains available when the independent provider is not selected.
 // moment you want to navigate, e.g. `onClick={() => startLogin()}`.
 //
 // It has SIDE EFFECTS — it mints a one-time nonce, writes the __Host- state
@@ -12,10 +14,24 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 // call would desync it from an in-flight login and the callback would reject it
 // with "invalid oauth state". It returns void by design, so there is no URL to
 // stash across renders.
-export const startLogin = () => {
+export const getSafeNextPath = (nextPath?: string) => {
+  if (nextPath?.startsWith("/") && !nextPath.startsWith("//") && nextPath !== "/register") {
+    return nextPath;
+  }
+  return "/";
+};
+
+export const startLogin = (nextPath?: string) => {
+  const safeNextPath = getSafeNextPath(nextPath);
+  const registerUrl = `/register?next=${encodeURIComponent(safeNextPath)}`;
   const hasConsent = typeof document !== "undefined" && document.cookie.split("; ").some((cookie) => cookie.trim().startsWith("b2_legal_consent=platform-protection-v1"));
   if (!hasConsent) {
-    window.location.href = "/register?next=login";
+    window.location.href = registerUrl;
+    return;
+  }
+
+  if (isSupabaseAuthConfigured()) {
+    window.location.href = registerUrl;
     return;
   }
 

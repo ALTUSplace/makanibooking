@@ -13,6 +13,14 @@ describe("home search and service balance", () => {
     expect(source).toContain("dir={direction}");
   });
 
+  it("starts the hero directly with the prominent title without introductory badges", async () => {
+    const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("{heroCopy.title}");
+    expect(source).not.toContain("heroCopy.trust");
+    expect(source).not.toContain("heroCopy.mobile");
+  });
+
   it("keeps search icons interactive and preserves a high-contrast primary action", async () => {
     const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
 

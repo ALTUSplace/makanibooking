@@ -265,6 +265,42 @@
   min-height: 44px;
 }
 
+/* The assistant remains discoverable without obscuring the mobile bottom navigation. */
+.b2-ai-chat-trigger {
+  isolation: isolate;
+}
+
+.b2-ai-chat-trigger__halo {
+  position: absolute;
+  inset: -0.25rem;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--brand-orange) 78%, transparent);
+  border-radius: inherit;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .b2-ai-chat-trigger__bot {
+    animation: b2-assistant-float 2.8s var(--ease-out) infinite;
+  }
+
+  .b2-ai-chat-trigger__halo {
+    animation: b2-assistant-halo 2.8s var(--ease-out) infinite;
+  }
+}
+
+@keyframes b2-assistant-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  45% { transform: translateY(-3px) rotate(-5deg); }
+  70% { transform: translateY(-1px) rotate(4deg); }
+}
+
+@keyframes b2-assistant-halo {
+  0%, 35% { opacity: 0; transform: scale(0.95); }
+  55% { opacity: 0.7; }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
 .focus-ring:focus-visible,
 button:focus-visible,
 a:focus-visible,

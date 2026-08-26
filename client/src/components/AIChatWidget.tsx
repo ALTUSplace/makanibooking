@@ -59,14 +59,17 @@ export default function AIChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-4 z-50 md:bottom-6 md:left-6">
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white p-4 rounded-full shadow-2xl flex items-center gap-3 transition-transform hover:scale-105 group border-2 border-amber-500"
+          className="b2-ai-chat-trigger group relative flex items-center gap-3 rounded-full border-2 border-amber-500 bg-[#0B3C5D] p-4 text-white shadow-2xl transition-transform hover:scale-105"
           title="مساعد الذكاء الاصطناعي"
+          aria-label="فتح مساعد B2-Rent الذكي"
+          aria-expanded={isOpen}
         >
-          <Bot className="w-6 h-6 text-amber-400 animate-bounce" />
+          <span className="b2-ai-chat-trigger__halo" aria-hidden="true" />
+          <Bot className="b2-ai-chat-trigger__bot h-6 w-6 text-amber-400" aria-hidden="true" />
           <span className="hidden sm:inline font-bold text-sm tracking-wide">مساعد B2-Rent الذكي</span>
           <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">AI</span>
         </button>

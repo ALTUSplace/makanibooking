@@ -5,7 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
 import { CarListingCard } from '@/components/CarListingCard';
-import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone, BriefcaseBusiness, House, Smartphone, Plane } from 'lucide-react';
+import { Search, MapPin, Building2, Car, ShieldCheck, ArrowRight, CheckCircle2, Award, Clock, Bot, Send, Mic, Bookmark, Check, Calendar, DollarSign, Filter, Phone, BriefcaseBusiness, House, Plane } from 'lucide-react';
 import { PARTNERS, LISTINGS, ListingItem } from '@/data/b2rent';
 import { SmartRecommendations } from '@/components/SmartRecommendations';
 import { FAQSection } from '@/components/FAQSection';
@@ -25,11 +25,8 @@ export default function Home() {
     ? {
       cars: 'Location de voitures',
       properties: 'Immobilier',
-      trust: 'Plateforme de mise en relation entre voyageurs et partenaires au Maroc',
-      eyebrow: 'Exploration fluide sur mobile',
       title: 'Trouvez une voiture ou un bien au Maroc, rapidement.',
       subtitle: 'Comparez les offres publiées et consultez leurs détails dans cette version de démonstration.',
-      mobile: 'Explorez facilement les offres depuis votre téléphone',
       destinations: 'Disponibilités par destination',
       activeListings: 'Calculé à partir des annonces actives',
       destinationHint: 'Choisissez une destination pour consulter les offres',
@@ -44,11 +41,8 @@ export default function Home() {
       ? {
         cars: 'Car rentals',
         properties: 'Real estate',
-        trust: 'A marketplace connecting travellers and rental partners across Morocco',
-        eyebrow: 'Smooth mobile browsing',
         title: 'Find a car or property in Morocco, fast.',
         subtitle: 'Compare published listings and explore their details in this demonstration version.',
-        mobile: 'Explore listings easily from your phone',
         destinations: 'Availability by destination',
         activeListings: 'Calculated from active listings',
         destinationHint: 'Choose a destination to view listings',
@@ -62,11 +56,8 @@ export default function Home() {
       : {
         cars: 'كراء السيارات',
         properties: 'العقارات',
-        trust: 'منصة وسيطة تربط المسافرين وشركاء الكراء في المغرب',
-        eyebrow: 'استكشاف سلس من الهاتف',
         title: 'ابحث عن سيارة أو عقار في المغرب، بسرعة.',
         subtitle: 'قارن العروض المنشورة، واستكشف تفاصيلها ضمن هذه النسخة التجريبية.',
-        mobile: 'استكشف العروض بسهولة من هاتفك',
         destinations: 'التوفر حسب الوجهة',
         activeListings: 'محسوب من الإعلانات النشطة',
         destinationHint: 'اضغط على الوجهة لعرض العروض',
@@ -188,17 +179,6 @@ export default function Home() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--brand-navy-deep)]/70 to-transparent"></div>
 
         <div className="container relative z-10 mx-auto max-w-6xl space-y-5 text-center md:space-y-7">
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-orange)]/40 bg-[var(--brand-orange)]/15 px-3 py-1.5 text-xs font-bold tracking-wide text-[var(--brand-amber)]">
-            <ShieldCheck className="h-4 w-4 text-[var(--brand-orange)]" />
-            <span>{heroCopy.trust}</span>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
-              <Smartphone className="h-4 w-4 text-[var(--brand-amber)]" aria-hidden="true" />
-              <span>{heroCopy.mobile}</span>
-            </div>
-          </div>
-
           <h1 className="mx-auto max-w-4xl text-3xl font-black leading-[1.25] tracking-tight sm:text-4xl md:text-6xl md:leading-tight">
             {heroCopy.title}
           </h1>

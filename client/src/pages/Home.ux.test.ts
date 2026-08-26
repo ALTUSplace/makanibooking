@@ -83,4 +83,17 @@ describe("home search and service balance", () => {
     expect(source).toContain("{t('demoDetails')}");
     expect(source).toContain("isDemo");
   });
+
+  it("uses the MAKANIbooking navy and orange tokens for primary actions", async () => {
+    const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("bg-[var(--brand-orange)]");
+    expect(source).toContain("bg-[var(--brand-navy)]");
+    expect(source).toContain("hover:bg-[var(--brand-orange-dark)]");
+    expect(source).toContain("hover:bg-[var(--brand-navy-hover)]");
+    expect(source).not.toContain("#E57C23");
+    expect(source).not.toContain("#0B3C5D");
+    expect(source).not.toContain("#062940");
+    expect(source).not.toContain("#d46b1d");
+  });
 });

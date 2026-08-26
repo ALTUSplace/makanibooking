@@ -109,11 +109,11 @@ export function CarListingCard({ item, detailsHref, isDemo = false, imageActions
           <div className="min-w-0">
             <h3 className="truncate text-lg font-bold text-slate-900">{item.title}</h3>
             <p className="mt-1 flex items-center gap-1 truncate text-sm text-slate-500">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--brand-orange)]" aria-hidden="true" />
               <span className="truncate">{item.city} · {item.providerName}</span>
             </p>
           </div>
-          <p className="shrink-0 text-end text-2xl font-bold text-blue-700">
+          <p className="shrink-0 text-end text-2xl font-bold text-[var(--brand-orange)]">
             {formatPrice(item.pricePerUnit, language)}
             <span className="mt-0.5 block text-xs font-normal text-slate-500">{copy.perDay}</span>
           </p>
@@ -121,7 +121,7 @@ export function CarListingCard({ item, detailsHref, isDemo = false, imageActions
 
         <Link
           href={detailsHref}
-          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--brand-navy)] px-4 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--brand-navy-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)] focus-visible:ring-offset-2"
         >
           {isDemo ? copy.viewDemo : copy.bookNow}
         </Link>

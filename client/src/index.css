@@ -5,8 +5,9 @@
     /* MAKANIbooking design tokens: identity */
     --brand-navy: #0A2540;
     --brand-navy-deep: #0A2540;
+    --brand-navy-hover: #061A2D;
     --brand-orange: #FF6B00;
-    --brand-orange-dark: #e98000;
+    --brand-orange-dark: #CC5600;
     --brand-coral: #ff6b61;
     --brand-coral-dark: #e85850;
     --brand-amber: var(--brand-orange);
@@ -38,19 +39,19 @@
     --card-foreground: 209 61% 16%;
     --popover: 0 0% 100%;
     --popover-foreground: 209 61% 16%;
-    --primary: 35 100% 52%;
+    --primary: 209 73% 14%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 207 100% 22%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 25 100% 50%;
+    --secondary-foreground: 209 73% 14%;
     --muted: 210 30% 96%;
     --muted-foreground: 210 16% 43%;
-    --accent: 4 100% 69%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 25 100% 50%;
+    --accent-foreground: 209 73% 14%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 211 30% 91%;
     --input: 211 30% 87%;
-    --ring: 35 100% 52%;
+    --ring: 25 100% 50%;
     --radius: 1rem;
 
     /* MAKANIbooking design tokens: rhythm and elevation */
@@ -238,7 +239,7 @@
 }
 
 .b2-card:hover {
-  border-color: rgba(229, 124, 35, 0.35);
+  border-color: color-mix(in srgb, var(--brand-orange) 35%, transparent);
   box-shadow: var(--shadow-card);
   transform: translateY(-3px);
 }
@@ -307,7 +308,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(229, 124, 35, 0.45);
+  outline: 3px solid color-mix(in srgb, var(--brand-orange) 45%, transparent);
   outline-offset: 2px;
 }
 
@@ -340,7 +341,7 @@ textarea:focus-visible {
 .luxury-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-card);
-  border-color: rgba(229, 124, 35, 0.4);
+  border-color: color-mix(in srgb, var(--brand-orange) 40%, transparent);
 }
 
 .gold-gradient-text {
@@ -543,7 +544,7 @@ textarea:focus-visible {
 .mobile-bottom-nav__item.is-active .mobile-bottom-nav__icon {
   background: var(--brand-amber);
   color: var(--brand-white);
-  box-shadow: 0 6px 16px rgba(229, 124, 35, 0.24);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--brand-orange) 24%, transparent);
 }
 
 .mobile-bottom-nav__icon {
@@ -559,7 +560,7 @@ textarea:focus-visible {
 
 .dark .mobile-bottom-nav__item:hover,
 .dark .mobile-bottom-nav__item.is-active {
-  background: rgba(229, 124, 35, 0.14);
+  background: color-mix(in srgb, var(--brand-orange) 14%, transparent);
   color: #ffd4ad;
 }
 

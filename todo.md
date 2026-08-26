@@ -692,10 +692,10 @@
 - [x] Preserve the shared project state and document any GitHub history divergence before synchronization.
 - [x] Clean production configuration and add safe `.env.example` / local-development templates without committing secrets.
 - [x] Generate and validate the Supabase PostgreSQL schema/migration assets; apply only verified non-destructive migrations.
-- [ ] Configure Vercel build settings and production environment-variable structure without inventing OAuth or payment secrets.
+- [x] Configure Vercel build settings and production environment-variable structure without inventing OAuth or payment secrets.
 - [x] Establish repeatable GitHub synchronization and CI/CD documentation for future Manus changes.
 - [x] Run type checks, unit tests, build checks, and production smoke checks after migration changes.
-- [ ] Save a stable checkpoint and report automation completed plus account-level approvals still required.
+- [x] Save a stable checkpoint and report automation completed plus account-level approvals still required.
 
 
 ## جلسة نقل MAKANIbooking إلى Vercel — 2026-08-26
@@ -707,3 +707,13 @@
 - [x] تشغيل فحوص النوع والاختبارات والبناء والتحقق من API الخاص بـ Vercel
 - [x] إتمام النشر أو توثيق الخطوة الحسابية الوحيدة المتبقية إذا كانت تتطلب صلاحية المستخدم
 - [ ] تنفيذ smoke test على رابط Vercel وتوثيق حالة تسجيل الدخول والحجز والدفع المحاكي
+
+
+## جولة الاستكمال الشامل — 2026-08-26
+
+- [x] إعادة فحص مشروع Vercel المنشور وربط GitHub بعد آخر Deployment
+- [x] تدقيق إعدادات Production الحالية دون كشف أو اختراع أسرار
+- [x] فحص مسارات الصفحة الرئيسية وterms وprivacy وAPI والصحة على نطاق Vercel
+- [x] توثيق الفرق بين النشر على Vercel والتحول المستقل الكامل إلى Supabase
+- [x] إصلاح أي خلل قابل للإصلاح آلياً ثم تشغيل check/test/build
+- [ ] حفظ checkpoint نهائي بعد اكتمال التغييرات القابلة للتنفيذ وتقديم تقرير صادق بالمتبقي

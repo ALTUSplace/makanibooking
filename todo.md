@@ -696,3 +696,14 @@
 - [x] Establish repeatable GitHub synchronization and CI/CD documentation for future Manus changes.
 - [x] Run type checks, unit tests, build checks, and production smoke checks after migration changes.
 - [ ] Save a stable checkpoint and report automation completed plus account-level approvals still required.
+
+
+## جلسة نقل MAKANIbooking إلى Vercel — 2026-08-26
+
+- [ ] فحص إعدادات Vercel الحالية وربط المشروع بمستودع `kamalbouragba/makanibooking`
+- [ ] تدقيق توافق بنية Vite + Express مع تشغيل Vercel والتحقق من `vercel.json` وAPI entrypoint
+- [ ] التحقق من متغيرات Production المطلوبة للمصادقة وقاعدة البيانات دون كشف الأسرار
+- [ ] التحقق من مخطط Supabase PostgreSQL ومسار Drizzle قبل أي cutover
+- [ ] تشغيل فحوص النوع والاختبارات والبناء والتحقق من API الخاص بـ Vercel
+- [ ] إتمام النشر أو توثيق الخطوة الحسابية الوحيدة المتبقية إذا كانت تتطلب صلاحية المستخدم
+- [ ] تنفيذ smoke test على رابط Vercel وتوثيق حالة تسجيل الدخول والحجز والدفع المحاكي

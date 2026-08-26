@@ -1,0 +1,541 @@
+=== IMAGE VERIFICATION ===
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { invokeLLM } from "./_core/llm";
+import { ENV } from "./_core/env";
+
+export const ORIGINAL_IMAGE_REJECTION_MESSAGE =
+  "عذراً، ينبغي إرفاق صور أصلية وواقعية من تصويركم المباشر لضمان الشفافية ومصداقية العرض على المنصة.";
+
+export type ImageVerificationResult = {
+  accepted: boolean;
+  confidence: number;
+  reasons: string[];
+};
+
+type ImageProofPayload = {
+  ownerId: number;
+  url: string;
+  sha256: string;
+  issuedAt: number;
+};
+
+function proofSignature(payload: string) {
+  const signingSecret = ENV.cookieSecret ?? process.env.JWT_SECRET;
+  if (!signingSecret) throw new Error("Image verification signing secret is not configured");
+  return createHmac("sha256", signingSecret).update(payload).digest("base64url");
+}
+
+export function createImageVerificationProof(input: { ownerId: number; url: string; bytes: Uint8Array }) {
+  const payload: ImageProofPayload = {
+    ownerId: input.ownerId,
+    url: input.url,
+    sha256: createHash("sha256").update(input.bytes).digest("hex"),
+    issuedAt: Date.now(),
+  };
+  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  return `${encoded}.${proofSignature(encoded)}`;
+}
+
+export function verifyImageVerificationProof(input: { proof: string; ownerId: number; url: string; bytes?: Uint8Array }) {
+  try {
+    const [encoded, signature] = input.proof.split(".");
+    if (!encoded || !signature) return false;
+    const expected = proofSignature(encoded);
+    const actualBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+    if (actualBuffer.length !== expectedBuffer.length || !timingSafeEqual(actualBuffer, expectedBuffer)) return false;
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as ImageProofPayload;
+    if (payload.ownerId !== input.ownerId || payload.url !== input.url) return false;
+    if (!Number.isFinite(payload.issuedAt) || Date.now() - payload.issuedAt > 24 * 60 * 60 * 1000) return false;
+    if (input.bytes && createHash("sha256").update(input.bytes).digest("hex") !== payload.sha256) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const verificationSchema = {
+  name: "original_image_verification",
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      isRealistic: { type: "boolean" },
+      isPromotional: { type: "boolean" },
+      isStockLike: { type: "boolean" },
+      isAiGenerated: { type: "boolean" },
+      confidence: { type: "number", minimum: 0, maximum: 1 },
+      reasons: { type: "array", items: { type: "string" }, maxItems: 5 },
+    },
+    required: ["isRealistic", "isPromotional", "isStockLike", "isAiGenerated", "confidence", "reasons"],
+  },
+  strict: true,
+} as const;
+
+function readAssistantJson(result: Awaited<ReturnType<typeof invokeLLM>>) {
+  const content = result.choices[0]?.message?.content;
+  if (typeof content !== "string") throw new Error("Vision AI returned no text result");
+  return JSON.parse(content) as {
+    isRealistic: boolean;
+    isPromotional: boolean;
+    isStockLike: boolean;
+    isAiGenerated: boolean;
+    confidence: number;
+    reasons: string[];
+  };
+}
+
+export async function verifyOriginalListingImage(input: {
+  base64: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+}): Promise<ImageVerificationResult> {
+  try {
+    const result = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a strict marketplace image authenticity screener. Assess only visible evidence. Accept only realistic, user-captured-looking photos of the listed asset. Reject stock-photo-like, promotional graphic, screenshots, collages, watermarks, heavy marketing edits, and AI-generated-looking images. You cannot prove provenance or capture source; use conservative decisions and explain uncertainty.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Classify this listing image. Return only the requested JSON schema. Set accepted only when it is realistic and none of the rejection flags apply with confidence at least 0.78.",
+            },
+            { type: "image_url", image_url: { url: `data:${input.mimeType};base64,${input.base64}`, detail: "high" } },
+          ],
+        },
+      ],
+      outputSchema: verificationSchema,
+      maxTokens: 500,
+    });
+
+    const analysis = readAssistantJson(result);
+    const confidence = Math.max(0, Math.min(1, Number(analysis.confidence)));
+    const rejectedBySignal = !analysis.isRealistic || analysis.isPromotional || analysis.isStockLike || analysis.isAiGenerated;
+    return {
+      accepted: !rejectedBySignal && confidence >= 0.78,
+      confidence,
+      reasons: Array.isArray(analysis.reasons) ? analysis.reasons.slice(0, 5) : [],
+    };
+  } catch {
+    return {
+      accepted: false,
+      confidence: 0,
+      reasons: ["تعذر التحقق من أصلية الصورة حالياً. يرجى المحاولة بصورة واضحة وواقعية أخرى."],
+    };
+  }
+}
+=== WHATSAPP REFERENCES ===
+client/src/pages/Success.tsx:24:  const phone = booking?.ownerWhatsApp || 'غير متوفر';
+client/src/pages/Success.tsx:39:  const canContactAgency = bookingStatus === 'Confirmed' && Boolean(booking?.ownerWhatsApp);
+client/src/pages/Success.tsx:42:    if (!canContactAgency || !booking?.ownerWhatsApp) {
+client/src/pages/Success.tsx:49:    window.open(`https://wa.me/${booking.ownerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+client/src/pages/Success.tsx:255:        "5. For assistance, contact the agency WhatsApp directly."
+client/src/pages/CarDetails.tsx:35:    agency: { name: 'المؤجر على B2-Rent', address: listing.city, whatsapp: '' },
+client/src/pages/CarDetails.tsx:47:    agency: { name: fallbackCar.providerName, address: fallbackCar.city, whatsapp: '' },
+client/src/pages/CarDetails.tsx:101:    if (platform === 'whatsapp') {
+client/src/pages/CarDetails.tsx:102:      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+client/src/pages/CarDetails.tsx:178:            <button onClick={() => handleShare('whatsapp')} className="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white px-3 py-1 rounded-xl text-xs font-bold transition-all border border-emerald-500/30">
+client/src/pages/CarDetails.tsx:269:                  {car.agency.whatsapp.replace(/\D/g, '').length >= 8 ? (
+client/src/pages/CarDetails.tsx:271:                      href={`https://wa.me/${car.agency.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`مرحباً، أرغب في الاستفسار عن سيارة ${car.name}`)}`}
+client/src/pages/Search.tsx:587:                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`شاهد هذا العرض الرائع: ${quickViewItem.title} - ${quickViewItem.pricePerUnit} ${quickViewItem.unitLabel} في ${quickViewItem.city} عبر منصة B2-Rent: ${window.location.href}`)}`, '_blank');
+client/src/pages/Voucher.tsx:21:  const phone = data.ownerWhatsApp?.replace(/[^0-9+]/g, '') || '';
+client/src/pages/Voucher.tsx:22:  const whatsappUrl = phone ? `https://wa.me/${phone.replace(/^\+/, '')}?text=${encodeURIComponent(`مرحباً، أتوصل بخصوص الحجز ${data.voucher.code} — ${data.listingTitle}.`)}` : '';
+client/src/pages/Voucher.tsx:34:          <div className="border-t pt-4"><p className="text-sm text-slate-500">الشريك المؤجر</p><p className="font-bold text-slate-900">{data.ownerName || 'الشريك'}</p><div className="mt-3 flex flex-wrap gap-2"><a href={data.mapsUrl} target="_blank" rel="noreferrer"><Button variant="outline" size="sm"><MapPin className="mr-1 h-4 w-4" /> Google Maps</Button></a>{phone && <a href={`tel:${phone}`}><Button variant="outline" size="sm"><Phone className="mr-1 h-4 w-4" /> اتصال مباشر</Button></a>}{whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noreferrer"><Button size="sm" className="bg-[#25D366] text-white hover:bg-[#1ebe5d]"><MessageCircle className="mr-1 h-4 w-4" /> WhatsApp</Button></a>}</div><p className="mt-3 text-xs text-slate-500">ملاحظة: رابط الخرائط الافتراضي مبني على اسم الإعلان والمدينة، ويمكن للشريك لاحقاً إضافة موقع دقيق.</p></div>
+client/src/pages/Profile.tsx:25:  const [whatsappPhone, setWhatsappPhone] = useState("");
+client/src/pages/Profile.tsx:32:    setWhatsappPhone(user.whatsappPhone || "");
+client/src/pages/Profile.tsx:46:      whatsappPhone: whatsappPhone.trim() || null,
+client/src/pages/Profile.tsx:117:                <input value={whatsappPhone} onChange={event => setWhatsappPhone(event.target.value)} inputMode="tel" dir="ltr" className="w-full rounded-xl border border-border bg-background px-3 py-3" placeholder="2126XXXXXXXX" />
+client/src/pages/PartnerDashboard.tsx:355:              <Badge className="bg-primary/10 text-primary animate-pulse">تنبيهات WhatsApp نشطة</Badge>
+client/src/pages/PartnerDashboard.tsx:381:                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 flex-1 md:flex-none" onClick={() => toast.success('تم قبول طلب الحجز وإرسال إشعار WhatsApp فور للعميل')}>
+client/src/pages/PartnerDashboard.tsx:439:                  <p>• إشعارات فورية عبر WhatsApp و Email</p>
+client/src/pages/HostDashboard.tsx:54:      if (row.eventType === "whatsapp_click" || row.eventType === "contact_click") current.contactClicks += row.total;
+client/src/pages/HostDashboard.tsx:114:    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><Stat icon={<TrendingUp />} title="الصافي المؤكد" value={`${Number(monthlyRevenue).toLocaleString("fr-MA")} MAD`} /><Stat icon={<CalendarCheck />} title="الحجوزات النشطة" value={String(activeBookings)} /><Stat icon={<Building2 />} title="إجمالي العروض" value={String(overview.data?.totalListings ?? listings.data?.length ?? 0)} /><Stat icon={<Eye />} title="المشاهدات" value={String(overview.data?.views ?? 0)} /><Stat icon={<MessageCircle />} title="نقرات التواصل" value={String((overview.data?.whatsappClicks ?? 0) + (overview.data?.contactClicks ?? 0))} /></div>
+client/src/pages/HostDashboard.tsx:116:    <section className="grid gap-4 md:grid-cols-3"><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><MessageCircle className="h-4 w-4 text-emerald-600" />نقرات واتساب</div><p className="mt-3 text-3xl font-black">{overview.data?.whatsappClicks ?? 0}</p><p className="mt-1 text-xs text-muted-foreground">إجمالي النقرات على مراسلة الوكالة</p></div><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><Phone className="h-4 w-4 text-blue-600" />نقرات الاتصال</div><p className="mt-3 text-3xl font-black">{overview.data?.contactClicks ?? 0}</p><p className="mt-1 text-xs text-muted-foreground">إجمالي طلبات الاتصال المسجلة</p></div><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><Power className="h-4 w-4 text-amber-600" />حالة التوفر</div><p className="mt-3 text-3xl font-black">{overview.data?.availableListings ?? 0}<span className="text-base font-medium text-muted-foreground"> متاح</span></p><p className="mt-1 text-xs text-muted-foreground">{overview.data?.unavailableListings ?? 0} عرض غير متاح حالياً</p></div></section>
+client/src/pages/HostDashboard.tsx:120:    <section className="space-y-4"><div className="flex items-center justify-between"><h2 className="text-xl font-bold">معروضاتي</h2><span className="text-sm text-muted-foreground">{listings.data?.length ?? 0} عروض</span></div>{listings.data?.length ? listings.data.map((listing) => { const isAvailable = listing.status === "Published" || listing.status === "Available"; return <div key={listing.id} className="flex flex-col gap-4 rounded-2xl border bg-card p-5 md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{listing.title}</p><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isAvailable ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{isAvailable ? "متاح" : "غير متاح"}</span></div><p className="mt-1 text-sm text-muted-foreground">{listing.city} · {Number(listing.pricePerDay).toLocaleString("fr-MA")} MAD · {listing.category === "car" ? "سيارة" : "عقار"}</p><div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{listing.analytics.views} مشاهدة</span><span className="inline-flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{listing.analytics.whatsappClicks} واتساب</span><span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{listing.analytics.contactClicks} اتصال</span></div></div><div className="flex flex-wrap gap-2"><Button size="sm" variant={isAvailable ? "outline" : "default"} onClick={() => toggleAvailability.mutate({ listingId: listing.id, available: !isAvailable })} disabled={toggleAvailability.isPending}><Power className="ml-1 h-4 w-4" />{isAvailable ? "تعطيل التوفر" : "تفعيل التوفر"}</Button><Button size="sm" variant="outline" onClick={() => { setEditingId(listing.id); setForm({ title: listing.title, city: listing.city, officeType: listing.officeType ?? "office", rentalPeriod: listing.rentalPeriod ?? "monthly", price: String(listing.pricePerDay), description: listing.description ?? "", amenities: listing.amenities ? listing.amenities.split(",").filter(Boolean) : [], imageUrl: listing.imageUrl ?? "", imageVerificationProof: "" }); setShowForm(true); }}><Pencil className="ml-1 h-4 w-4" />تعديل</Button><Button size="sm" variant="outline" onClick={() => removeListing.mutate({ id: listing.id })} disabled={removeListing.isPending}><Trash2 className="ml-1 h-4 w-4" />حذف</Button>{bookingContactHref(bookings.data, listing.id) && <a className="inline-flex items-center rounded-md border px-3 py-2 text-sm" href={bookingContactHref(bookings.data, listing.id)!} target="_blank" rel="noreferrer"><MessageCircle className="ml-1 h-4 w-4" />واتساب</a>}</div></div>; }) : <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground">لم تضف أي معروض بعد.</div>}</section>
+client/src/pages/HostDashboard.tsx:127:function bookingContactHref(rows: Array<{ listingId: number; renterName?: string | null; status: string }> | undefined, listingId: number) { const booking = rows?.find((item) => item.listingId === listingId && item.status === "Confirmed"); return booking ? `https://wa.me/?text=${encodeURIComponent(`مرحباً، بخصوص حجز ${booking.renterName ?? "المستأجر"} في هذا المكتب`)}` : null; }
+client/src/pages/AgencySettings.tsx:19:  whatsappPhone: "",
+client/src/pages/AgencySettings.tsx:68:      whatsappPhone: data.whatsappPhone ?? "",
+client/src/pages/AgencySettings.tsx:132:        <Field label="واتساب" value={form.whatsappPhone} onChange={(value) => updateField("whatsappPhone", value)} placeholder="+212 6..." dir="ltr" />
+client/src/components/Navbar.tsx:35:const WhatsAppNotificationModal = lazy(() => import("./WhatsAppNotificationModal").then((module) => ({ default: module.WhatsAppNotificationModal })));
+client/src/components/Navbar.tsx:81:  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+client/src/components/Navbar.tsx:348:                    <button type="button" onClick={() => { setWhatsappModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><MessageSquare className="h-4 w-4" />{t("whatsappSms")}</button>
+client/src/components/Navbar.tsx:485:        <WhatsAppNotificationModal
+client/src/components/Navbar.tsx:486:          isOpen={whatsappModalOpen}
+client/src/components/Navbar.tsx:536:                <button type="button" onClick={() => { setWhatsappModalOpen(true); setMobileMenuOpen(false); }} className="b2-utility-action"><MessageSquare className="h-4 w-4" /> {t("whatsappSms")}</button>
+client/src/components/WhatsAppNotificationModal.tsx:6:interface WhatsAppNotificationModalProps {
+client/src/components/WhatsAppNotificationModal.tsx:19:export function WhatsAppNotificationModal({ isOpen, onClose, bookingDetails }: WhatsAppNotificationModalProps) {
+client/src/components/WhatsAppNotificationModal.tsx:50:              <h3 className="text-base font-extrabold text-white">إرسال إشعار WhatsApp / SMS</h3>
+client/src/components/WhatsAppNotificationModal.tsx:119:                <span>إرسال عبر WhatsApp / SMS</span>
+=== SEARCH FILTERS ===
+21-
+22-const OFFICE_TYPES = ['private', 'coworking', 'meeting_room', 'company_headquarters'] as const;
+23-const AMENITY_OPTIONS = ['fiber', 'air_conditioning', 'reception', 'parking', 'security'] as const;
+24-
+25-const listingRoute = (item: ListingItem) => item.type === 'car' ? `/car/${item.id}` : `/property/${item.id}`;
+26-
+27-const parseArrayField = (value: string | null | undefined): string[] => {
+28-  if (!value) return [];
+29-  try {
+30-    const parsed = JSON.parse(value);
+31:    if (Array.isArray(parsed)) return parsed.filter((entry): entry is string => typeof entry === 'string');
+32-  } catch {
+33-    // Legacy rows may contain comma-separated amenities.
+34-  }
+35:  return value.split(',').map((entry) => entry.trim()).filter(Boolean);
+36-};
+37-
+38-const toListingItem = (item: {
+39-  id: number;
+40-  ownerId: number;
+41-  title: string;
+42-  description: string | null;
+43-  category: string;
+44:  pricePerDay: number;
+45-  imageUrl: string | null;
+46:  city: string;
+47:  fuelType: string | null;
+48:  transmission: string | null;
+49-  rooms: number | null;
+50-  officeType: string | null;
+51-  rentalPeriod: 'daily' | 'monthly' | 'yearly' | null;
+52-  amenities: string | null;
+53-  dynamicPricePerDay?: number;
+54-  ownerName?: string | null;
+55-}): ListingItem => {
+56-  const normalizedCategory = item.category.toLowerCase();
+57-  const type: ListingItem['type'] = normalizedCategory.includes('car') || normalizedCategory.includes('سيارة')
+58-    ? 'car'
+59-    : item.officeType || normalizedCategory.includes('office') || normalizedCategory.includes('مكتب')
+60-      ? 'office'
+61-      : 'property';
+62:  const amenities = parseArrayField(item.amenities).filter((entry): entry is NonNullable<ListingItem['amenities']>[number] =>
+63-    ['fiber', 'air_conditioning', 'reception', 'parking', 'security'].includes(entry),
+64-  );
+65-  const unitLabel = type === 'office'
+66-    ? item.rentalPeriod === 'monthly' ? 'درهم / شهر' : item.rentalPeriod === 'yearly' ? 'درهم / سنة' : 'درهم / يوم'
+67-    : type === 'car' ? 'درهم / يوم' : 'درهم / ليلة';
+68-  return {
+69-    id: String(item.id),
+70-    providerId: String(item.ownerId),
+71-    providerName: item.ownerName || `مالك الإعلان #${item.ownerId}`,
+72-    type,
+73-    title: item.title,
+74-    category: item.category,
+75:    city: item.city,
+76:    pricePerUnit: item.dynamicPricePerDay ?? item.pricePerDay,
+77-    unitLabel,
+78-    image: item.imageUrl || '',
+79-    images: item.imageUrl ? [item.imageUrl] : [],
+80:    features: [item.fuelType, item.transmission, ...amenities].filter((value): value is string => Boolean(value)),
+81-    description: item.description || '',
+82-    officeType: type === 'office' && ['private', 'coworking', 'meeting_room', 'company_headquarters'].includes(item.officeType || '')
+83-      ? item.officeType as ListingItem['officeType']
+84-      : undefined,
+85-    amenities: amenities.length ? amenities : undefined,
+86-    rentalTerms: item.rentalPeriod ? [item.rentalPeriod] : undefined,
+87-    specs: {
+88:      transmission: item.transmission || undefined,
+89:      fuel: item.fuelType || undefined,
+90-      rooms: item.rooms ? String(item.rooms) : undefined,
+91-    },
+92-  };
+93-};
+94-
+95:const cityMap: Record<string, string> = {
+96-  agadir: 'أغادير',
+97-  marrakech: 'مراكش',
+98-  casablanca: 'الدار البيضاء',
+99-  tangier: 'طنجة',
+100-  rabat: 'الرباط',
+101-};
+102-
+103-export default function Search() {
+104-  const [, setLocation] = useLocation();
+105-  const { language, t } = useLanguage();
+106-  const searchParams = new URLSearchParams(window.location.search);
+107-
+108:  const rawCity = searchParams.get('city') || 'all';
+109:  const resolvedCity = cityMap[rawCity] || rawCity;
+110-
+111-  const naturalQuery = searchParams.get('q') || '';
+112-  const brandParam = searchParams.get('brand') || '';
+113-  const categoryParam = searchParams.get('category') || '';
+114-  const rawMaxPrice = Number(searchParams.get('maxPrice'));
+115-  const startDateParam = searchParams.get('startDate') || undefined;
+116-  const endDateParam = searchParams.get('endDate') || undefined;
+117:  const [cityFilter, setCityFilter] = useState(resolvedCity);
+118-  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
+119-  const [searchQuery, setSearchQuery] = useState(naturalQuery);
+120-  const [maxPrice, setMaxPrice] = useState(Number.isFinite(rawMaxPrice) && rawMaxPrice > 0 ? rawMaxPrice : 4000);
+121-  const [excellenceOnly, setExcellenceOnly] = useState(false);
+122:  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc'>('price-asc');
+123-  const [officeTypeFilter, setOfficeTypeFilter] = useState<string>('all');
+124-  const [amenityFilters, setAmenityFilters] = useState<string[]>([]);
+125-  const [rentalTermFilter, setRentalTermFilter] = useState<string>('all');
+126-  const listingInput = useMemo(() => ({ startDate: startDateParam, endDate: endDateParam }), [startDateParam, endDateParam]);
+127-  const listingsQuery = trpc.listings.list.useQuery(listingInput);
+128-  const serverListings = useMemo(() => (listingsQuery.data ?? []).map(toListingItem), [listingsQuery.data]);
+129-  const catalogListings = useMemo(() => serverListings.length > 0 ? serverListings : LISTINGS, [serverListings]);
+130-  const isDemoInventory = serverListings.length === 0;
+131-
+132-  const toggleAmenity = (amenity: string) => {
+133-    setAmenityFilters((current) => current.includes(amenity)
+134:      ? current.filter((value) => value !== amenity)
+135-      : [...current, amenity]);
+136-  };
+137-
+138-  // ميزة العرض السريع (Quick View Modal)
+139-  const [quickViewItem, setQuickViewItem] = useState<ListingItem | null>(null);
+140-
+141-  // عرض الخريطة التفاعلية
+142-  const [showMap, setShowMap] = useState(false);
+143-
+144-  // ميزة المقارنة (Side-by-Side Comparison)
+145-  const [compareList, setCompareList] = useState<ListingItem[]>([]);
+146-  const [showCompareModal, setShowCompareModal] = useState(false);
+147-
+148-  const toggleCompare = (item: ListingItem) => {
+149-    if (compareList.find(c => c.id === item.id)) {
+150:      setCompareList(compareList.filter(c => c.id !== item.id));
+151-      toast.info('تمت إزالة العنصر من قائمة المقارنة');
+152-    } else {
+153-      if (compareList.length >= 2) {
+154-        toast.error('يمكنك مقارنة عنصرين كحد أقصى في نفس الوقت');
+155-        return;
+156-      }
+157-      setCompareList([...compareList, item]);
+158-      toast.success('تمت إضافة العنصر إلى قائمة المقارنة');
+159-    }
+160-  };
+161-
+162:  const filteredListings = useMemo(() => {
+163:    return catalogListings.filter((item: ListingItem) => {
+164:      if (cityFilter !== 'all' && item.city !== cityFilter) return false;
+165-      if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+166-      if (typeFilter === 'office' && officeTypeFilter !== 'all' && item.officeType !== officeTypeFilter) return false;
+167-      if (typeFilter === 'office' && rentalTermFilter !== 'all' && !item.rentalTerms?.includes(rentalTermFilter as 'daily' | 'monthly' | 'yearly')) return false;
+168-      if (typeFilter === 'office' && amenityFilters.length > 0 && !amenityFilters.every((amenity) => item.amenities?.includes(amenity as NonNullable<ListingItem['amenities']>[number]))) return false;
+169:      if (item.pricePerUnit > maxPrice) return false;
+170-      if (brandParam) {
+171-        const b = brandParam.toLowerCase();
+172-        if (!item.title.toLowerCase().includes(b) && !item.category.toLowerCase().includes(b)) return false;
+173-      }
+174-      if (categoryParam) {
+175-        const c = categoryParam.toLowerCase();
+176-        if (!item.category.toLowerCase().includes(c) && !item.title.toLowerCase().includes(c) && !item.description.toLowerCase().includes(c)) return false;
+177-      }
+178-      if (searchQuery.trim()) {
+179-        const q = searchQuery.toLowerCase();
+180-        const matches = item.title.toLowerCase().includes(q) ||
+181-                        item.description.toLowerCase().includes(q) ||
+182:                        item.city.toLowerCase().includes(q) ||
+183-                        item.category.toLowerCase().includes(q) ||
+184-                        item.features.some(f => f.toLowerCase().includes(q));
+185-        if (!matches) return false;
+186-      }
+187-      return true;
+188-    }).sort((a: ListingItem, b: ListingItem) => {
+189:      if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
+190:      if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
+191-      return 0;
+192-    });
+193:  }, [catalogListings, cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
+194-
+195-  const [isSearching, setIsSearching] = useState(false);
+196:  const cityLabel = (city: string) => language === 'fr' ? ({ 'جميع المدن': 'Toutes les villes', 'مراكش': 'Marrakech', 'أغادير': 'Agadir', 'الدار البيضاء': 'Casablanca', 'طنجة': 'Tanger', 'الرباط': 'Rabat' }[city] ?? city) : city;
+197-
+198-  return (
+199-    <div className="min-h-screen bg-background text-foreground pb-20" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+200-      <div className="container mx-auto px-4 space-y-8">
+201-
+202-        {isDemoInventory && (
+203-          <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100" role="status">
+204-            {language === 'fr'
+205-              ? 'Mode démo : ces annonces sont visibles pour consultation; la réservation et le paiement ne sont pas encore disponibles.'
+206-              : language === 'en'
+--
+251-
+252-        {/* الخريطة التفاعلية المتقدمة مع دبابيس الأسعار */}
+253-        {showMap && (
+254-          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-in fade-in-50">
+255-            <div className="flex items-center justify-between">
+256-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+257-                <MapPin className="w-5 h-5 text-amber-500" /> خريطة الأسعار التفاعلية (Search as I move the map)
+258-              </h3>
+259-              <span className="text-xs text-slate-400">انقر على الدبابيس لعرض تفاصيل الإعلان السريعة</span>
+260-            </div>
+261:            <MapSearchView listings={filteredListings as any} onSelectListing={(item) => {
+262-              toast.info(`تم اختيار: ${item.title}`);
+263-            }} />
+264-          </div>
+265-        )}
+266-
+267-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+268-          <div className="lg:col-span-1 bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-6 h-fit sticky top-28 shadow-xl">
+269-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+270-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+271-                <Filter className="w-5 h-5 text-amber-400" />
+--
+276-                  setCityFilter('all');
+277-                  setTypeFilter('all');
+278-                  setMaxPrice(4000);
+279-                  setExcellenceOnly(false);
+280-                  setOfficeTypeFilter('all');
+281-                  setAmenityFilters([]);
+282-                  setRentalTermFilter('all');
+283-                }}
+284-                className="text-xs text-amber-400 hover:underline"
+285-              >
+286:                {t('resetFilters')}
+287-              </button>
+288-            </div>
+289-
+290-            <div className="space-y-2">
+291-              <label className="text-xs font-semibold text-slate-300">{t('naturalSearch')}</label>
+292-              <input
+293-                type="text"
+294-                placeholder={t('searchPlaceholder')}
+295-                value={searchQuery}
+296-                onChange={(e) => setSearchQuery(e.target.value)}
+--
+339-                        <input type="checkbox" checked={amenityFilters.includes(amenity)} onChange={() => toggleAmenity(amenity)} className="accent-amber-500" />
+340-                        {t(amenity === 'air_conditioning' ? 'airConditioning' : amenity)}
+341-                      </label>
+342-                    ))}
+343-                  </div>
+344-                </div>
+345-              </>
+346-            )}
+347-
+348-            <div className="space-y-2">
+349:              <label className="text-xs font-semibold text-slate-300">{t('city')}</label>
+350-              <select
+351:                value={cityFilter}
+352-                onChange={(e) => setCityFilter(e.target.value)}
+353-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+354-              >
+355-                {CITIES.map((c) => (
+356-                  <option key={c.id} value={c.name}>
+357:                    {cityLabel(c.name)}
+358-                  </option>
+359-                ))}
+360-              </select>
+361-            </div>
+362-
+363-            <div className="space-y-2">
+364-              <div className="flex justify-between text-xs">
+365-                <span className="font-semibold text-slate-300">{t('maxPrice')}</span>
+366-                <span className="text-amber-400 font-bold">{maxPrice} درهم</span>
+367-              </div>
+--
+373-                value={maxPrice}
+374-                onChange={(e) => setMaxPrice(Number(e.target.value))}
+375-                className="w-full accent-amber-500 bg-slate-800 cursor-pointer"
+376-              />
+377-            </div>
+378-          </div>
+379-
+380-          <div className="lg:col-span-3 space-y-6">
+381-            <div className="bg-slate-950 border border-slate-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+382-              <div className="text-sm text-slate-300">
+383:                {t('offersFoundPrefix')} <span className="text-amber-400 font-bold">{filteredListings.length}</span> {t('availableOffers')}
+384-              </div>
+385-              <div className="flex items-center gap-2 w-full sm:w-auto">
+386-                <ArrowUpDown className="w-4 h-4 text-amber-400" />
+387-                <span className="text-xs text-slate-400">{t('sortBy')}:</span>
+388-                <select
+389-                  value={sortBy}
+390-                  onChange={(e) => setSortBy(e.target.value as any)}
+391-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
+392-                >
+393:                  <option value="price-asc">{t('lowestPrice')}</option>
+394:                  <option value="price-desc">{t('highestPrice')}</option>
+395-                </select>
+396-              </div>
+397-            </div>
+398-
+399-            {listingsQuery.isLoading && (
+400-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6" aria-live="polite">
+401-                {[1, 2, 3, 4].map((skeleton) => (
+402-                  <div key={skeleton} className="min-h-80 rounded-3xl bg-slate-950 border border-slate-800 animate-pulse" aria-label={t('loadingListings')} />
+403-                ))}
+404-              </div>
+405-            )}
+406-            {listingsQuery.error && !isDemoInventory && (
+407-              <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-6 text-red-200" role="alert">
+408-                {t('listingsLoadError')}
+409-              </div>
+410-            )}
+411:            {!listingsQuery.isLoading && !listingsQuery.error && filteredListings.length === 0 && (
+412-              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-8 text-center text-slate-300" aria-live="polite">
+413-                {t('noMatchingListings')}
+414-              </div>
+415-            )}
+416-
+417-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+418:              {filteredListings.map((item) => {
+419-                const isCompared = compareList.some(c => c.id === item.id);
+420-                if (item.type === 'car') {
+421-                  return (
+422-                    <CarListingCard
+423-                      key={item.id}
+424-                      item={item}
+425-                      detailsHref={listingRoute(item)}
+426-                      isDemo={isDemoInventory}
+427-                      className="b2-touch-card"
+428-                      imageActions={(
+--
+464-                          decoding="async"
+465-                          width={800}
+466-                          height={448}
+467-                          className="b2-responsive-media group-hover:scale-110 transition-transform duration-700 ease-out"
+468-                        />
+469-                      ) : (
+470-                        <div className="h-full w-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center" aria-label="لا توجد صورة للإعلان">
+471-                          <Home className="w-12 h-12 text-slate-600" />
+472-                        </div>
+473-                      )}
+474:                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
+475-
+476-                      <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
+477:                        {item.city}
+478-                      </div>
+479-
+480-
+481-                      {/* زر المقارنة */}
+482-                      <button
+483-                        onClick={() => toggleCompare(item)}
+484-                        className={`absolute bottom-4 left-4 min-h-11 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg ${isCompared ? 'bg-amber-500 text-slate-950' : 'bg-slate-950/80 text-white hover:bg-slate-900 border border-slate-700'}`}
+485-                      >
+486-                        <Scale className="w-3.5 h-3.5" /> {isCompared ? 'مضاف للمقارنة' : 'مقارنة'}
+487-                      </button>
+--
+503-                            {item.type === 'office' ? 'مكتب' : 'عقار'}
+504-                          </span>
+505-                        </div>
+506-                        <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+507-                          {item.title}
+508-                        </h3>
+509-                      </div>
+510-
+511-                      <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+512-                        <div>
+513:                          <span className="text-2xl font-extrabold text-white">{item.pricePerUnit}</span>
+514-                          <span className="text-xs text-slate-400 mr-1">{item.unitLabel}</span>
+515-                        </div>
+516-                        <Button
+517-                          onClick={() => setLocation(listingRoute(item))}
+518-                          className="b2-card-action min-h-11 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20"
+519-                        >
+=== LEGAL ROUTES/FOOTER ===
+client/src/App.tsx:30:const TermsPage = lazy(() => import('./pages/TermsOfService'));
+client/src/App.tsx:31:const PrivacyPage = lazy(() => import('./pages/PrivacyPolicy'));
+client/src/App.tsx:103:      <Route path="/terms" component={TermsPage} />
+client/src/App.tsx:105:      <Route path="/privacy" component={PrivacyPage} />
+client/src/components/Footer.tsx:223:                <FooterLink href="/privacy">{language === 'ar' ? 'سياسة الخصوصية' : language === 'fr' ? 'Politique de confidentialité' : 'Privacy policy'}</FooterLink>
+client/src/components/Footer.tsx:224:                <FooterLink href="/terms">{language === 'ar' ? 'شروط الاستخدام' : language === 'fr' ? 'Conditions d’utilisation' : 'Terms of service'}</FooterLink>
+client/src/components/Footer.tsx:225:                <FooterLink href="/terms">{language === 'ar' ? 'الإشعارات القانونية' : language === 'fr' ? 'Mentions légales' : 'Legal notices'}</FooterLink>

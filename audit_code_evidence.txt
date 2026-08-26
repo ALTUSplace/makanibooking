@@ -1,0 +1,513 @@
+=== ROUTERS 350-440 ===
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        await db.update(bookingMessages).set({ readAt: new Date() }).where(and(eq(bookingMessages.id, input.messageId), eq(bookingMessages.recipientId, ctx.user!.id)));
+        return { success: true as const };
+      }),
+  }),
+
+  refunds: router({
+    listMine: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(refundRequests).where(eq(refundRequests.requestedBy, ctx.user!.id)).orderBy(desc(refundRequests.createdAt)).limit(100);
+    }),
+    request: protectedProcedure
+      .input(z.object({ bookingId: z.number().int().positive(), amount: z.number().int().positive(), reason: z.string().trim().min(5).max(2000) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+        const bookingRows = await db.select({ renterId: bookings.renterId, totalPrice: bookings.totalPrice, status: bookings.status, ownerId: listings.ownerId })
+          .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id)).where(eq(bookings.id, input.bookingId)).limit(1);
+        const booking = bookingRows[0];
+        if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "الحجز غير موجود." });
+        if (ctx.user!.id !== booking.renterId && ctx.user!.id !== booking.ownerId && ctx.user!.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك طلب استرداد لهذا الحجز." });
+        if (input.amount > booking.totalPrice) throw new TRPCError({ code: "BAD_REQUEST", message: "مبلغ الاسترداد لا يمكن أن يتجاوز قيمة الحجز." });
+        const pending = await db.select({ id: refundRequests.id }).from(refundRequests).where(and(eq(refundRequests.bookingId, input.bookingId), eq(refundRequests.status, "Pending"))).limit(1);
+        if (pending.length) throw new TRPCError({ code: "CONFLICT", message: "يوجد طلب استرداد قيد المراجعة لهذا الحجز." });
+        const [inserted] = await db.insert(refundRequests).values({ bookingId: input.bookingId, requestedBy: ctx.user!.id, amount: input.amount, reason: input.reason });
+        const refundId = Number(inserted.insertId);
+        await writeAuditLog({ actorId: ctx.user!.id, action: "refund.requested", entityType: "refund_request", entityId: refundId, afterData: { bookingId: input.bookingId, amount: input.amount, reason: input.reason } });
+        return { success: true as const, refundId };
+      }),
+  }),
+
+  storage: router({
+    uploadAgencyLogo: ownerProcedure
+      .input(z.object({
+        fileName: z.string().trim().min(1).max(160),
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        contentBase64: z.string().min(1).max(8_500_000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "agency-logo";
+        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+        if (imageBuffer.length === 0 || imageBuffer.length > 3 * 1024 * 1024) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الشعار يجب ألا يتجاوز 3 ميجابايت." });
+        }
+        const uploaded = await storagePut(`users/${ctx.user!.id}/agency/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
+        await getDb().then(async db => {
+          if (db) await db.update(users).set({ agencyLogoUrl: uploaded.url }).where(eq(users.id, ctx.user!.id));
+        });
+        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType };
+      }),
+    uploadImage: ownerProcedure
+      .input(z.object({
+        fileName: z.string().trim().min(1).max(160),
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        contentBase64: z.string().min(1).max(8_500_000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "listing-image";
+        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+        if (imageBuffer.length === 0 || imageBuffer.length > 6 * 1024 * 1024) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الصورة يجب أن يكون بين 1 بايت و6 ميجابايت." });
+        }
+        const verification = await verifyOriginalListingImage({ base64: input.contentBase64, mimeType: input.mimeType });
+        if (!verification.accepted) {
+          const notificationTitle = "تم رفض صورة الإعلان / Image refusée";
+          const notificationMessage = `${ORIGINAL_IMAGE_REJECTION_MESSAGE}\n\nالأسباب: ${verification.reasons.join("، ") || "لم تستوفِ الصورة معايير الأصالة."}`;
+          await safeNotifyUser({
+            userId: ctx.user!.id,
+            type: "listing_rejected",
+            title: notificationTitle,
+            message: notificationMessage,
+            href: "/host",
+            entityType: "listing_image_verification",
+            dedupeKey: `listing-image-rejected:${ctx.user!.id}:${normalizedName}:${verification.confidence}`,
+            email: ctx.user!.email ? { to: ctx.user!.email, subject: notificationTitle, ...buildEmailContent(notificationTitle, notificationMessage, "/host") } : undefined,
+          });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: ORIGINAL_IMAGE_REJECTION_MESSAGE,
+            cause: { confidence: verification.confidence, reasons: verification.reasons },
+          });
+        }
+        const uploaded = await storagePut(`users/${ctx.user!.id}/listings/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
+        const verificationProof = createImageVerificationProof({ ownerId: ctx.user!.id, url: uploaded.url, bytes: imageBuffer });
+        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType, verification: { confidence: verification.confidence }, verificationProof };
+      }),
+  }),
+
+  kyc: router({
+    listMine: protectedProcedure.query(async ({ ctx }) => {
+=== SEARCH FILTER CONTROLS ===
+41-  title: string;
+42-  description: string | null;
+43-  category: string;
+44:  pricePerDay: number;
+45-  imageUrl: string | null;
+46-  city: string;
+47:  fuelType: string | null;
+48:  transmission: string | null;
+49-  rooms: number | null;
+50:  officeType: string | null;
+51-  rentalPeriod: 'daily' | 'monthly' | 'yearly' | null;
+52-  amenities: string | null;
+53-  dynamicPricePerDay?: number;
+--
+56-  const normalizedCategory = item.category.toLowerCase();
+57-  const type: ListingItem['type'] = normalizedCategory.includes('car') || normalizedCategory.includes('سيارة')
+58-    ? 'car'
+59:    : item.officeType || normalizedCategory.includes('office') || normalizedCategory.includes('مكتب')
+60-      ? 'office'
+61-      : 'property';
+62-  const amenities = parseArrayField(item.amenities).filter((entry): entry is NonNullable<ListingItem['amenities']>[number] =>
+--
+73-    title: item.title,
+74-    category: item.category,
+75-    city: item.city,
+76:    pricePerUnit: item.dynamicPricePerDay ?? item.pricePerDay,
+77-    unitLabel,
+78-    image: item.imageUrl || '',
+79-    images: item.imageUrl ? [item.imageUrl] : [],
+80:    features: [item.fuelType, item.transmission, ...amenities].filter((value): value is string => Boolean(value)),
+81-    description: item.description || '',
+82:    officeType: type === 'office' && ['private', 'coworking', 'meeting_room', 'company_headquarters'].includes(item.officeType || '')
+83:      ? item.officeType as ListingItem['officeType']
+84-      : undefined,
+85-    amenities: amenities.length ? amenities : undefined,
+86:    rentalTerms: item.rentalPeriod ? [item.rentalPeriod] : undefined,
+87-    specs: {
+88:      transmission: item.transmission || undefined,
+89:      fuel: item.fuelType || undefined,
+90-      rooms: item.rooms ? String(item.rooms) : undefined,
+91-    },
+92-  };
+--
+114-  const rawMaxPrice = Number(searchParams.get('maxPrice'));
+115-  const startDateParam = searchParams.get('startDate') || undefined;
+116-  const endDateParam = searchParams.get('endDate') || undefined;
+117:  const [cityFilter, setCityFilter] = useState(resolvedCity);
+118-  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
+119-  const [searchQuery, setSearchQuery] = useState(naturalQuery);
+120-  const [maxPrice, setMaxPrice] = useState(Number.isFinite(rawMaxPrice) && rawMaxPrice > 0 ? rawMaxPrice : 4000);
+121-  const [excellenceOnly, setExcellenceOnly] = useState(false);
+122:  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc'>('price-asc');
+123:  const [officeTypeFilter, setOfficeTypeFilter] = useState<string>('all');
+124:  const [amenityFilters, setAmenityFilters] = useState<string[]>([]);
+125:  const [rentalTermFilter, setRentalTermFilter] = useState<string>('all');
+126-  const listingInput = useMemo(() => ({ startDate: startDateParam, endDate: endDateParam }), [startDateParam, endDateParam]);
+127-  const listingsQuery = trpc.listings.list.useQuery(listingInput);
+128-  const serverListings = useMemo(() => (listingsQuery.data ?? []).map(toListingItem), [listingsQuery.data]);
+129-  const catalogListings = useMemo(() => serverListings.length > 0 ? serverListings : LISTINGS, [serverListings]);
+130-  const isDemoInventory = serverListings.length === 0;
+131-
+132:  const toggleAmenity = (amenity: string) => {
+133:    setAmenityFilters((current) => current.includes(amenity)
+134:      ? current.filter((value) => value !== amenity)
+135:      : [...current, amenity]);
+136-  };
+137-
+138-  // ميزة العرض السريع (Quick View Modal)
+--
+161-
+162-  const filteredListings = useMemo(() => {
+163-    return catalogListings.filter((item: ListingItem) => {
+164:      if (cityFilter !== 'all' && item.city !== cityFilter) return false;
+165-      if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+166:      if (typeFilter === 'office' && officeTypeFilter !== 'all' && item.officeType !== officeTypeFilter) return false;
+167:      if (typeFilter === 'office' && rentalTermFilter !== 'all' && !item.rentalTerms?.includes(rentalTermFilter as 'daily' | 'monthly' | 'yearly')) return false;
+168:      if (typeFilter === 'office' && amenityFilters.length > 0 && !amenityFilters.every((amenity) => item.amenities?.includes(amenity as NonNullable<ListingItem['amenities']>[number]))) return false;
+169:      if (item.pricePerUnit > maxPrice) return false;
+170-      if (brandParam) {
+171-        const b = brandParam.toLowerCase();
+172-        if (!item.title.toLowerCase().includes(b) && !item.category.toLowerCase().includes(b)) return false;
+--
+186-      }
+187-      return true;
+188-    }).sort((a: ListingItem, b: ListingItem) => {
+189:      if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
+190:      if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
+191-      return 0;
+192-    });
+193:  }, [catalogListings, cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
+194-
+195-  const [isSearching, setIsSearching] = useState(false);
+196-  const cityLabel = (city: string) => language === 'fr' ? ({ 'جميع المدن': 'Toutes les villes', 'مراكش': 'Marrakech', 'أغادير': 'Agadir', 'الدار البيضاء': 'Casablanca', 'طنجة': 'Tanger', 'الرباط': 'Rabat' }[city] ?? city) : city;
+--
+315-            {typeFilter === 'office' && (
+316-              <>
+317-                <div className="space-y-2">
+318:                  <label className="text-xs font-semibold text-slate-300">{t('officeType')}</label>
+319:                  <select value={officeTypeFilter} onChange={(e) => setOfficeTypeFilter(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+320-                    <option value="all">{t('all')}</option>
+321:                    {OFFICE_TYPES.map((officeType) => (
+322:                      <option key={officeType} value={officeType}>{t({ private: 'privateOffice', coworking: 'coworking', meeting_room: 'meetingRoom', company_headquarters: 'companyHeadquarters' }[officeType])}</option>
+323-                    ))}
+324-                  </select>
+325-                </div>
+--
+327-                  <label className="text-xs font-semibold text-slate-300">{t('rentalType')}</label>
+328-                  <div className="grid grid-cols-3 gap-2">
+329-                    {(['daily', 'monthly', 'yearly'] as const).map((term) => (
+330:                      <button key={term} type="button" onClick={() => setRentalTermFilter(rentalTermFilter === term ? 'all' : term)} className={`rounded-lg border px-2 py-2 text-[11px] ${rentalTermFilter === term ? 'border-amber-400 bg-amber-500/15 text-amber-300' : 'border-slate-700 bg-slate-900 text-slate-300'}`}>{t(term)}</button>
+331-                    ))}
+332-                  </div>
+333-                </div>
+334-                <div className="space-y-2">
+335-                  <label className="text-xs font-semibold text-slate-300">{t('amenities')}</label>
+336-                  <div className="space-y-2">
+337:                    {AMENITY_OPTIONS.map((amenity) => (
+338:                      <label key={amenity} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+339:                        <input type="checkbox" checked={amenityFilters.includes(amenity)} onChange={() => toggleAmenity(amenity)} className="accent-amber-500" />
+340:                        {t(amenity === 'air_conditioning' ? 'airConditioning' : amenity)}
+341-                      </label>
+342-                    ))}
+343-                  </div>
+--
+348-            <div className="space-y-2">
+349-              <label className="text-xs font-semibold text-slate-300">{t('city')}</label>
+350-              <select
+351:                value={cityFilter}
+352-                onChange={(e) => setCityFilter(e.target.value)}
+353-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+354-              >
+--
+390-                  onChange={(e) => setSortBy(e.target.value as any)}
+391-                  className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
+392-                >
+393:                  <option value="price-asc">{t('lowestPrice')}</option>
+394:                  <option value="price-desc">{t('highestPrice')}</option>
+395-                </select>
+396-              </div>
+397-            </div>
+--
+510-
+511-                      <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+512-                        <div>
+513:                          <span className="text-2xl font-extrabold text-white">{item.pricePerUnit}</span>
+514-                          <span className="text-xs text-slate-400 mr-1">{item.unitLabel}</span>
+515-                        </div>
+516-                        <Button
+--
+564-                  <h2 className="text-xl font-black text-white">{quickViewItem.title}</h2>
+565-                </div>
+566-                <div className="text-left">
+567:                  <div className="text-2xl font-black text-amber-400">{quickViewItem.pricePerUnit} {quickViewItem.unitLabel}</div>
+568-                  <div className="text-xs text-slate-500">التقييمات الموثقة تظهر في صفحة الإعلان بعد توفرها</div>
+569-                </div>
+570-              </div>
+--
+584-                  <span className="text-xs text-slate-400">مشاركة:</span>
+585-                  <button
+586-                    onClick={() => {
+587:                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`شاهد هذا العرض الرائع: ${quickViewItem.title} - ${quickViewItem.pricePerUnit} ${quickViewItem.unitLabel} في ${quickViewItem.city} عبر منصة B2-Rent: ${window.location.href}`)}`, '_blank');
+588-                    }}
+589-                    className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 p-2 rounded-xl text-xs flex items-center gap-1 transition-colors"
+590-                    title="مشاركة عبر واتساب"
+--
+653-                  <div className="space-y-2 text-xs text-slate-300">
+654-                    <div className="flex justify-between py-2 border-b border-slate-800">
+655-                      <span className="text-slate-400">السعر:</span>
+656:                      <span className="font-extrabold text-amber-400">{c.pricePerUnit} {c.unitLabel}</span>
+657-                    </div>
+658-                    <div className="flex justify-between py-2 border-b border-slate-800">
+659-                      <span className="text-slate-400">المدينة:</span>
+=== WHATSAPP REFERENCES ===
+client/src/pages/Success.tsx-45-    }
+client/src/pages/Success.tsx-46-    const message = language === 'ar'
+client/src/pages/Success.tsx-47-      ? `مرحباً، أود التواصل بخصوص الحجز ${bookingRef} — ${premises}.`
+client/src/pages/Success.tsx-48-      : `Bonjour, je souhaite échanger au sujet de la réservation ${bookingRef} — ${premises}.`;
+client/src/pages/Success.tsx:49:    window.open(`https://wa.me/${booking.ownerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+client/src/pages/Success.tsx-50-  };
+client/src/pages/Success.tsx-51-
+client/src/pages/Success.tsx-52-  const handleEmailContact = () => {
+client/src/pages/Success.tsx-53-    if (isPending) {
+--
+client/src/pages/CarDetails.tsx-31-    transmission: listing.transmission || 'غير محدد',
+client/src/pages/CarDetails.tsx-32-    fuel: listing.fuelType || 'غير محدد',
+client/src/pages/CarDetails.tsx-33-    seats: 5,
+client/src/pages/CarDetails.tsx-34-    features: listing.amenities ? listing.amenities.split(',').map((item) => item.trim()).filter(Boolean) : [],
+client/src/pages/CarDetails.tsx:35:    agency: { name: 'المؤجر على B2-Rent', address: listing.city, whatsapp: '' },
+client/src/pages/CarDetails.tsx-36-  } : fallbackCar ? {
+client/src/pages/CarDetails.tsx-37-    id: fallbackCar.id,
+client/src/pages/CarDetails.tsx-38-    name: fallbackCar.title,
+client/src/pages/CarDetails.tsx-39-    brand: fallbackCar.category.split(/[ /]/)[0] || 'B2-Rent',
+--
+client/src/pages/CarDetails.tsx-43-    transmission: fallbackCar.specs.transmission || 'غير محدد',
+client/src/pages/CarDetails.tsx-44-    fuel: fallbackCar.specs.fuel || 'غير محدد',
+client/src/pages/CarDetails.tsx-45-    seats: Number(fallbackCar.specs.seats) || 5,
+client/src/pages/CarDetails.tsx-46-    features: fallbackCar.features,
+client/src/pages/CarDetails.tsx:47:    agency: { name: fallbackCar.providerName, address: fallbackCar.city, whatsapp: '' },
+client/src/pages/CarDetails.tsx-48-  } : null;
+client/src/pages/CarDetails.tsx-49-
+client/src/pages/CarDetails.tsx-50-  const [startDate, setStartDate] = useState(() => {
+client/src/pages/CarDetails.tsx-51-    const date = new Date();
+--
+client/src/pages/CarDetails.tsx-94-  const insurancePrice = includeInsurance ? 100 * daysCount : 0;
+client/src/pages/CarDetails.tsx-95-  const babySeatPrice = includeBabySeat ? 50 * daysCount : 0;
+client/src/pages/CarDetails.tsx-96-  const totalPrice = dailyPrice * daysCount + insurancePrice + babySeatPrice;
+client/src/pages/CarDetails.tsx-97-
+client/src/pages/CarDetails.tsx:98:  const handleShare = (platform: string) => {
+client/src/pages/CarDetails.tsx-99-    const url = window.location.href;
+client/src/pages/CarDetails.tsx-100-    const text = `استأجر ${car.name} في ${car.cityName} عبر منصة B2-Rent الرائدة!`;
+client/src/pages/CarDetails.tsx:101:    if (platform === 'whatsapp') {
+client/src/pages/CarDetails.tsx:102:      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+client/src/pages/CarDetails.tsx-103-    } else if (platform === 'facebook') {
+client/src/pages/CarDetails.tsx-104-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+client/src/pages/CarDetails.tsx-105-    } else if (platform === 'copy') {
+client/src/pages/CarDetails.tsx-106-      navigator.clipboard.writeText(url);
+--
+client/src/pages/CarDetails.tsx-174-
+client/src/pages/CarDetails.tsx-175-          {/* Share Buttons */}
+client/src/pages/CarDetails.tsx-176-          <div className="flex items-center gap-2">
+client/src/pages/CarDetails.tsx-177-            <span className="text-xs text-slate-400 flex items-center gap-1"><Share2 className="w-3.5 h-3.5 text-amber-400" /> مشاركة:</span>
+client/src/pages/CarDetails.tsx:178:            <button onClick={() => handleShare('whatsapp')} className="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white px-3 py-1 rounded-xl text-xs font-bold transition-all border border-emerald-500/30">
+client/src/pages/CarDetails.tsx-179-              واتساب
+client/src/pages/CarDetails.tsx-180-            </button>
+client/src/pages/CarDetails.tsx:181:            <button onClick={() => handleShare('facebook')} className="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white px-3 py-1 rounded-xl text-xs font-bold transition-all border border-blue-500/30">
+client/src/pages/CarDetails.tsx-182-              فيسبوك
+client/src/pages/CarDetails.tsx-183-            </button>
+client/src/pages/CarDetails.tsx:184:            <button onClick={() => handleShare('copy')} className="bg-slate-800 text-slate-300 hover:bg-slate-700 px-3 py-1 rounded-xl text-xs font-bold transition-all border border-slate-700 flex items-center gap-1">
+client/src/pages/CarDetails.tsx-185-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+client/src/pages/CarDetails.tsx-186-              <span>{copiedLink ? 'تم النسخ' : 'نسخ الرابط'}</span>
+client/src/pages/CarDetails.tsx-187-            </button>
+client/src/pages/CarDetails.tsx-188-          </div>
+--
+client/src/pages/CarDetails.tsx-265-                      </div>
+client/src/pages/CarDetails.tsx-266-                      <p className="text-xs text-slate-400">{car.agency.address}</p>
+client/src/pages/CarDetails.tsx-267-                    </div>
+client/src/pages/CarDetails.tsx-268-                  </div>
+client/src/pages/CarDetails.tsx:269:                  {car.agency.whatsapp.replace(/\D/g, '').length >= 8 ? (
+client/src/pages/CarDetails.tsx-270-                    <a
+client/src/pages/CarDetails.tsx:271:                      href={`https://wa.me/${car.agency.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`مرحباً، أرغب في الاستفسار عن سيارة ${car.name}`)}`}
+client/src/pages/CarDetails.tsx-272-                      target="_blank"
+client/src/pages/CarDetails.tsx-273-                      rel="noopener noreferrer"
+client/src/pages/CarDetails.tsx-274-                      className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow-lg"
+client/src/pages/CarDetails.tsx-275-                    >
+--
+client/src/pages/Search.tsx-583-                <div className="flex items-center gap-2">
+client/src/pages/Search.tsx-584-                  <span className="text-xs text-slate-400">مشاركة:</span>
+client/src/pages/Search.tsx-585-                  <button
+client/src/pages/Search.tsx-586-                    onClick={() => {
+client/src/pages/Search.tsx:587:                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`شاهد هذا العرض الرائع: ${quickViewItem.title} - ${quickViewItem.pricePerUnit} ${quickViewItem.unitLabel} في ${quickViewItem.city} عبر منصة B2-Rent: ${window.location.href}`)}`, '_blank');
+client/src/pages/Search.tsx-588-                    }}
+client/src/pages/Search.tsx-589-                    className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 p-2 rounded-xl text-xs flex items-center gap-1 transition-colors"
+client/src/pages/Search.tsx-590-                    title="مشاركة عبر واتساب"
+client/src/pages/Search.tsx-591-                  >
+--
+client/src/pages/Voucher.tsx-18-
+client/src/pages/Voucher.tsx-19-  const start = new Date(data.startDate).toLocaleDateString('fr-MA');
+client/src/pages/Voucher.tsx-20-  const end = new Date(data.endDate).toLocaleDateString('fr-MA');
+client/src/pages/Voucher.tsx-21-  const phone = data.ownerWhatsApp?.replace(/[^0-9+]/g, '') || '';
+client/src/pages/Voucher.tsx:22:  const whatsappUrl = phone ? `https://wa.me/${phone.replace(/^\+/, '')}?text=${encodeURIComponent(`مرحباً، أتوصل بخصوص الحجز ${data.voucher.code} — ${data.listingTitle}.`)}` : '';
+client/src/pages/Voucher.tsx-23-  const copyCode = async () => { await navigator.clipboard?.writeText(data.voucher.code); toast.success('تم نسخ كود الحجز.'); };
+client/src/pages/Voucher.tsx-24-  const downloadQr = () => { const link = document.createElement('a'); link.href = data.qrCodeDataUrl; link.download = `${data.voucher.code}-QR.png`; link.click(); };
+client/src/pages/Voucher.tsx-25-
+client/src/pages/Voucher.tsx-26-  return <section className="min-h-[70vh] bg-slate-50 px-4 py-8 sm:px-6">
+--
+client/src/pages/Voucher.tsx-30-        <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-[#0B3C5D]"><Ticket className="h-5 w-5 text-amber-600" /> تفاصيل الحجز</CardTitle></CardHeader><CardContent className="space-y-5">
+client/src/pages/Voucher.tsx-31-          {data.listingImageUrl && <OptimizedImage src={data.listingImageUrl} alt={data.listingTitle} width={900} height={300} widthHint={900} sizes="(max-width: 1024px) 100vw, 60vw" className="h-48 w-full rounded-xl object-cover" />}
+client/src/pages/Voucher.tsx-32-          <div><p className="text-sm text-slate-500">السيارة أو العقار</p><h2 className="text-2xl font-bold text-slate-900">{data.listingTitle}</h2><p className="mt-1 flex items-center gap-1 text-slate-600"><MapPin className="h-4 w-4 text-amber-600" />{data.listingCity} · {data.listingCategory === 'car' ? 'سيارة' : 'عقار'}</p></div>
+client/src/pages/Voucher.tsx-33-          <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">بداية الحجز</p><p className="mt-1 flex items-center gap-2 font-semibold"><CalendarDays className="h-4 w-4 text-amber-600" />{start}</p></div><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs text-slate-500">نهاية الحجز</p><p className="mt-1 flex items-center gap-2 font-semibold"><CalendarDays className="h-4 w-4 text-amber-600" />{end}</p></div></div>
+client/src/pages/Voucher.tsx:34:          <div className="border-t pt-4"><p className="text-sm text-slate-500">الشريك المؤجر</p><p className="font-bold text-slate-900">{data.ownerName || 'الشريك'}</p><div className="mt-3 flex flex-wrap gap-2"><a href={data.mapsUrl} target="_blank" rel="noreferrer"><Button variant="outline" size="sm"><MapPin className="mr-1 h-4 w-4" /> Google Maps</Button></a>{phone && <a href={`tel:${phone}`}><Button variant="outline" size="sm"><Phone className="mr-1 h-4 w-4" /> اتصال مباشر</Button></a>}{whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noreferrer"><Button size="sm" className="bg-[#25D366] text-white hover:bg-[#1ebe5d]"><MessageCircle className="mr-1 h-4 w-4" /> WhatsApp</Button></a>}</div><p className="mt-3 text-xs text-slate-500">ملاحظة: رابط الخرائط الافتراضي مبني على اسم الإعلان والمدينة، ويمكن للشريك لاحقاً إضافة موقع دقيق.</p></div>
+client/src/pages/Voucher.tsx-35-        </CardContent></Card>
+client/src/pages/Voucher.tsx-36-        <Card className="border-0 shadow-sm"><CardHeader><CardTitle className="text-center text-[#0B3C5D]">رمز الدخول الرقمي</CardTitle></CardHeader><CardContent className="flex flex-col items-center text-center"><div className="rounded-2xl border bg-white p-4"><img src={data.qrCodeDataUrl} alt="QR Code لتذكرة الحجز" width={260} height={260} className="h-[260px] w-[260px]" /></div><p className="mt-5 text-sm text-slate-500">أبرز هذا الرمز عند استلام السيارة أو الوصول إلى العقار.</p><button onClick={copyCode} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-2 font-mono font-bold text-amber-800"><Copy className="h-4 w-4" />{data.voucher.code}</button><div className="mt-4 flex flex-wrap justify-center gap-2"><Button variant="outline" size="sm" onClick={downloadQr}><Download className="mr-1 h-4 w-4" /> تنزيل QR</Button><Button variant="ghost" size="sm" onClick={() => setLocation('/my-bookings')}><ArrowLeft className="mr-1 h-4 w-4" /> حجوزاتي</Button></div><div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-3 text-right text-xs leading-5 text-amber-950"><p className="font-bold">إخلاء المسؤولية</p><p className="mt-1">B2-Rent منصة إعلانية ووسيط تقني فقط، ولا تتحمل مسؤولية الحالة الميكانيكية للسيارة أو حالة العقار ونظافته. يتحمل الشريك مسؤولية الأصل المعروض، ويجب على الزبون معاينته وإبلاغ الشريك بأي تحفظ عند التسليم، في حدود ما يسمح به القانون المغربي.</p></div><p className="mt-4 text-xs text-slate-400">هذه التذكرة لا تستبدل العقد أو إثبات الهوية. لا تشارك رابطها مع غير أطراف الحجز.</p></CardContent></Card>
+client/src/pages/Voucher.tsx-37-      </div>
+client/src/pages/Voucher.tsx-38-    </div>
+--
+client/src/pages/Profile.tsx-21-  const { user, loading: authLoading, isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
+client/src/pages/Profile.tsx-22-  const { theme, toggleTheme } = useTheme();
+client/src/pages/Profile.tsx-23-  const [activeTab, setActiveTab] = useState<"info" | "bookings" | "invoices">("info");
+client/src/pages/Profile.tsx-24-  const [name, setName] = useState("");
+client/src/pages/Profile.tsx:25:  const [whatsappPhone, setWhatsappPhone] = useState("");
+client/src/pages/Profile.tsx-26-  const [commercialRegister, setCommercialRegister] = useState("");
+client/src/pages/Profile.tsx-27-  const profileMutation = trpc.auth.updateProfile.useMutation();
+client/src/pages/Profile.tsx-28-
+client/src/pages/Profile.tsx-29-  useEffect(() => {
+client/src/pages/Profile.tsx-30-    if (!user) return;
+client/src/pages/Profile.tsx-31-    setName(user.name || "");
+client/src/pages/Profile.tsx:32:    setWhatsappPhone(user.whatsappPhone || "");
+client/src/pages/Profile.tsx-33-    setCommercialRegister(user.commercialRegister || "");
+client/src/pages/Profile.tsx-34-  }, [user]);
+client/src/pages/Profile.tsx-35-
+client/src/pages/Profile.tsx-36-  const bookingsQuery = trpc.bookings.list.useQuery(undefined, { enabled: isAuthenticated });
+--
+client/src/pages/Profile.tsx-42-
+client/src/pages/Profile.tsx-43-  const saveProfile = (event: React.FormEvent) => {
+client/src/pages/Profile.tsx-44-    event.preventDefault();
+client/src/pages/Profile.tsx-45-    profileMutation.mutate({
+client/src/pages/Profile.tsx:46:      whatsappPhone: whatsappPhone.trim() || null,
+client/src/pages/Profile.tsx-47-      commercialRegister: commercialRegister.trim() || null,
+client/src/pages/Profile.tsx-48-    }, {
+client/src/pages/Profile.tsx-49-      onSuccess: () => toast.success("تم حفظ بيانات التواصل والسجل التجاري في حسابك."),
+client/src/pages/Profile.tsx-50-      onError: (error) => toast.error(error.message || "تعذر حفظ بيانات الحساب."),
+--
+client/src/pages/Profile.tsx-113-                <input value={user.email || ""} readOnly className="w-full rounded-xl border border-border bg-muted px-3 py-3 text-muted-foreground" />
+client/src/pages/Profile.tsx-114-              </label>
+client/src/pages/Profile.tsx-115-              <label className="space-y-2 text-sm">
+client/src/pages/Profile.tsx-116-                <span className="font-bold">رقم واتساب للمؤجر</span>
+client/src/pages/Profile.tsx:117:                <input value={whatsappPhone} onChange={event => setWhatsappPhone(event.target.value)} inputMode="tel" dir="ltr" className="w-full rounded-xl border border-border bg-background px-3 py-3" placeholder="2126XXXXXXXX" />
+client/src/pages/Profile.tsx-118-                <span className="text-xs text-muted-foreground">يظهر للمستأجر فقط بعد تأكيد الحجز.</span>
+client/src/pages/Profile.tsx-119-              </label>
+client/src/pages/Profile.tsx-120-              <label className="space-y-2 text-sm">
+client/src/pages/Profile.tsx-121-                <span className="font-bold">السجل التجاري (RC)</span>
+--
+client/src/pages/HostDashboard.tsx-50-    const byDay = new Map<string, { views: number; contactClicks: number }>();
+client/src/pages/HostDashboard.tsx-51-    for (const row of analyticsTimeline.data ?? []) {
+client/src/pages/HostDashboard.tsx-52-      const current = byDay.get(row.day) ?? { views: 0, contactClicks: 0 };
+client/src/pages/HostDashboard.tsx-53-      if (row.eventType === "view") current.views = row.total;
+client/src/pages/HostDashboard.tsx:54:      if (row.eventType === "whatsapp_click" || row.eventType === "contact_click") current.contactClicks += row.total;
+client/src/pages/HostDashboard.tsx-55-      byDay.set(row.day, current);
+client/src/pages/HostDashboard.tsx-56-    }
+client/src/pages/HostDashboard.tsx-57-    return Array.from({ length: 30 }, (_, index) => {
+client/src/pages/HostDashboard.tsx-58-      const date = new Date();
+--
+client/src/pages/HostDashboard.tsx-110-  const toggleAmenity = (value: string) => setForm((current) => ({ ...current, amenities: current.amenities.includes(value) ? current.amenities.filter((item) => item !== value) : [...current.amenities, value] }));
+client/src/pages/HostDashboard.tsx-111-
+client/src/pages/HostDashboard.tsx-112-  return <div className="container py-8 space-y-8" dir="rtl">
+client/src/pages/HostDashboard.tsx-113-    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-sm text-muted-foreground">مساحة المالك</p><h1 className="text-3xl font-black">لوحة إدارة المكاتب</h1></div><div className="flex flex-wrap gap-2"><Link href="/host/settings"><Button type="button" variant="outline"><Building2 className="ml-2 h-4 w-4" />إعدادات الوكالة</Button></Link><Button type="button" variant="outline" onClick={downloadAnalyticsCsv} disabled={analyticsCsv.isFetching}><Download className="ml-2 h-4 w-4" />{analyticsCsv.isFetching ? "جاري التصدير..." : "تصدير CSV"}</Button><Button onClick={() => setShowForm((value) => !value)} className="bg-[var(--brand-amber)] text-white"><Plus className="ml-2 h-4 w-4" />إضافة مكتب جديد</Button></div></div>
+client/src/pages/HostDashboard.tsx:114:    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><Stat icon={<TrendingUp />} title="الصافي المؤكد" value={`${Number(monthlyRevenue).toLocaleString("fr-MA")} MAD`} /><Stat icon={<CalendarCheck />} title="الحجوزات النشطة" value={String(activeBookings)} /><Stat icon={<Building2 />} title="إجمالي العروض" value={String(overview.data?.totalListings ?? listings.data?.length ?? 0)} /><Stat icon={<Eye />} title="المشاهدات" value={String(overview.data?.views ?? 0)} /><Stat icon={<MessageCircle />} title="نقرات التواصل" value={String((overview.data?.whatsappClicks ?? 0) + (overview.data?.contactClicks ?? 0))} /></div>
+client/src/pages/HostDashboard.tsx-115-    <section className="rounded-3xl border bg-card p-6 shadow-sm"><div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-bold">متابعة حالة الإعلانات</h2><p className="text-sm text-muted-foreground">نظرة سريعة على وضع كل إعلان تابع لوكالتك.</p></div><span className="text-xs text-muted-foreground">{statusSummary.isLoading ? "جاري التحديث..." : `${statusSummary.data?.total ?? 0} إعلانات`}</span></div><div className="grid gap-3 sm:grid-cols-3">{(["pending", "published", "rejected"] as const).map((status) => { const meta = statusMeta[status]; return <button type="button" key={status} onClick={() => setListingStatusFilter(status)} className={`rounded-2xl border p-4 text-right transition ${meta.classes} ${listingStatusFilter === status ? "ring-2 ring-[var(--brand-navy)] ring-offset-2" : "opacity-90 hover:opacity-100"}`}><div className="flex items-center justify-between gap-2"><span className="flex items-center gap-2 text-sm font-bold">{meta.icon}{meta.label}</span><span className="text-2xl font-black">{statusSummary.data?.counts[status] ?? 0}</span></div><p className="mt-1 text-xs opacity-75">{meta.description}</p></button>; })}</div><div className="mt-5 flex flex-wrap items-center gap-2"><Button type="button" size="sm" variant={listingStatusFilter === "all" ? "default" : "outline"} onClick={() => setListingStatusFilter("all")}>كل الإعلانات</Button>{statusSummary.isError && <span className="text-xs text-red-600">تعذر تحميل ملخص الحالات.</span>}</div><div className="mt-4 divide-y rounded-2xl border">{statusSummary.isLoading ? <div className="p-6 text-center text-sm text-muted-foreground">جاري تحميل حالات الإعلانات...</div> : filteredStatusListings.length ? filteredStatusListings.map((listing) => { const meta = statusMeta[listing.normalizedStatus as keyof typeof statusMeta]; return <div key={listing.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate font-bold">{listing.title}</p><p className="text-xs text-muted-foreground">{listing.city} · {listing.category} {listing.createdAt ? `· ${new Date(listing.createdAt).toLocaleDateString("fr-MA")}` : ""}</p></div><div className="flex flex-wrap items-center gap-2"><span className={`inline-flex w-fit items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold ${meta.classes}`}>{meta.icon}{meta.label}</span>{listing.normalizedStatus === "rejected" && <Button type="button" size="sm" variant="outline" onClick={() => { const source = listings.data?.find((item) => item.id === listing.id); if (!source) return toast.error("تعذر تحميل بيانات الإعلان"); setResubmissionId(listing.id); setEditingId(null); setForm({ title: source.title, city: source.city, officeType: source.officeType ?? "office", rentalPeriod: source.rentalPeriod ?? "monthly", price: String(source.pricePerDay), description: source.description ?? "", amenities: source.amenities ? source.amenities.split(",").filter(Boolean) : [], imageUrl: "", imageVerificationProof: "" }); setShowForm(true); }}>تعديل وإعادة الإرسال</Button>}</div></div>; }) : <div className="p-6 text-center text-sm text-muted-foreground">لا توجد إعلانات ضمن هذه الحالة.</div>}</div></section>
+client/src/pages/HostDashboard.tsx:116:    <section className="grid gap-4 md:grid-cols-3"><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><MessageCircle className="h-4 w-4 text-emerald-600" />نقرات واتساب</div><p className="mt-3 text-3xl font-black">{overview.data?.whatsappClicks ?? 0}</p><p className="mt-1 text-xs text-muted-foreground">إجمالي النقرات على مراسلة الوكالة</p></div><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><Phone className="h-4 w-4 text-blue-600" />نقرات الاتصال</div><p className="mt-3 text-3xl font-black">{overview.data?.contactClicks ?? 0}</p><p className="mt-1 text-xs text-muted-foreground">إجمالي طلبات الاتصال المسجلة</p></div><div className="rounded-2xl border bg-card p-5"><div className="flex items-center gap-2 text-sm font-bold"><Power className="h-4 w-4 text-amber-600" />حالة التوفر</div><p className="mt-3 text-3xl font-black">{overview.data?.availableListings ?? 0}<span className="text-base font-medium text-muted-foreground"> متاح</span></p><p className="mt-1 text-xs text-muted-foreground">{overview.data?.unavailableListings ?? 0} عرض غير متاح حالياً</p></div></section>
+client/src/pages/HostDashboard.tsx-117-    <section className="rounded-3xl border bg-card p-6 shadow-sm"><div className="mb-4 flex items-center gap-2"><BarChart3 className="h-5 w-5 text-[var(--brand-amber)]" /><div><h2 className="text-xl font-bold">تطور الأداء</h2><p className="text-xs text-muted-foreground">آخر 30 يوماً · المشاهدات ونقرات التواصل</p></div></div>{analyticsTimeline.isLoading ? <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">جاري تحميل الرسم البياني...</div> : <div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={timeline} margin={{ top: 8, right: 8, left: -16, bottom: 4 }}><CartesianGrid strokeDasharray="3 3" className="stroke-border/60" /><XAxis dataKey="label" tickLine={false} axisLine={false} minTickGap={24} /><YAxis allowDecimals={false} tickLine={false} axisLine={false} width={32} /><Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.day ?? ""} /><Line type="monotone" dataKey="views" name="المشاهدات" stroke="#0B3C5D" strokeWidth={3} dot={false} /><Line type="monotone" dataKey="contactClicks" name="نقرات التواصل" stroke="#E57C23" strokeWidth={3} dot={false} /></LineChart></ResponsiveContainer></div>}</section>
+client/src/pages/HostDashboard.tsx-118-    <section className="rounded-3xl border bg-card p-6 shadow-sm"><div className="mb-4 flex items-center gap-2"><WalletCards className="h-5 w-5 text-[var(--brand-amber)]" /><h2 className="text-xl font-bold">الأرباح والتسويات</h2></div><div className="grid gap-4 sm:grid-cols-4"><Stat title="الإجمالي" value={`${Number(financials.data?.gross ?? 0).toLocaleString("fr-MA")} MAD`} /><Stat title="عمولة المنصة" value={`${Number(financials.data?.platformFees ?? 0).toLocaleString("fr-MA")} MAD`} /><Stat title="الصافي" value={`${Number(financials.data?.net ?? 0).toLocaleString("fr-MA")} MAD`} /><Stat title="المصروف" value={`${Number(financials.data?.paid ?? 0).toLocaleString("fr-MA")} MAD`} /></div><form className="mt-5 grid gap-3 sm:grid-cols-[1fr_180px_auto]" onSubmit={(event) => { event.preventDefault(); const amount = Number(payoutAmount); if (!amount || amount <= 0) return toast.error("أدخل مبلغاً صحيحاً"); requestPayout.mutate({ amount, method: payoutMethod }); }}><input type="number" min="1" className="rounded-xl border bg-background p-3" placeholder="مبلغ السحب بالدرهم" value={payoutAmount} onChange={(event) => setPayoutAmount(event.target.value)} /><select className="rounded-xl border bg-background p-3" value={payoutMethod} onChange={(event) => setPayoutMethod(event.target.value as typeof payoutMethod)}><option value="bank_transfer">تحويل بنكي</option><option value="cash_plus">Cash Plus</option><option value="wafacash">وفاكاش</option></select><Button type="submit" disabled={requestPayout.isPending}>طلب سحب المستحقات</Button></form></section>
+client/src/pages/HostDashboard.tsx-119-    {showForm && <form onSubmit={submit} className="space-y-5 rounded-3xl border bg-card p-6 shadow-sm"><div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold">{resubmissionId ? "تصحيح الإعلان وإعادة إرساله" : editingId ? "تعديل الإعلان" : "إضافة مكتب جديد"}</h2>{resubmissionId && <p className="mt-1 text-sm text-muted-foreground">أعد رفع صورة أصلية جديدة ليتم فحصها قبل إرسال الإعلان للمراجعة.</p>}</div><Button type="button" variant="ghost" onClick={() => { setShowForm(false); setEditingId(null); setResubmissionId(null); }}>إغلاق</Button></div><div className="grid gap-4 md:grid-cols-2"><input className="rounded-xl border bg-background p-3" placeholder="اسم المكتب" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /><input className="rounded-xl border bg-background p-3" placeholder="المدينة" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /><select className="rounded-xl border bg-background p-3" value={form.officeType} onChange={(e) => setForm({ ...form, officeType: e.target.value })}>{Object.entries(labels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><select className="rounded-xl border bg-background p-3" value={form.rentalPeriod} onChange={(e) => setForm({ ...form, rentalPeriod: e.target.value })}><option value="daily">يومي</option><option value="monthly">شهري</option><option value="yearly">سنوي</option></select><input type="number" min="0" className="rounded-xl border bg-background p-3" placeholder="السعر بالدرهم" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /><textarea className="rounded-xl border bg-background p-3 md:col-span-2" placeholder="وصف المكتب" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div><div className="flex flex-wrap gap-2">{[["fiber", "Fiber Optic"], ["ac", "مكيف"], ["parking", "Parking"], ["security", "حراسة"]].map(([value, label]) => <button type="button" key={value} onClick={() => toggleAmenity(value)} className={`rounded-full border px-4 py-2 text-sm ${form.amenities.includes(value) ? "border-amber-500 bg-amber-50 text-amber-800" : "bg-background"}`}>{label}</button>)}</div><AdvancedMediaUpload onImagesUploaded={(images) => { const first = images[0]; setForm((current) => ({ ...current, imageUrl: first?.url ?? "", imageVerificationProof: first?.verificationProof ?? "" })); }} /><Button type="submit" disabled={createListing.isPending || updateListing.isPending || resubmitRejected.isPending}>{resubmissionId ? (resubmitRejected.isPending ? "جاري إعادة الإرسال..." : "إعادة الإرسال للمراجعة") : createListing.isPending ? "جاري الحفظ..." : editingId ? "حفظ التعديلات" : "إرسال المكتب للمراجعة"}</Button></form>}
+client/src/pages/HostDashboard.tsx:120:    <section className="space-y-4"><div className="flex items-center justify-between"><h2 className="text-xl font-bold">معروضاتي</h2><span className="text-sm text-muted-foreground">{listings.data?.length ?? 0} عروض</span></div>{listings.data?.length ? listings.data.map((listing) => { const isAvailable = listing.status === "Published" || listing.status === "Available"; return <div key={listing.id} className="flex flex-col gap-4 rounded-2xl border bg-card p-5 md:flex-row md:items-center md:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{listing.title}</p><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isAvailable ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{isAvailable ? "متاح" : "غير متاح"}</span></div><p className="mt-1 text-sm text-muted-foreground">{listing.city} · {Number(listing.pricePerDay).toLocaleString("fr-MA")} MAD · {listing.category === "car" ? "سيارة" : "عقار"}</p><div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{listing.analytics.views} مشاهدة</span><span className="inline-flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" />{listing.analytics.whatsappClicks} واتساب</span><span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{listing.analytics.contactClicks} اتصال</span></div></div><div className="flex flex-wrap gap-2"><Button size="sm" variant={isAvailable ? "outline" : "default"} onClick={() => toggleAvailability.mutate({ listingId: listing.id, available: !isAvailable })} disabled={toggleAvailability.isPending}><Power className="ml-1 h-4 w-4" />{isAvailable ? "تعطيل التوفر" : "تفعيل التوفر"}</Button><Button size="sm" variant="outline" onClick={() => { setEditingId(listing.id); setForm({ title: listing.title, city: listing.city, officeType: listing.officeType ?? "office", rentalPeriod: listing.rentalPeriod ?? "monthly", price: String(listing.pricePerDay), description: listing.description ?? "", amenities: listing.amenities ? listing.amenities.split(",").filter(Boolean) : [], imageUrl: listing.imageUrl ?? "", imageVerificationProof: "" }); setShowForm(true); }}><Pencil className="ml-1 h-4 w-4" />تعديل</Button><Button size="sm" variant="outline" onClick={() => removeListing.mutate({ id: listing.id })} disabled={removeListing.isPending}><Trash2 className="ml-1 h-4 w-4" />حذف</Button>{bookingContactHref(bookings.data, listing.id) && <a className="inline-flex items-center rounded-md border px-3 py-2 text-sm" href={bookingContactHref(bookings.data, listing.id)!} target="_blank" rel="noreferrer"><MessageCircle className="ml-1 h-4 w-4" />واتساب</a>}</div></div>; }) : <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground">لم تضف أي معروض بعد.</div>}</section>
+client/src/pages/HostDashboard.tsx-121-    <section className="space-y-4"><h2 className="text-xl font-bold">تقويم التوفر</h2>{listings.data?.map((listing) => <div key={`availability-${listing.id}`} className="rounded-2xl border bg-card p-5"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><p className="font-bold">{listing.title}</p><p className="text-sm text-muted-foreground">الفترات المحجوبة: {listing.availability ? JSON.parse(listing.availability).length : 0}</p></div><Button size="sm" onClick={() => { const current = listing.availability ? JSON.parse(listing.availability) : []; if (!availabilityDraft.start || !availabilityDraft.end) return toast.error("حدد تاريخ البداية والنهاية"); setAvailability.mutate({ listingId: listing.id, blockedRanges: [...current, { start: availabilityDraft.start, end: availabilityDraft.end }] }); }} disabled={setAvailability.isPending || availabilityDraft.listingId !== listing.id}><CalendarCheck className="ml-1 h-4 w-4" />حفظ الفترة</Button></div><div className="grid gap-3 sm:grid-cols-2"><input type="date" className="rounded-xl border bg-background p-3" aria-label="تاريخ بداية عدم التوفر" value={availabilityDraft.listingId === listing.id ? availabilityDraft.start : ""} onChange={(e) => setAvailabilityDraft({ listingId: listing.id, start: e.target.value, end: availabilityDraft.listingId === listing.id ? availabilityDraft.end : "" })} /><input type="date" className="rounded-xl border bg-background p-3" aria-label="تاريخ نهاية عدم التوفر" value={availabilityDraft.listingId === listing.id ? availabilityDraft.end : ""} onChange={(e) => setAvailabilityDraft({ listingId: listing.id, start: availabilityDraft.listingId === listing.id ? availabilityDraft.start : "", end: e.target.value })} /></div></div>)}</section>
+client/src/pages/HostDashboard.tsx-122-    <section className="space-y-4"><h2 className="text-xl font-bold">مزامنة التقويم الخارجي (iCal)</h2><p className="text-sm text-muted-foreground">الصق رابط iCal الخاص بإعلانك من Airbnb أو Booking.com لاستيراد الفترات المحجوبة. رابط التصدير يمكن إضافته داخل المنصة الخارجية.</p>{listings.data?.map((listing) => <div key={`ical-${listing.id}`} className="rounded-2xl border bg-card p-5"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><p className="font-bold">{listing.title}</p><p className="text-sm text-muted-foreground">الحالة: {listing.icalSyncStatus === "ok" ? "متزامن" : listing.icalSyncStatus === "error" ? `خطأ: ${listing.icalSyncError ?? "تعذر الجلب"}` : "لم تتم المزامنة بعد"}{listing.icalLastSyncedAt ? ` · آخر تحديث ${new Date(listing.icalLastSyncedAt).toLocaleString("fr-MA")}` : ""}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => syncIcal.mutate({ listingId: listing.id })} disabled={syncIcal.isPending}><RefreshCw className="ml-1 h-4 w-4" />مزامنة الآن</Button></div></div><div className="grid gap-3 md:grid-cols-[1fr_auto]"><input dir="ltr" className="rounded-xl border bg-background p-3 text-left" placeholder="https://.../calendar.ics" value={icalDrafts[listing.id] ?? listing.icalImportUrl ?? ""} onChange={(event) => setIcalDrafts((current) => ({ ...current, [listing.id]: event.target.value }))} /><Button onClick={() => saveIcal.mutate({ listingId: listing.id, importUrl: (icalDrafts[listing.id] ?? listing.icalImportUrl ?? "").trim() || null })} disabled={saveIcal.isPending}>حفظ الرابط</Button></div>{listing.icalExportToken && <div className="mt-3 flex flex-col gap-2 rounded-xl bg-muted/50 p-3 text-sm"><span>رابط تصدير حجوزات B2-Rent:</span><div className="flex items-center gap-2"><code dir="ltr" className="min-w-0 flex-1 overflow-x-auto text-xs">{`${window.location.origin}/api/ical/export/${listing.icalExportToken}`}</code><Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/api/ical/export/${listing.icalExportToken}`)}><Copy className="ml-1 h-4 w-4" />نسخ</Button></div></div>}</div>)}</section>
+client/src/pages/HostDashboard.tsx-123-    <section className="space-y-4"><h2 className="text-xl font-bold">طلبات الحجز</h2>{bookings.data?.length ? bookings.data.map((booking) => <div key={booking.id} className="flex flex-col gap-4 rounded-2xl border bg-card p-5 md:flex-row md:items-center md:justify-between"><div><p className="font-bold">{booking.listingTitle ?? "مكتب"}</p><p className="text-sm text-muted-foreground">{booking.renterName ?? "مستأجر"} · {booking.status} · {Number(booking.totalPrice ?? 0).toLocaleString("fr-MA")} MAD</p></div>{booking.status === "Pending" && <div className="flex gap-2"><Button size="sm" onClick={() => updateStatus.mutate({ bookingId: booking.id, status: "Confirmed" })}><Check className="ml-1 h-4 w-4" />قبول</Button><Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ bookingId: booking.id, status: "Cancelled" })}><X className="ml-1 h-4 w-4" />رفض</Button></div>}</div>) : <div className="rounded-2xl border border-dashed p-8 text-center text-muted-foreground">لا توجد حجوزات واردة حالياً.</div>}</section>
+client/src/pages/HostDashboard.tsx-124-  </div>;
+client/src/pages/HostDashboard.tsx-125-}
+client/src/pages/HostDashboard.tsx-126-
+client/src/pages/HostDashboard.tsx:127:function bookingContactHref(rows: Array<{ listingId: number; renterName?: string | null; status: string }> | undefined, listingId: number) { const booking = rows?.find((item) => item.listingId === listingId && item.status === "Confirmed"); return booking ? `https://wa.me/?text=${encodeURIComponent(`مرحباً، بخصوص حجز ${booking.renterName ?? "المستأجر"} في هذا المكتب`)}` : null; }
+client/src/pages/HostDashboard.tsx-128-function Stat({ icon, title, value }: { icon?: React.ReactNode; title: string; value: string }) { return <div className="rounded-2xl border bg-card p-5"><div className="mb-3 flex items-center gap-2 text-[var(--brand-amber)]">{icon}<span className="text-sm text-muted-foreground">{title}</span></div><strong className="text-2xl">{value}</strong></div>; }
+--
+client/src/pages/AgencySettings.tsx-15-  agencyLatitude: "",
+client/src/pages/AgencySettings.tsx-16-  agencyLongitude: "",
+client/src/pages/AgencySettings.tsx-17-  agencyHours: "",
+client/src/pages/AgencySettings.tsx-18-  commercialRegister: "",
+client/src/pages/AgencySettings.tsx:19:  whatsappPhone: "",
+client/src/pages/AgencySettings.tsx-20-};
+client/src/pages/AgencySettings.tsx-21-
+client/src/pages/AgencySettings.tsx-22-type AgencyForm = typeof initialForm;
+client/src/pages/AgencySettings.tsx-23-
+--
+client/src/pages/AgencySettings.tsx-64-      agencyLatitude: data.agencyLatitude ?? "",
+client/src/pages/AgencySettings.tsx-65-      agencyLongitude: data.agencyLongitude ?? "",
+client/src/pages/AgencySettings.tsx-66-      agencyHours: data.agencyHours ?? "",
+client/src/pages/AgencySettings.tsx-67-      commercialRegister: data.commercialRegister ?? "",
+client/src/pages/AgencySettings.tsx:68:      whatsappPhone: data.whatsappPhone ?? "",
+client/src/pages/AgencySettings.tsx-69-    });
+client/src/pages/AgencySettings.tsx-70-  }, [settingsQuery.data]);
+client/src/pages/AgencySettings.tsx-71-
+client/src/pages/AgencySettings.tsx-72-  if (authLoading || (user && settingsQuery.isLoading)) {
+--
+client/src/pages/AgencySettings.tsx-128-      <div className="grid gap-4 md:grid-cols-2">
+client/src/pages/AgencySettings.tsx-129-        <Field label="اسم الوكالة" value={form.agencyName} onChange={(value) => updateField("agencyName", value)} placeholder="مثال: B2 Rent Casablanca" />
+client/src/pages/AgencySettings.tsx-130-        <Field label="الهاتف" value={form.agencyPhone} onChange={(value) => updateField("agencyPhone", value)} placeholder="+212 6..." dir="ltr" />
+client/src/pages/AgencySettings.tsx-131-        <Field label="البريد الإلكتروني" value={form.agencyEmail} onChange={(value) => updateField("agencyEmail", value)} placeholder="contact@agency.ma" type="email" dir="ltr" />
+client/src/pages/AgencySettings.tsx:132:        <Field label="واتساب" value={form.whatsappPhone} onChange={(value) => updateField("whatsappPhone", value)} placeholder="+212 6..." dir="ltr" />
+client/src/pages/AgencySettings.tsx-133-        <Field label="السجل التجاري RC" value={form.commercialRegister} onChange={(value) => updateField("commercialRegister", value)} placeholder="رقم السجل التجاري" dir="ltr" />
+client/src/pages/AgencySettings.tsx-134-        <Field label="الموقع الإلكتروني" value={form.agencyWebsite} onChange={(value) => updateField("agencyWebsite", value)} placeholder="https://..." dir="ltr" type="url" />
+client/src/pages/AgencySettings.tsx-135-        <label className="grid gap-2 text-sm font-medium md:col-span-2">العنوان الكامل<textarea value={form.agencyAddress} onChange={(event) => updateField("agencyAddress", event.target.value)} placeholder="المدينة، الشارع، رقم المكتب" className="min-h-24 rounded-xl border bg-background p-3 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring" /></label>
+client/src/pages/AgencySettings.tsx-136-      </div>
+--
+client/src/components/Navbar.tsx-77-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+client/src/components/Navbar.tsx-78-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+client/src/components/Navbar.tsx-79-  const [utilitiesOpen, setUtilitiesOpen] = useState(false);
+client/src/components/Navbar.tsx-80-  const [cmiModalOpen, setCmiModalOpen] = useState(false);
+client/src/components/Navbar.tsx:81:  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+client/src/components/Navbar.tsx-82-  const [twoFaModalOpen, setTwoFaModalOpen] = useState(false);
+client/src/components/Navbar.tsx-83-  const [notificationPulse, setNotificationPulse] = useState(false);
+client/src/components/Navbar.tsx-84-  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(() => {
+client/src/components/Navbar.tsx-85-    if (typeof window === "undefined") return true;
+--
+client/src/components/Navbar.tsx-344-                  </nav>
+client/src/components/Navbar.tsx-345-                  <div className="mt-4 grid grid-cols-2 gap-2">
+client/src/components/Navbar.tsx-346-                    <button type="button" onClick={() => { setTwoFaModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><Shield className="h-4 w-4" />{t("accountSecurity")}</button>
+client/src/components/Navbar.tsx-347-                    <button type="button" onClick={() => { setCmiModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><CreditCard className="h-4 w-4" />{t("cmiPayment")}</button>
+client/src/components/Navbar.tsx:348:                    <button type="button" onClick={() => { setWhatsappModalOpen(true); setUtilitiesOpen(false); }} className="b2-utility-action"><MessageSquare className="h-4 w-4" />{t("whatsappSms")}</button>
+client/src/components/Navbar.tsx-349-                    {toggleTheme && <button type="button" onClick={toggleThemeWithFeedback} className="b2-utility-action">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{theme === "dark" ? t("dayMode") : t("nightMode")}</button>}
+client/src/components/Navbar.tsx-350-                  </div>
+client/src/components/Navbar.tsx-351-                </div>
+client/src/components/Navbar.tsx-352-              )}
+--
+client/src/components/Navbar.tsx-482-          onSuccess={() => setCmiModalOpen(false)}
+client/src/components/Navbar.tsx-483-          amount={1500}
+client/src/components/Navbar.tsx-484-        />
+client/src/components/Navbar.tsx-485-        <WhatsAppNotificationModal
+client/src/components/Navbar.tsx:486:          isOpen={whatsappModalOpen}
+client/src/components/Navbar.tsx-487-          onClose={() => setWhatsappModalOpen(false)}
+client/src/components/Navbar.tsx-488-          bookingDetails={{
+client/src/components/Navbar.tsx-489-            id: "B2R-9942",
+client/src/components/Navbar.tsx-490-            carName: "Dacia Duster 2026",
+--
+client/src/components/Navbar.tsx-532-
+client/src/components/Navbar.tsx-533-              <div className="grid grid-cols-2 gap-2">
+client/src/components/Navbar.tsx-534-                <button type="button" onClick={() => { setTwoFaModalOpen(true); setMobileMenuOpen(false); }} className="b2-utility-action"><Shield className="h-4 w-4" /> {t("accountSecurity")}</button>
+client/src/components/Navbar.tsx-535-                <button type="button" onClick={() => { setCmiModalOpen(true); setMobileMenuOpen(false); }} className="b2-utility-action"><CreditCard className="h-4 w-4" />{t("cmiPayment")}</button>
+client/src/components/Navbar.tsx:536:                <button type="button" onClick={() => { setWhatsappModalOpen(true); setMobileMenuOpen(false); }} className="b2-utility-action"><MessageSquare className="h-4 w-4" /> {t("whatsappSms")}</button>
+client/src/components/Navbar.tsx-537-                {toggleTheme && <button type="button" onClick={() => { toggleThemeWithFeedback(); setMobileMenuOpen(false); }} className="b2-utility-action">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}{theme === "dark" ? t("dayMode") : t("nightMode")}</button>}
+client/src/components/Navbar.tsx-538-              </div>
+client/src/components/Navbar.tsx-539-
+client/src/components/Navbar.tsx-540-              <Link href="/add-car" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center justify-center rounded-full bg-[var(--brand-coral)] px-4 py-3 text-sm font-extrabold text-white hover:bg-[var(--brand-coral-dark)]">
+=== LEGAL ROUTES ===
+client/src/App.tsx-27-const SearchPage = lazy(() => import("./pages/Search"));
+client/src/App.tsx-28-const PropertyDetailPage = lazy(() => import("./pages/PropertyDetailWithVideo"));
+client/src/App.tsx-29-const DisputeResolutionPage = lazy(() => import('./pages/DisputeResolution'));
+client/src/App.tsx:30:const TermsPage = lazy(() => import('./pages/TermsOfService'));
+client/src/App.tsx:31:const PrivacyPage = lazy(() => import('./pages/PrivacyPolicy'));
+client/src/App.tsx-32-const AddCarPage = lazy(() => import("./pages/AddCar"));
+client/src/App.tsx-33-const MyBookingsPage = lazy(() => import("./pages/MyBookings"));
+client/src/App.tsx-34-const HelpPage = lazy(() => import("./pages/Help"));

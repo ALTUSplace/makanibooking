@@ -369,10 +369,28 @@ textarea:focus-visible {
 }
 
 .glass-header {
-  background: color-mix(in srgb, var(--brand-surface) 95%, transparent);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--brand-border);
-  box-shadow: 0 6px 22px rgba(0, 43, 77, 0.05);
+  background: color-mix(in srgb, var(--brand-surface) 78%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-border) 68%, transparent);
+  box-shadow: 0 4px 18px rgba(0, 43, 77, 0.035);
+}
+
+.b2-logo-link {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.b2-brand-mark {
+  display: block;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  mix-blend-mode: multiply;
+}
+
+.dark .b2-brand-mark {
+  mix-blend-mode: normal;
 }
 
 .b2-header-link {

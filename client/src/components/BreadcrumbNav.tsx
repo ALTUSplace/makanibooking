@@ -1,75 +1,75 @@
 import { Link, useLocation } from "wouter";
 import { ChevronLeft, Home } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const routeNames: Record<string, string> = {
-  "/": "الرئيسية",
-  "/search": "بحث الإعلانات",
-  "/booking": "حجز موعد",
-  "/checkout": "إتمام الدفع",
-  "/success": "تأكيد الحجز",
-  "/dashboard": "لوحة المالك",
-  "/admin": "لوحة المشرف العام",
-  "/profile": "الملف الشخصي",
-  "/renter-dashboard": "حجوزاتي وفواتيري",
-  "/add-car": "إضافة إعلان جديد",
-  "/my-bookings": "إدارة الحجوزات",
-  "/help": "الدعم والمساعدة",
-  "/support-tickets": "تذاكر الدعم",
-  "/dispute-resolution": "حل النزاعات",
-  "/notifications": "الإشعارات",
-  "/favorites": "المفضلة",
-  "/privacy": "سياسة الخصوصية",
-  "/terms": "شروط الاستخدام",
-  "/host": "لوحة المالك",
-  "/host-dashboard": "لوحة المالك",
-  "/partner": "لوحة المالك",
-  "/partner-dashboard": "لوحة المالك",
-  "/blog": "المدونة",
-  "/about": "من نحن",
+const routeKeys: Record<string, string> = {
+  "/": "home",
+  "/search": "search",
+  "/booking": "bookNow",
+  "/checkout": "checkout",
+  "/success": "success",
+  "/dashboard": "dashboard",
+  "/admin": "admin",
+  "/profile": "profile",
+  "/renter-dashboard": "myBookings",
+  "/add-car": "addCar",
+  "/my-bookings": "myBookings",
+  "/help": "help",
+  "/support-tickets": "help",
+  "/dispute-resolution": "disputeResolution",
+  "/notifications": "notifications",
+  "/favorites": "favorites",
+  "/privacy": "privacyPolicy",
+  "/terms": "termsOfService",
+  "/host": "dashboard",
+  "/host-dashboard": "dashboard",
+  "/partner": "dashboard",
+  "/partner-dashboard": "dashboard",
+  "/blog": "blog",
+  "/about": "about",
 };
 
-function dynamicLabel(path: string, segment: string) {
-  if (path.startsWith("/property/")) return "تفاصيل العقار";
-  if (path.startsWith("/car/")) return "تفاصيل السيارة";
-  if (/^\d+$/.test(segment)) return `الإعلان رقم ${segment}`;
-  if (segment.startsWith("car_")) return "تفاصيل الإعلان";
-  return segment
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+function dynamicLabel(path: string, segment: string, t: (key: string) => string) {
+  if (path.startsWith("/property/")) return t("propertyDetails");
+  if (path.startsWith("/car/")) return t("carDetails");
+  if (/^\d+$/.test(segment)) return t("listingNumber").replace("{id}", segment);
+  if (segment.startsWith("car_")) return t("listingDetails");
+  return t("listingPage");
 }
 
 export default function BreadcrumbNav() {
   const [location] = useLocation();
+  const { direction, t } = useLanguage();
   if (location === "/") return null;
 
-  const pathSegments = location.split("/").filter(Boolean);
-  const items = [{ label: "الرئيسية", path: "/" }];
+  const pathSegments = location.split("?")[0].split("/").filter(Boolean);
+  const items = [{ label: t("home"), path: "/" }];
   let currentPath = "";
 
   pathSegments.forEach((segment) => {
     currentPath += `/${segment}`;
     items.push({
-      label: routeNames[currentPath] ?? dynamicLabel(currentPath, segment),
+      label: routeKeys[currentPath] ? t(routeKeys[currentPath]) : dynamicLabel(currentPath, segment, t),
       path: currentPath,
     });
   });
 
   return (
-    <nav aria-label="مسار التنقل" className="bg-muted/30 border-b border-border/50 py-2.5 px-4 md:px-8 mb-6" dir="rtl">
+    <nav aria-label={t("breadcrumb")} className="mb-6 border-b border-border/50 bg-muted/30 px-4 py-2.5 md:px-8" dir={direction}>
       <ol className="flex items-center space-x-2 space-x-reverse text-sm text-muted-foreground">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (
             <li key={item.path} className="flex items-center space-x-2 space-x-reverse">
-              {index > 0 && <ChevronLeft className="w-4 h-4 text-muted-foreground/60 mx-1" />}
+              {index > 0 && <ChevronLeft className="mx-1 h-4 w-4 text-muted-foreground/60" aria-hidden="true" />}
               {isLast ? (
-                <span className="font-semibold text-primary flex items-center gap-1">
-                  {index === 0 && <Home className="w-3.5 h-3.5" />}
+                <span className="flex items-center gap-1 font-semibold text-primary">
+                  {index === 0 && <Home className="h-3.5 w-3.5" aria-hidden="true" />}
                   {item.label}
                 </span>
               ) : (
-                <Link href={item.path} className="hover:text-primary transition-colors flex items-center gap-1">
-                  {index === 0 && <Home className="w-3.5 h-3.5" />}
+                <Link href={item.path} className="flex items-center gap-1 transition-colors hover:text-primary">
+                  {index === 0 && <Home className="h-3.5 w-3.5" aria-hidden="true" />}
                   {item.label}
                 </Link>
               )}

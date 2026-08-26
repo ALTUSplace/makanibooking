@@ -5,7 +5,8 @@ describe('B2-Rent SEO footer', () => {
   it('uses the approved hosted identity and verified contact channels', async () => {
     const source = await readFile(new URL('./Footer.tsx', import.meta.url), 'utf8');
 
-    expect(source).toContain('/manus-storage/b2-rent-morocco-logo-transparent_088c06ab.png');
+    expect(source).toContain('/manus-storage/b2-rent-morocco-logo-alpha-source_db1c11c9.png');
+    expect(source).toContain('bg-transparent p-0');
     expect(source).toContain("const supportPhoneDisplay = '+212 754 382 654'");
     expect(source).toContain("tel:+212754382654");
     expect(source).toContain('b2rentt@gmail.com');

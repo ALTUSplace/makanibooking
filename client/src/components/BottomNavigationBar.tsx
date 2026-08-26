@@ -1,19 +1,20 @@
 import { CalendarDays, Home, Search, UserRound } from "lucide-react";
 import { useLocation } from "wouter";
-
-const navItems = [
-  { label: "الرئيسية", path: "/", icon: Home },
-  { label: "البحث", path: "/search", icon: Search },
-  { label: "حجوزاتي", path: "/my-bookings", icon: CalendarDays },
-  { label: "الحساب", path: "/profile", icon: UserRound },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function BottomNavigationBar() {
   const [location, setLocation] = useLocation();
+  const { direction, t } = useLanguage();
   const currentPath = location.split("?")[0];
+  const navItems = [
+    { label: t("home"), path: "/", icon: Home },
+    { label: t("search"), path: "/search", icon: Search },
+    { label: t("myBookings"), path: "/my-bookings", icon: CalendarDays },
+    { label: t("account"), path: "/profile", icon: UserRound },
+  ];
 
   return (
-    <nav className="mobile-bottom-nav md:hidden" aria-label="التنقل السريع للهواتف" dir="rtl">
+    <nav className="mobile-bottom-nav md:hidden" aria-label={t("search")} dir={direction}>
       <div className="mobile-bottom-nav__inner">
         {navItems.map((item) => {
           const Icon = item.icon;

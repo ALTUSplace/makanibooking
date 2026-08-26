@@ -1,0 +1,442 @@
+=== LISTING PROCEDURES ===
+4-import { TRPCError } from "@trpc/server";
+5-import { parse as parseCookie } from "cookie";
+6-import { getSessionCookieOptions } from "./_core/cookies";
+7-import { systemRouter } from "./_core/systemRouter";
+8-import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
+9-import { getDb } from "./db";
+10-import { listings, listingAnalyticsEvents, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers, bookingMessages, auditLogs, refundRequests } from "../drizzle/schema";
+11-import { eq, and, lte, gte, lt, gt, desc, count, isNull, inArray, ne, sql } from "drizzle-orm";
+12-import { safeNotifyUser, buildEmailContent } from "./notificationService";
+13-import { z } from "zod";
+14-import { storageGet, storagePut } from "./storage";
+15-import { generateServerCommercialLeasePdf } from "./commercialLeasePdf";
+16-import { createHeartbeatJob } from "./_core/heartbeat";
+17-import { calculateInvoiceTotals, createInvoiceNumber, getSimulatedPaymentStatus } from "./billing";
+18-import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUrl, createVoucherCode } from "../shared/voucher";
+19-import { escapeIcal, parseIcalEvents, validateIcalImportUrl } from "../shared/ical";
+20-import { syncListingIcal } from "./ical";
+21-import { CANCELLATION_POLICY_VERSION, CANCELLATION_POLICY_TEXT, CANCELLATION_POLICY_FINGERPRINT } from "../shared/cancellationPolicySnapshot";
+22:import { createImageVerificationProof, ORIGINAL_IMAGE_REJECTION_MESSAGE, verifyImageVerificationProof, verifyOriginalListingImage } from "./imageVerification";
+23-
+24-async function writeAuditLog(input: {
+25-  actorId: number;
+26-  action: string;
+27-  entityType: string;
+28-  entityId?: number;
+29-  beforeData?: unknown;
+30-  afterData?: unknown;
+31-}) {
+32-  const db = await getDb();
+33-  if (!db) return;
+34-  await db.insert(auditLogs).values({
+35-    actorId: input.actorId,
+36-    action: input.action,
+37-    entityType: input.entityType,
+38-    entityId: input.entityId,
+39-    beforeData: input.beforeData === undefined ? null : JSON.stringify(input.beforeData),
+40-    afterData: input.afterData === undefined ? null : JSON.stringify(input.afterData),
+--
+101-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+102-      const rows = await db.select({
+103-        agencyName: users.agencyName,
+104-        agencyLogoUrl: users.agencyLogoUrl,
+105-        agencyPhone: users.agencyPhone,
+106-        agencyEmail: users.agencyEmail,
+107-        agencyAddress: users.agencyAddress,
+108-        agencyWebsite: users.agencyWebsite,
+109-        agencyLatitude: users.agencyLatitude,
+110-        agencyLongitude: users.agencyLongitude,
+111-        agencyHours: users.agencyHours,
+112-        commercialRegister: users.commercialRegister,
+113-        whatsappPhone: users.whatsappPhone,
+114-      }).from(users).where(eq(users.id, ctx.user!.id)).limit(1);
+115-      return rows[0] ?? null;
+116-    }),
+117-    statusSummary: ownerProcedure.query(async ({ ctx }) => {
+118-      const db = await getDb();
+119:      const empty = { counts: { pending: 0, published: 0, rejected: 0 }, total: 0, listings: [] as Array<{ id: number; title: string; city: string; category: string; status: string; normalizedStatus: "pending" | "published" | "rejected"; createdAt: Date | null }> };
+120-      if (!db) return empty;
+121-      const owned = await db.select({ id: listings.id, title: listings.title, city: listings.city, category: listings.category, status: listings.status, createdAt: listings.createdAt })
+122-        .from(listings).where(eq(listings.ownerId, ctx.user!.id)).orderBy(desc(listings.createdAt));
+123-      const result = owned.map((listing) => {
+124:        const normalizedStatus = listing.status === "Rejected" ? "rejected" : listing.status === "Pending" ? "pending" : "published";
+125-        return { ...listing, normalizedStatus };
+126-      });
+127-      return {
+128-        total: result.length,
+129-        counts: {
+130:          pending: result.filter((listing) => listing.normalizedStatus === "pending").length,
+131-          published: result.filter((listing) => listing.normalizedStatus === "published").length,
+132-          rejected: result.filter((listing) => listing.normalizedStatus === "rejected").length,
+133-        },
+134-        listings: result,
+135-      };
+136-    }),
+137-    updateSettings: ownerProcedure
+138-      .input(z.object({
+139-        agencyName: z.string().trim().max(180).optional().nullable(),
+140-        agencyPhone: z.string().trim().max(32).optional().nullable(),
+141-        agencyEmail: z.string().trim().email().max(320).optional().nullable(),
+142-        agencyAddress: z.string().trim().max(255).optional().nullable(),
+143-        agencyWebsite: z.string().trim().url().max(255).optional().nullable(),
+144-        agencyLatitude: z.string().trim().regex(/^-?\d{1,2}(?:\.\d{1,8})?$/).max(32).optional().nullable(),
+145-        agencyLongitude: z.string().trim().regex(/^-?\d{1,3}(?:\.\d{1,8})?$/).max(32).optional().nullable(),
+146-        agencyHours: z.string().trim().max(2000).optional().nullable(),
+147-        commercialRegister: z.string().trim().max(120).optional().nullable(),
+148-        whatsappPhone: z.string().trim().max(32).optional().nullable(),
+--
+172-      const owned = await db.select().from(listings).where(eq(listings.ownerId, ctx.user!.id)).orderBy(desc(listings.createdAt));
+173-      if (!owned.length) return [];
+174-      const events = await db.select({ listingId: listingAnalyticsEvents.listingId, eventType: listingAnalyticsEvents.eventType, total: count() })
+175-        .from(listingAnalyticsEvents)
+176-        .where(inArray(listingAnalyticsEvents.listingId, owned.map((listing) => listing.id)))
+177-        .groupBy(listingAnalyticsEvents.listingId, listingAnalyticsEvents.eventType);
+178-      const counts = new Map<number, { views: number; whatsappClicks: number; contactClicks: number }>();
+179-      for (const event of events) {
+180-        const current = counts.get(event.listingId) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 };
+181-        if (event.eventType === "view") current.views = Number(event.total);
+182-        if (event.eventType === "whatsapp_click") current.whatsappClicks = Number(event.total);
+183-        if (event.eventType === "contact_click") current.contactClicks = Number(event.total);
+184-        counts.set(event.listingId, current);
+185-      }
+186-      return owned.map((listing) => ({ ...listing, analytics: counts.get(listing.id) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 } }));
+187-    }),
+188-    overview: ownerProcedure.query(async ({ ctx }) => {
+189-      const db = await getDb();
+190:      if (!db) return { totalListings: 0, availableListings: 0, unavailableListings: 0, activeBookings: 0, views: 0, whatsappClicks: 0, contactClicks: 0, grossRevenue: 0, netRevenue: 0 };
+191-      const owned = await db.select({ id: listings.id, status: listings.status }).from(listings).where(eq(listings.ownerId, ctx.user!.id));
+192-      const listingIds = owned.map((listing) => listing.id);
+193:      if (!listingIds.length) return { totalListings: 0, availableListings: 0, unavailableListings: 0, activeBookings: 0, views: 0, whatsappClicks: 0, contactClicks: 0, grossRevenue: 0, netRevenue: 0 };
+194-      const [eventRows, bookingRows] = await Promise.all([
+195-        db.select({ eventType: listingAnalyticsEvents.eventType, total: count() }).from(listingAnalyticsEvents).where(inArray(listingAnalyticsEvents.listingId, listingIds)).groupBy(listingAnalyticsEvents.eventType),
+196-        db.select({ status: bookings.status, totalPrice: bookings.totalPrice, netProfit: bookings.netProfit }).from(bookings).where(inArray(bookings.listingId, listingIds)),
+197-      ]);
+198-      const eventTotals = { views: 0, whatsappClicks: 0, contactClicks: 0 };
+199-      for (const row of eventRows) {
+200-        if (row.eventType === "view") eventTotals.views = Number(row.total);
+201-        if (row.eventType === "whatsapp_click") eventTotals.whatsappClicks = Number(row.total);
+202-        if (row.eventType === "contact_click") eventTotals.contactClicks = Number(row.total);
+203-      }
+204-      return {
+205-        totalListings: owned.length,
+206-        availableListings: owned.filter((listing) => listing.status === "Published" || listing.status === "Available").length,
+207-        unavailableListings: owned.filter((listing) => listing.status === "Rented" || listing.status === "Rejected").length,
+208:        activeBookings: bookingRows.filter((booking) => booking.status === "Pending" || booking.status === "Confirmed").length,
+209-        ...eventTotals,
+210-        grossRevenue: bookingRows.filter((booking) => booking.status === "Confirmed").reduce((sum, booking) => sum + Number(booking.totalPrice), 0),
+211-        netRevenue: bookingRows.filter((booking) => booking.status === "Confirmed").reduce((sum, booking) => sum + Number(booking.netProfit), 0),
+212-      };
+213-    }),
+214-    analyticsTimeline: ownerProcedure.query(async ({ ctx }) => {
+215-      const db = await getDb();
+216-      if (!db) return [];
+217-      const owned = await db.select({ id: listings.id }).from(listings).where(eq(listings.ownerId, ctx.user!.id));
+218-      const listingIds = owned.map((listing) => listing.id);
+219-      if (!listingIds.length) return [];
+220-      const since = new Date();
+221-      since.setUTCHours(0, 0, 0, 0);
+222-      since.setUTCDate(since.getUTCDate() - 29);
+223-      const rows = await db.select({
+224-        day: sql<string>`DATE(${listingAnalyticsEvents.createdAt})`,
+225-        eventType: listingAnalyticsEvents.eventType,
+226-        total: count(),
+--
+251-        const current = counts.get(event.listingId) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 };
+252-        if (event.eventType === "view") current.views = Number(event.total);
+253-        if (event.eventType === "whatsapp_click") current.whatsappClicks = Number(event.total);
+254-        if (event.eventType === "contact_click") current.contactClicks = Number(event.total);
+255-        counts.set(event.listingId, current);
+256-      }
+257-      const csvField = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+258-      const header = ["listing_id", "title", "category", "status", "views", "whatsapp_clicks", "contact_clicks", "total_contact_clicks", "created_at"];
+259-      const rows = owned.map((listing) => {
+260-        const analytics = counts.get(listing.id) ?? { views: 0, whatsappClicks: 0, contactClicks: 0 };
+261-        return [listing.id, listing.title, listing.category, listing.status, analytics.views, analytics.whatsappClicks, analytics.contactClicks, analytics.whatsappClicks + analytics.contactClicks, listing.createdAt?.toISOString?.() ?? ""].map(csvField).join(",");
+262-      });
+263-      const date = new Date().toISOString().slice(0, 10);
+264-      return { filename: `b2-rent-agency-analytics-${date}.csv`, csv: `\uFEFF${header.map(csvField).join(",")}\n${rows.join("\n")}` };
+265-    }),
+266-  }),
+267-
+268-  notifications: router({
+269:    list: protectedProcedure
+270-      .input(z.object({ unreadOnly: z.boolean().optional().default(false) }))
+271-      .query(async ({ ctx, input }) => {
+272-        const db = await getDb();
+273-        if (!db) return [];
+274-        const filters = [eq(notifications.userId, ctx.user!.id)];
+275-        if (input.unreadOnly) filters.push(isNull(notifications.readAt));
+276-        return db.select().from(notifications)
+277-          .where(and(...filters))
+278-          .orderBy(desc(notifications.createdAt))
+279-          .limit(50);
+280-      }),
+281-
+282-    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+283-      const db = await getDb();
+284-      if (!db) return 0;
+285-      const result = await db.select({ value: count() }).from(notifications)
+286-        .where(and(eq(notifications.userId, ctx.user!.id), isNull(notifications.readAt)));
+287-      return Number(result[0]?.value ?? 0);
+--
+355-
+356-  refunds: router({
+357-    listMine: protectedProcedure.query(async ({ ctx }) => {
+358-      const db = await getDb();
+359-      if (!db) return [];
+360-      return db.select().from(refundRequests).where(eq(refundRequests.requestedBy, ctx.user!.id)).orderBy(desc(refundRequests.createdAt)).limit(100);
+361-    }),
+362-    request: protectedProcedure
+363-      .input(z.object({ bookingId: z.number().int().positive(), amount: z.number().int().positive(), reason: z.string().trim().min(5).max(2000) }))
+364-      .mutation(async ({ ctx, input }) => {
+365-        const db = await getDb();
+366-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+367-        const bookingRows = await db.select({ renterId: bookings.renterId, totalPrice: bookings.totalPrice, status: bookings.status, ownerId: listings.ownerId })
+368-          .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id)).where(eq(bookings.id, input.bookingId)).limit(1);
+369-        const booking = bookingRows[0];
+370-        if (!booking) throw new TRPCError({ code: "NOT_FOUND", message: "الحجز غير موجود." });
+371-        if (ctx.user!.id !== booking.renterId && ctx.user!.id !== booking.ownerId && ctx.user!.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك طلب استرداد لهذا الحجز." });
+372-        if (input.amount > booking.totalPrice) throw new TRPCError({ code: "BAD_REQUEST", message: "مبلغ الاسترداد لا يمكن أن يتجاوز قيمة الحجز." });
+373:        const pending = await db.select({ id: refundRequests.id }).from(refundRequests).where(and(eq(refundRequests.bookingId, input.bookingId), eq(refundRequests.status, "Pending"))).limit(1);
+374:        if (pending.length) throw new TRPCError({ code: "CONFLICT", message: "يوجد طلب استرداد قيد المراجعة لهذا الحجز." });
+375-        const [inserted] = await db.insert(refundRequests).values({ bookingId: input.bookingId, requestedBy: ctx.user!.id, amount: input.amount, reason: input.reason });
+376-        const refundId = Number(inserted.insertId);
+377-        await writeAuditLog({ actorId: ctx.user!.id, action: "refund.requested", entityType: "refund_request", entityId: refundId, afterData: { bookingId: input.bookingId, amount: input.amount, reason: input.reason } });
+378-        return { success: true as const, refundId };
+379-      }),
+380-  }),
+381-
+382-  storage: router({
+383-    uploadAgencyLogo: ownerProcedure
+384-      .input(z.object({
+385-        fileName: z.string().trim().min(1).max(160),
+386-        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+387-        contentBase64: z.string().min(1).max(8_500_000),
+388-      }))
+389-      .mutation(async ({ ctx, input }) => {
+390-        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "agency-logo";
+391-        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+392-        if (imageBuffer.length === 0 || imageBuffer.length > 3 * 1024 * 1024) {
+--
+395-        const uploaded = await storagePut(`users/${ctx.user!.id}/agency/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
+396-        await getDb().then(async db => {
+397-          if (db) await db.update(users).set({ agencyLogoUrl: uploaded.url }).where(eq(users.id, ctx.user!.id));
+398-        });
+399-        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType };
+400-      }),
+401-    uploadImage: ownerProcedure
+402-      .input(z.object({
+403-        fileName: z.string().trim().min(1).max(160),
+404-        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+405-        contentBase64: z.string().min(1).max(8_500_000),
+406-      }))
+407-      .mutation(async ({ ctx, input }) => {
+408-        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "listing-image";
+409-        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+410-        if (imageBuffer.length === 0 || imageBuffer.length > 6 * 1024 * 1024) {
+411-          throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الصورة يجب أن يكون بين 1 بايت و6 ميجابايت." });
+412-        }
+413:        const verification = await verifyOriginalListingImage({ base64: input.contentBase64, mimeType: input.mimeType });
+414-        if (!verification.accepted) {
+415-          const notificationTitle = "تم رفض صورة الإعلان / Image refusée";
+416-          const notificationMessage = `${ORIGINAL_IMAGE_REJECTION_MESSAGE}\n\nالأسباب: ${verification.reasons.join("، ") || "لم تستوفِ الصورة معايير الأصالة."}`;
+417-          await safeNotifyUser({
+418-            userId: ctx.user!.id,
+419-            type: "listing_rejected",
+420-            title: notificationTitle,
+421-            message: notificationMessage,
+422-            href: "/host",
+423-            entityType: "listing_image_verification",
+424-            dedupeKey: `listing-image-rejected:${ctx.user!.id}:${normalizedName}:${verification.confidence}`,
+425-            email: ctx.user!.email ? { to: ctx.user!.email, subject: notificationTitle, ...buildEmailContent(notificationTitle, notificationMessage, "/host") } : undefined,
+426-          });
+427-          throw new TRPCError({
+428-            code: "BAD_REQUEST",
+429-            message: ORIGINAL_IMAGE_REJECTION_MESSAGE,
+430-            cause: { confidence: verification.confidence, reasons: verification.reasons },
+431-          });
+--
+499-      if (!db) return [];
+500-      return db.select({ id: refundRequests.id, bookingId: refundRequests.bookingId, requestedBy: refundRequests.requestedBy, requesterName: users.name, amount: refundRequests.amount, reason: refundRequests.reason, status: refundRequests.status, adminNote: refundRequests.adminNote, reviewedBy: refundRequests.reviewedBy, createdAt: refundRequests.createdAt, reviewedAt: refundRequests.reviewedAt })
+501-        .from(refundRequests).leftJoin(users, eq(refundRequests.requestedBy, users.id)).orderBy(desc(refundRequests.createdAt)).limit(200);
+502-    }),
+503-    reviewRefund: adminProcedure
+504-      .input(z.object({ refundId: z.number().int().positive(), status: z.enum(["Approved", "Rejected", "Paid"]), adminNote: z.string().trim().max(2000).optional() }))
+505-      .mutation(async ({ ctx, input }) => {
+506-        const db = await getDb();
+507-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة." });
+508-        const current = await db.select().from(refundRequests).where(eq(refundRequests.id, input.refundId)).limit(1);
+509-        if (!current[0]) throw new TRPCError({ code: "NOT_FOUND", message: "طلب الاسترداد غير موجود." });
+510-        await db.update(refundRequests).set({ status: input.status, adminNote: input.adminNote || null, reviewedBy: ctx.user!.id, reviewedAt: new Date() }).where(eq(refundRequests.id, input.refundId));
+511-        await writeAuditLog({ actorId: ctx.user!.id, action: "refund.reviewed", entityType: "refund_request", entityId: input.refundId, beforeData: current[0], afterData: { ...current[0], status: input.status, adminNote: input.adminNote || null } });
+512-        await safeNotifyUser({ userId: current[0].requestedBy, type: "system", title: "تحديث طلب الاسترداد / Mise à jour du remboursement", message: `تم تحديث طلب الاسترداد #${input.refundId} إلى حالة ${input.status}.`, href: "/my-bookings", entityType: "refund_request", entityId: input.refundId });
+513-        return { success: true as const };
+514-      }),
+515-    overview: adminProcedure.query(async () => {
+516-      const db = await getDb();
+517:      if (!db) return { users: 0, owners: 0, renters: 0, listings: 0, pendingListings: 0, bookings: 0, grossRevenue: 0, platformFees: 0 };
+518:      const [userRows, ownerRows, renterRows, listingRows, pendingRows, bookingRows, revenueRows] = await Promise.all([
+519-        db.select({ value: count() }).from(users),
+520-        db.select({ value: count() }).from(users).where(eq(users.role, 'owner')),
+521-        db.select({ value: count() }).from(users).where(eq(users.role, 'renter')),
+522-        db.select({ value: count() }).from(listings),
+523-        db.select({ value: count() }).from(listings).where(eq(listings.status, 'Published')),
+524-        db.select({ value: count() }).from(bookings),
+525-        db.select({ gross: bookings.totalPrice, fees: bookings.commissionFee }).from(bookings).where(eq(bookings.status, 'Confirmed')),
+526-      ]);
+527-      return {
+528-        users: Number(userRows[0]?.value ?? 0), owners: Number(ownerRows[0]?.value ?? 0), renters: Number(renterRows[0]?.value ?? 0),
+529:        listings: Number(listingRows[0]?.value ?? 0), pendingListings: Number(pendingRows[0]?.value ?? 0), bookings: Number(bookingRows[0]?.value ?? 0),
+530-        grossRevenue: revenueRows.reduce((sum, row) => sum + row.gross, 0), platformFees: revenueRows.reduce((sum, row) => sum + row.fees, 0),
+531-      };
+532-    }),
+533-    users: adminProcedure.query(async () => {
+534-      const db = await getDb();
+535-      if (!db) return [];
+536-      return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt)).limit(200);
+537-    }),
+538-    updateUserRole: adminProcedure
+539-      .input(z.object({ userId: z.number().int().positive(), role: z.enum(['renter', 'owner', 'admin', 'user']) }))
+540-      .mutation(async ({ input }) => {
+541-        const db = await getDb();
+542-        if (!db) throw new Error('Database unavailable');
+543-        await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
+544-        return { success: true };
+545-      }),
+546-    bookings: adminProcedure.query(async () => {
+547-      const db = await getDb();
+--
+635-    ownerFinancials: ownerProcedure.query(async ({ ctx }) => {
+636-      const db = await getDb();
+637-      if (!db) return { gross: 0, platformFees: 0, net: 0, requested: 0, paid: 0 };
+638-      const rows = await db.select({ totalPrice: bookings.totalPrice, commissionFee: bookings.commissionFee, netProfit: bookings.netProfit })
+639-        .from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id))
+640-        .where(and(eq(listings.ownerId, ctx.user!.id), eq(bookings.status, 'Confirmed')));
+641-      const payouts = await db.select({ amount: payoutRequests.amount, status: payoutRequests.status }).from(payoutRequests).where(eq(payoutRequests.ownerId, ctx.user!.id));
+642-      return {
+643-        gross: rows.reduce((sum, row) => sum + row.totalPrice, 0),
+644-        platformFees: rows.reduce((sum, row) => sum + row.commissionFee, 0),
+645-        net: rows.reduce((sum, row) => sum + row.netProfit, 0),
+646-        requested: payouts.filter(p => p.status === 'Pending' || p.status === 'Approved').reduce((sum, p) => sum + p.amount, 0),
+647-        paid: payouts.filter(p => p.status === 'Paid').reduce((sum, p) => sum + p.amount, 0),
+648-      };
+649-    }),
+650-  }),
+651-
+652-  supportTickets: router({
+653:    list: protectedProcedure.query(async ({ ctx }) => {
+654-      const db = await getDb();
+655-      if (!db) return [];
+656-      return db.select({ id: supportTickets.id, subject: supportTickets.subject, category: supportTickets.category, description: supportTickets.description, status: supportTickets.status, lastResponse: supportTickets.lastResponse, respondedAt: supportTickets.respondedAt, createdAt: supportTickets.createdAt, updatedAt: supportTickets.updatedAt })
+657-        .from(supportTickets).where(eq(supportTickets.userId, ctx.user!.id)).orderBy(desc(supportTickets.createdAt)).limit(100);
+658-    }),
+659:    create: protectedProcedure
+660-      .input(z.object({ subject: z.string().trim().min(3).max(255), category: z.string().trim().min(2).max(120), description: z.string().trim().min(5).max(5000) }))
+661-      .mutation(async ({ ctx, input }) => {
+662-        const db = await getDb();
+663-        if (!db) throw new Error("Database unavailable");
+664-        const [inserted] = await db.insert(supportTickets).values({ userId: ctx.user!.id, subject: input.subject, category: input.category, description: input.description, status: "Open" });
+665-        const ticketId = Number(inserted.insertId);
+666-        const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(20);
+667-        await Promise.all(admins.filter(admin => admin.id !== ctx.user!.id).map(admin => safeNotifyUser({
+668-          userId: admin.id,
+669-          type: "system",
+670-          title: "تذكرة دعم جديدة / Nouveau ticket",
+671-          message: `تم فتح تذكرة دعم جديدة: ${input.subject}`,
+672-          href: "/admin",
+673-          entityType: "support_ticket",
+674-          entityId: ticketId,
+675-        })));
+676-        return { success: true, ticketId };
+677-      }),
+678-  }),
+679-
+680-  disputes: router({
+681-    listMine: protectedProcedure.query(async ({ ctx }) => {
+682-      const db = await getDb();
+683-      if (!db) return [];
+684-      const rows = await db.select({ id: disputes.id, bookingId: disputes.bookingId, type: disputes.type, description: disputes.description, status: disputes.status, resolutionNote: disputes.resolutionNote, createdAt: disputes.createdAt, updatedAt: disputes.updatedAt })
+685-        .from(disputes).where(eq(disputes.openedBy, ctx.user!.id)).orderBy(desc(disputes.createdAt)).limit(100);
+686-      if (!rows.length) return [];
+687-      const attachments = await db.select({ id: disputeAttachments.id, disputeId: disputeAttachments.disputeId, originalFileName: disputeAttachments.originalFileName, fileKey: disputeAttachments.fileKey, mimeType: disputeAttachments.mimeType, fileSize: disputeAttachments.fileSize })
+688-        .from(disputeAttachments).where(inArray(disputeAttachments.disputeId, rows.map(row => row.id)));
+689-      return rows.map(row => ({ ...row, attachments: attachments.filter(file => file.disputeId === row.id).map(file => ({ id: file.id, name: file.originalFileName, mimeType: file.mimeType, size: file.fileSize, url: `/manus-storage/${file.fileKey}` })) }));
+690-    }),
+691:    create: protectedProcedure
+692-      .input(z.object({ bookingId: z.number().int().positive(), type: z.string().trim().min(2).max(120), description: z.string().trim().min(5).max(5000), attachments: z.array(z.object({ name: z.string().trim().min(1).max(255), mimeType: z.string().trim().min(1).max(100), contentBase64: z.string().max(14000000) })).max(5).optional() }))
+693-      .mutation(async ({ ctx, input }) => {
+694-        const db = await getDb();
+695-        if (!db) throw new Error("Database unavailable");
+696-        const booking = await db.select({ id: bookings.id, renterId: bookings.renterId, listingId: bookings.listingId }).from(bookings).where(eq(bookings.id, input.bookingId)).limit(1);
+697-        if (!booking[0]) throw new Error("الحجز المرتبط بالنزاع غير موجود.");
+698-        const listing = await db.select({ ownerId: listings.ownerId, title: listings.title }).from(listings).where(eq(listings.id, booking[0].listingId)).limit(1);
+699-        const canOpen = ctx.user!.role === "admin" || booking[0].renterId === ctx.user!.id || listing[0]?.ownerId === ctx.user!.id;
+700-        if (!canOpen) throw new Error("لا يمكنك فتح نزاع حول حجز لا يخصك.");
+701-        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+702-        const files = input.attachments ?? [];
+703-        if (files.some(file => !allowedTypes.includes(file.mimeType))) throw new Error("نوع ملف مرفق غير مدعوم.");
+704-        const totalBytes = files.reduce((total, file) => total + Math.floor(file.contentBase64.length * 0.75), 0);
+705-        if (totalBytes > 10 * 1024 * 1024) throw new Error("إجمالي المرفقات يتجاوز 10 ميجابايت.");
+706-        const [inserted] = await db.insert(disputes).values({ bookingId: input.bookingId, openedBy: ctx.user!.id, type: input.type, description: input.description, status: "Open" });
+707-        const disputeId = Number(inserted.insertId);
+708-        for (const file of files) {
+709-          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+--
+724-      }),
+725-  }),
+726-
+727-  payouts: router({
+728-    request: ownerProcedure
+729-      .input(z.object({ amount: z.number().int().positive(), method: z.enum(['bank_transfer', 'cash_plus', 'wafacash']) }))
+730-      .mutation(async ({ ctx, input }) => {
+731-        const db = await getDb();
+732-        if (!db) throw new Error('Database unavailable');
+733-        const rows = await db.select({ netProfit: bookings.netProfit }).from(bookings).innerJoin(listings, eq(bookings.listingId, listings.id)).where(and(eq(listings.ownerId, ctx.user!.id), eq(bookings.status, 'Confirmed')));
+734-        const previous = await db.select({ amount: payoutRequests.amount, status: payoutRequests.status }).from(payoutRequests).where(eq(payoutRequests.ownerId, ctx.user!.id));
+735-        const available = rows.reduce((sum, row) => sum + row.netProfit, 0) - previous.filter(p => p.status !== 'Rejected').reduce((sum, p) => sum + p.amount, 0);
+736-        if (input.amount > available) throw new Error('Requested amount exceeds available owner balance');
+737-        await db.insert(payoutRequests).values({ ownerId: ctx.user!.id, amount: input.amount, method: input.method });
+738-        return { success: true };
+739-      }),
+740-  }),
+741-  listings: router({
+742:    list: publicProcedure
+743-      .input(
+744-        z.object({
+745-          startDate: z.string().optional(),
+746-          endDate: z.string().optional(),
+747-        }).optional()
+748-      )
+749-      .query(async ({ input }) => {
+750-        const db = await getDb();
+751-        if (!db) throw unavailableCatalogError();
+752-        const allListings = await db.select({ listing: listings, ownerName: users.name }).from(listings).leftJoin(users, eq(listings.ownerId, users.id)).where(inArray(listings.status, ['Published', 'Available'])).orderBy(desc(listings.createdAt));
+753-
+754-        // Dynamic Pricing Engine calculation
+755-        return allListings.map(({ listing: item, ownerName }) => {
+756-          let adjustedPrice = item.pricePerDay;
+757-          if (input?.startDate && input?.endDate) {
+758-            const start = new Date(input.startDate);
+759-            const end = new Date(input.endDate);
+=== TEST SUMMARY FILES ===
+audit_automated_results.txt
+audit_code_evidence.txt
+audit_external_findings.md
+audit_router_findings.txt
+audit_visual_findings.md
+=== RECENT TEST OUTPUT ===
+2026-08-26 13:59 ./audit_router_findings.txt
+2026-08-26 13:58 ./audit_external_findings.md
+2026-08-26 13:58 ./audit_code_evidence.txt
+2026-08-26 13:57 ./audit_automated_results.txt
+2026-08-26 13:55 ./audit_visual_findings.md
+2026-08-24 22:42 ./server/seo-assets.audit.test.ts
+2026-08-24 22:39 ./server/checkout-ui.audit.test.ts
+2026-08-24 13:44 ./server/vercel-deployment.audit.test.ts
+2026-08-23 21:50 ./server/notification-center.audit.test.ts
+2026-08-22 23:18 ./server/operations.audit.test.ts
+2026-08-22 22:47 ./server/invoice-profile.audit.test.ts
+2026-08-22 18:54 ./server/profile-contract.audit.test.ts
+2026-08-22 18:25 ./server/support-dispute.audit.test.ts
+2026-08-22 18:18 ./server/marketplace.audit.test.ts

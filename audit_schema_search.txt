@@ -1,0 +1,839 @@
+=== SCHEMA STATUS ===
+drizzle/schema.ts:1:import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, index, uniqueIndex } from "drizzle-orm/mysql-core";
+drizzle/schema.ts-2-
+drizzle/schema.ts-3-export const users = mysqlTable("users", {
+drizzle/schema.ts-4-  id: int("id").autoincrement().primaryKey(),
+drizzle/schema.ts-5-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+drizzle/schema.ts-6-  name: text("name"),
+drizzle/schema.ts-7-  email: varchar("email", { length: 320 }),
+--
+drizzle/schema.ts-15-  agencyWebsite: varchar("agency_website", { length: 255 }),
+drizzle/schema.ts-16-  agencyLatitude: varchar("agency_latitude", { length: 32 }),
+drizzle/schema.ts-17-  agencyLongitude: varchar("agency_longitude", { length: 32 }),
+drizzle/schema.ts-18-  agencyHours: text("agency_hours"),
+drizzle/schema.ts-19-  loginMethod: varchar("loginMethod", { length: 64 }),
+drizzle/schema.ts-20-  passwordHash: varchar("passwordHash", { length: 255 }),
+drizzle/schema.ts:21:  role: mysqlEnum("role", ["renter", "owner", "admin", "user"]).default("user").notNull(),
+drizzle/schema.ts-22-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+drizzle/schema.ts-23-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+drizzle/schema.ts-24-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+drizzle/schema.ts-25-  legalConsentVersion: varchar("legal_consent_version", { length: 80 }),
+drizzle/schema.ts-26-  legalConsentAt: timestamp("legal_consent_at"),
+drizzle/schema.ts-27-});
+--
+drizzle/schema.ts-31-  ownerId: int("owner_id").notNull(),
+drizzle/schema.ts-32-  title: text("title").notNull(),
+drizzle/schema.ts-33-  description: text("description"),
+drizzle/schema.ts-34-  category: varchar("category", { length: 64 }).notNull(), // car أو real_estate
+drizzle/schema.ts-35-  pricePerDay: int("price_per_day").notNull(),
+drizzle/schema.ts-36-  imageUrl: text("image_url"),
+drizzle/schema.ts:37:  status: mysqlEnum("status", ["Pending", "Approved", "Available", "Rented", "Rejected", "Published"]).default("Published").notNull(),
+drizzle/schema.ts-38-  city: varchar("city", { length: 64 }).default("الدار البيضاء").notNull(),
+drizzle/schema.ts-39-  fuelType: varchar("fuel_type", { length: 32 }).default("ديزل"),
+drizzle/schema.ts-40-  transmission: varchar("transmission", { length: 32 }).default("أوتوماتيك"),
+drizzle/schema.ts-41-  rooms: int("rooms").default(0),
+drizzle/schema.ts-42-  officeType: varchar("office_type", { length: 64 }),
+drizzle/schema.ts:43:  rentalPeriod: mysqlEnum("rental_period", ["daily", "monthly", "yearly"]),
+drizzle/schema.ts-44-  amenities: text("amenities"),
+drizzle/schema.ts-45-  availability: text("availability"), // JSON array of blocked date ranges managed by the owner
+drizzle/schema.ts-46-  icalImportUrl: text("ical_import_url"), // private external calendar URL, never returned by public listing queries
+drizzle/schema.ts-47-  icalExportToken: varchar("ical_export_token", { length: 96 }).unique(),
+drizzle/schema.ts-48-  icalImportedRanges: text("ical_imported_ranges"), // JSON array of normalized external blocked ranges
+drizzle/schema.ts-49-  icalLastSyncedAt: timestamp("ical_last_synced_at"),
+drizzle/schema.ts:50:  icalSyncStatus: mysqlEnum("ical_sync_status", ["never", "ok", "error"]).default("never").notNull(),
+drizzle/schema.ts-51-  icalSyncError: varchar("ical_sync_error", { length: 500 }),
+drizzle/schema.ts-52-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+drizzle/schema.ts-53-});
+drizzle/schema.ts-54-
+drizzle/schema.ts-55-export const listingAnalyticsEvents = mysqlTable("listing_analytics_events", {
+drizzle/schema.ts-56-  id: int("event_id").autoincrement().primaryKey(),
+drizzle/schema.ts-57-  listingId: int("listing_id").notNull(),
+drizzle/schema.ts:58:  eventType: mysqlEnum("event_type", ["view", "whatsapp_click", "contact_click"]).notNull(),
+drizzle/schema.ts-59-  visitorKey: varchar("visitor_key", { length: 128 }),
+drizzle/schema.ts-60-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-61-}, (table) => ({
+drizzle/schema.ts-62-  listingEventIdx: index("listing_analytics_listing_event_idx").on(table.listingId, table.eventType),
+drizzle/schema.ts-63-  listingCreatedIdx: index("listing_analytics_listing_created_idx").on(table.listingId, table.createdAt),
+drizzle/schema.ts-64-}));
+--
+drizzle/schema.ts-70-  secondaryListingId: int("secondary_listing_id"), // للباقات المدمجة (عقاب + سيارة)
+drizzle/schema.ts-71-  startDate: timestamp("start_date").notNull(),
+drizzle/schema.ts-72-  endDate: timestamp("end_date").notNull(),
+drizzle/schema.ts-73-  totalPrice: int("total_price").notNull(),
+drizzle/schema.ts-74-  commissionFee: int("commission_fee").notNull(), // 10% عمولة المنصة
+drizzle/schema.ts-75-  netProfit: int("net_profit").notNull(), // صافي ربح الشريك
+drizzle/schema.ts:76:  status: mysqlEnum("status", ["Pending", "Confirmed", "Cancelled"]).default("Pending").notNull(),
+drizzle/schema.ts-77-  cancellationPolicyVersion: varchar("cancellation_policy_version", { length: 80 }),
+drizzle/schema.ts-78-  cancellationPolicySnapshot: text("cancellation_policy_snapshot"),
+drizzle/schema.ts-79-  cancellationPolicyFingerprint: varchar("cancellation_policy_fingerprint", { length: 80 }),
+drizzle/schema.ts-80-  cancellationPolicyAcceptedAt: timestamp("cancellation_policy_accepted_at"),
+drizzle/schema.ts-81-  cancellationPolicyAcceptedBy: int("cancellation_policy_accepted_by"),
+drizzle/schema.ts-82-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+--
+drizzle/schema.ts-92-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+drizzle/schema.ts-93-});
+drizzle/schema.ts-94-
+drizzle/schema.ts-95-export const kycSubmissions = mysqlTable("kyc_submissions", {
+drizzle/schema.ts-96-  id: int("kyc_id").autoincrement().primaryKey(),
+drizzle/schema.ts-97-  userId: int("user_id").notNull(),
+drizzle/schema.ts:98:  applicantRole: mysqlEnum("applicant_role", ["renter", "owner", "company"]).default("renter").notNull(),
+drizzle/schema.ts:99:  documentType: mysqlEnum("document_type", ["cni", "commercial_register"]).notNull(),
+drizzle/schema.ts-100-  documentKey: varchar("document_key", { length: 512 }).notNull(),
+drizzle/schema.ts-101-  originalFileName: varchar("original_file_name", { length: 255 }).notNull(),
+drizzle/schema.ts-102-  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+drizzle/schema.ts:103:  status: mysqlEnum("status", ["Pending", "Approved", "Rejected"]).default("Pending").notNull(),
+drizzle/schema.ts-104-  rejectionReason: text("rejection_reason"),
+drizzle/schema.ts-105-  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+drizzle/schema.ts-106-  reviewedAt: timestamp("reviewed_at"),
+drizzle/schema.ts-107-});
+drizzle/schema.ts-108-
+drizzle/schema.ts-109-export const payments = mysqlTable("payments", {
+drizzle/schema.ts-110-  id: int("payment_id").autoincrement().primaryKey(),
+drizzle/schema.ts-111-  bookingId: int("booking_id").notNull(),
+drizzle/schema.ts-112-  payerId: int("payer_id").notNull(),
+drizzle/schema.ts:113:  method: mysqlEnum("method", ["cmi_card", "bank_transfer"]).notNull(),
+drizzle/schema.ts:114:  status: mysqlEnum("status", ["Pending", "Succeeded", "Failed"]).default("Pending").notNull(),
+drizzle/schema.ts-115-  amount: int("amount").notNull(),
+drizzle/schema.ts-116-  currency: varchar("currency", { length: 3 }).default("MAD").notNull(),
+drizzle/schema.ts-117-  providerReference: varchar("provider_reference", { length: 120 }).notNull(),
+drizzle/schema.ts-118-  simulated: boolean("simulated").default(true).notNull(),
+drizzle/schema.ts-119-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-120-});
+--
+drizzle/schema.ts-122-export const commercialLeaseContracts = mysqlTable("commercial_lease_contracts", {
+drizzle/schema.ts-123-  id: int("contract_id").autoincrement().primaryKey(),
+drizzle/schema.ts-124-  bookingId: int("booking_id").notNull().unique(),
+drizzle/schema.ts-125-  landlordId: int("landlord_id").notNull(),
+drizzle/schema.ts-126-  tenantId: int("tenant_id").notNull(),
+drizzle/schema.ts-127-  reference: varchar("reference", { length: 80 }).notNull().unique(),
+drizzle/schema.ts:128:  leaseType: mysqlEnum("lease_type", ["commercial", "professional"]).notNull(),
+drizzle/schema.ts-129-  landlordName: varchar("landlord_name", { length: 255 }).notNull(),
+drizzle/schema.ts-130-  landlordRc: varchar("landlord_rc", { length: 120 }),
+drizzle/schema.ts-131-  tenantName: varchar("tenant_name", { length: 255 }).notNull(),
+drizzle/schema.ts-132-  premises: text("premises").notNull(),
+drizzle/schema.ts-133-  city: varchar("city", { length: 100 }).notNull(),
+drizzle/schema.ts-134-  startDate: timestamp("start_date").notNull(),
+drizzle/schema.ts-135-  endDate: timestamp("end_date").notNull(),
+drizzle/schema.ts-136-  monthlyRent: int("monthly_rent").notNull(),
+drizzle/schema.ts-137-  deposit: int("deposit").default(0).notNull(),
+drizzle/schema.ts-138-  pdfKey: varchar("pdf_key", { length: 512 }),
+drizzle/schema.ts:139:  status: mysqlEnum("status", ["Draft", "Generated", "Signed"]).default("Generated").notNull(),
+drizzle/schema.ts-140-  legalNotice: text("legal_notice").notNull(),
+drizzle/schema.ts-141-  leaseEndReminderTaskUid: varchar("lease_end_reminder_task_uid", { length: 65 }),
+drizzle/schema.ts-142-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-143-});
+drizzle/schema.ts-144-
+drizzle/schema.ts-145-export const notifications = mysqlTable("notifications", {
+drizzle/schema.ts-146-  id: int("notification_id").autoincrement().primaryKey(),
+drizzle/schema.ts-147-  userId: int("user_id").notNull(),
+drizzle/schema.ts:148:  type: mysqlEnum("type", ["booking_new", "booking_accepted", "booking_rejected", "listing_approved", "listing_rejected", "lease_expiring", "voucher_issued", "system"]).notNull(),
+drizzle/schema.ts-149-  title: varchar("title", { length: 255 }).notNull(),
+drizzle/schema.ts-150-  message: text("message").notNull(),
+drizzle/schema.ts-151-  href: varchar("href", { length: 512 }),
+drizzle/schema.ts-152-  entityType: varchar("entity_type", { length: 64 }),
+drizzle/schema.ts-153-  entityId: int("entity_id"),
+drizzle/schema.ts-154-  readAt: timestamp("read_at"),
+drizzle/schema.ts:155:  emailStatus: mysqlEnum("email_status", ["not_sent", "sent", "skipped", "failed"]).default("not_sent").notNull(),
+drizzle/schema.ts-156-  emailSentAt: timestamp("email_sent_at"),
+drizzle/schema.ts-157-  dedupeKey: varchar("dedupe_key", { length: 191 }),
+drizzle/schema.ts-158-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-159-}, (table) => ({
+drizzle/schema.ts-160-  userCreatedIdx: index("notifications_user_created_idx").on(table.userId, table.createdAt),
+drizzle/schema.ts-161-  userUnreadIdx: index("notifications_user_unread_idx").on(table.userId, table.readAt),
+--
+drizzle/schema.ts-192-export const refundRequests = mysqlTable("refund_requests", {
+drizzle/schema.ts-193-  id: int("refund_request_id").autoincrement().primaryKey(),
+drizzle/schema.ts-194-  bookingId: int("booking_id").notNull(),
+drizzle/schema.ts-195-  requestedBy: int("requested_by").notNull(),
+drizzle/schema.ts-196-  amount: int("amount").notNull(),
+drizzle/schema.ts-197-  reason: text("reason").notNull(),
+drizzle/schema.ts:198:  status: mysqlEnum("status", ["Pending", "Approved", "Rejected", "Paid"]).default("Pending").notNull(),
+drizzle/schema.ts-199-  adminNote: text("admin_note"),
+drizzle/schema.ts-200-  reviewedBy: int("reviewed_by"),
+drizzle/schema.ts-201-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-202-  reviewedAt: timestamp("reviewed_at"),
+drizzle/schema.ts-203-}, (table) => ({
+drizzle/schema.ts-204-  bookingIdx: index("refund_requests_booking_idx").on(table.bookingId, table.createdAt),
+--
+drizzle/schema.ts-214-});
+drizzle/schema.ts-215-
+drizzle/schema.ts-216-export const payoutRequests = mysqlTable("payout_requests", {
+drizzle/schema.ts-217-  id: int("payout_id").autoincrement().primaryKey(),
+drizzle/schema.ts-218-  ownerId: int("owner_id").notNull(),
+drizzle/schema.ts-219-  amount: int("amount").notNull(),
+drizzle/schema.ts:220:  method: mysqlEnum("method", ["bank_transfer", "cash_plus", "wafacash"]).notNull(),
+drizzle/schema.ts:221:  status: mysqlEnum("status", ["Pending", "Approved", "Paid", "Rejected"]).default("Pending").notNull(),
+drizzle/schema.ts-222-  reference: varchar("reference", { length: 120 }),
+drizzle/schema.ts-223-  adminNote: text("admin_note"),
+drizzle/schema.ts-224-  reviewedBy: int("reviewed_by"),
+drizzle/schema.ts-225-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-226-  reviewedAt: timestamp("reviewed_at"),
+drizzle/schema.ts-227-});
+--
+drizzle/schema.ts-229-export const bookingVouchers = mysqlTable("booking_vouchers", {
+drizzle/schema.ts-230-  id: int("voucher_id").autoincrement().primaryKey(),
+drizzle/schema.ts-231-  bookingId: int("booking_id").notNull().unique(),
+drizzle/schema.ts-232-  renterId: int("renter_id").notNull(),
+drizzle/schema.ts-233-  code: varchar("code", { length: 80 }).notNull().unique(),
+drizzle/schema.ts-234-  qrPayload: text("qr_payload").notNull(),
+drizzle/schema.ts:235:  status: mysqlEnum("status", ["Issued", "Revoked"]).default("Issued").notNull(),
+drizzle/schema.ts-236-  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+drizzle/schema.ts-237-});
+drizzle/schema.ts-238-
+drizzle/schema.ts-239-export const invoices = mysqlTable("invoices", {
+drizzle/schema.ts-240-  id: int("invoice_id").autoincrement().primaryKey(),
+drizzle/schema.ts-241-  invoiceNumber: varchar("invoice_number", { length: 80 }).notNull().unique(),
+--
+drizzle/schema.ts-245-  subtotal: int("subtotal").notNull(),
+drizzle/schema.ts-246-  commissionFee: int("commission_fee").notNull(),
+drizzle/schema.ts-247-  vatRateBasisPoints: int("vat_rate_basis_points").default(2000).notNull(),
+drizzle/schema.ts-248-  vatAmount: int("vat_amount").notNull(),
+drizzle/schema.ts-249-  total: int("total").notNull(),
+drizzle/schema.ts-250-  currency: varchar("currency", { length: 3 }).default("MAD").notNull(),
+drizzle/schema.ts:251:  status: mysqlEnum("status", ["Pending", "Issued"]).default("Issued").notNull(),
+drizzle/schema.ts-252-  cancellationPolicyVersion: varchar("cancellation_policy_version", { length: 80 }),
+drizzle/schema.ts-253-  cancellationPolicySnapshot: text("cancellation_policy_snapshot"),
+drizzle/schema.ts-254-  cancellationPolicyFingerprint: varchar("cancellation_policy_fingerprint", { length: 80 }),
+drizzle/schema.ts-255-  cancellationPolicyAcceptedAt: timestamp("cancellation_policy_accepted_at"),
+drizzle/schema.ts-256-  cancellationPolicyAcceptedBy: int("cancellation_policy_accepted_by"),
+drizzle/schema.ts-257-  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+--
+drizzle/schema.ts-260-export const disputes = mysqlTable("disputes", {
+drizzle/schema.ts-261-  id: int("dispute_id").autoincrement().primaryKey(),
+drizzle/schema.ts-262-  bookingId: int("booking_id").notNull(),
+drizzle/schema.ts-263-  openedBy: int("opened_by").notNull(),
+drizzle/schema.ts-264-  type: varchar("type", { length: 120 }).notNull(),
+drizzle/schema.ts-265-  description: text("description").notNull(),
+drizzle/schema.ts:266:  status: mysqlEnum("status", ["Open", "UnderReview", "Resolved", "Rejected"]).default("Open").notNull(),
+drizzle/schema.ts-267-  resolutionNote: text("resolution_note"),
+drizzle/schema.ts-268-  reviewedBy: int("reviewed_by"),
+drizzle/schema.ts-269-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-270-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+drizzle/schema.ts-271-});
+drizzle/schema.ts-272-
+--
+drizzle/schema.ts-283-export const supportTickets = mysqlTable("support_tickets", {
+drizzle/schema.ts-284-  id: int("ticket_id").autoincrement().primaryKey(),
+drizzle/schema.ts-285-  userId: int("user_id").notNull(),
+drizzle/schema.ts-286-  subject: varchar("subject", { length: 255 }).notNull(),
+drizzle/schema.ts-287-  category: varchar("category", { length: 120 }).notNull(),
+drizzle/schema.ts-288-  description: text("description").notNull(),
+drizzle/schema.ts:289:  status: mysqlEnum("status", ["Open", "InProgress", "Resolved"]).default("Open").notNull(),
+drizzle/schema.ts-290-  lastResponse: text("last_response"),
+drizzle/schema.ts-291-  respondedAt: timestamp("responded_at"),
+drizzle/schema.ts-292-  createdAt: timestamp("created_at").defaultNow().notNull(),
+drizzle/schema.ts-293-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+drizzle/schema.ts-294-});
+drizzle/schema.ts-295-
+--
+server/_core/index.ts-1-import "dotenv/config";
+server/_core/index.ts-2-import { createServer } from "http";
+server/_core/index.ts-3-import net from "net";
+server/_core/index.ts-4-import { serveStatic, setupVite } from "./vite";
+server/_core/index.ts-5-import { createApp } from "./app";
+server/_core/index.ts-6-
+server/_core/index.ts:7:function isPortAvailable(port: number): Promise<boolean> {
+server/_core/index.ts-8-  return new Promise(resolve => {
+server/_core/index.ts-9-    const server = net.createServer();
+server/_core/index.ts-10-    server.listen(port, () => {
+server/_core/index.ts-11-      server.close(() => resolve(true));
+server/_core/index.ts-12-    });
+server/_core/index.ts-13-    server.on("error", () => resolve(false));
+server/_core/index.ts-14-  });
+server/_core/index.ts-15-}
+server/_core/index.ts-16-
+server/_core/index.ts:17:async function findAvailablePort(startPort: number = 3000): Promise<number> {
+server/_core/index.ts-18-  for (let port = startPort; port < startPort + 20; port++) {
+server/_core/index.ts:19:    if (await isPortAvailable(port)) {
+server/_core/index.ts-20-      return port;
+server/_core/index.ts-21-    }
+server/_core/index.ts-22-  }
+server/_core/index.ts-23-  throw new Error(`No available port found starting from ${startPort}`);
+server/_core/index.ts-24-}
+server/_core/index.ts-25-
+--
+server/_core/index.ts-31-    await setupVite(app, server);
+server/_core/index.ts-32-  } else {
+server/_core/index.ts-33-    serveStatic(app);
+server/_core/index.ts-34-  }
+server/_core/index.ts-35-
+server/_core/index.ts-36-  const preferredPort = parseInt(process.env.PORT || "3000");
+server/_core/index.ts:37:  const port = await findAvailablePort(preferredPort);
+=== IMAGE UPLOAD ROUTE ===
+server/routers.ts-6-import { getSessionCookieOptions } from "./_core/cookies";
+server/routers.ts-7-import { systemRouter } from "./_core/systemRouter";
+server/routers.ts-8-import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
+server/routers.ts-9-import { getDb } from "./db";
+server/routers.ts-10-import { listings, listingAnalyticsEvents, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers, bookingMessages, auditLogs, refundRequests } from "../drizzle/schema";
+server/routers.ts-11-import { eq, and, lte, gte, lt, gt, desc, count, isNull, inArray, ne, sql } from "drizzle-orm";
+server/routers.ts-12-import { safeNotifyUser, buildEmailContent } from "./notificationService";
+server/routers.ts-13-import { z } from "zod";
+server/routers.ts-14-import { storageGet, storagePut } from "./storage";
+server/routers.ts-15-import { generateServerCommercialLeasePdf } from "./commercialLeasePdf";
+server/routers.ts-16-import { createHeartbeatJob } from "./_core/heartbeat";
+server/routers.ts-17-import { calculateInvoiceTotals, createInvoiceNumber, getSimulatedPaymentStatus } from "./billing";
+server/routers.ts-18-import { buildVoucherOwnerMessage, buildVoucherRenterMessage, createMapsSearchUrl, createVoucherCode } from "../shared/voucher";
+server/routers.ts-19-import { escapeIcal, parseIcalEvents, validateIcalImportUrl } from "../shared/ical";
+server/routers.ts-20-import { syncListingIcal } from "./ical";
+server/routers.ts-21-import { CANCELLATION_POLICY_VERSION, CANCELLATION_POLICY_TEXT, CANCELLATION_POLICY_FINGERPRINT } from "../shared/cancellationPolicySnapshot";
+server/routers.ts:22:import { createImageVerificationProof, ORIGINAL_IMAGE_REJECTION_MESSAGE, verifyImageVerificationProof, verifyOriginalListingImage } from "./imageVerification";
+server/routers.ts-23-
+server/routers.ts-24-async function writeAuditLog(input: {
+server/routers.ts-25-  actorId: number;
+server/routers.ts-26-  action: string;
+server/routers.ts-27-  entityType: string;
+server/routers.ts-28-  entityId?: number;
+server/routers.ts-29-  beforeData?: unknown;
+server/routers.ts-30-  afterData?: unknown;
+server/routers.ts-31-}) {
+server/routers.ts-32-  const db = await getDb();
+server/routers.ts-33-  if (!db) return;
+server/routers.ts-34-  await db.insert(auditLogs).values({
+server/routers.ts-35-    actorId: input.actorId,
+server/routers.ts-36-    action: input.action,
+server/routers.ts-37-    entityType: input.entityType,
+server/routers.ts-38-    entityId: input.entityId,
+--
+server/routers.ts-385-        fileName: z.string().trim().min(1).max(160),
+server/routers.ts-386-        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+server/routers.ts-387-        contentBase64: z.string().min(1).max(8_500_000),
+server/routers.ts-388-      }))
+server/routers.ts-389-      .mutation(async ({ ctx, input }) => {
+server/routers.ts-390-        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "agency-logo";
+server/routers.ts-391-        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+server/routers.ts-392-        if (imageBuffer.length === 0 || imageBuffer.length > 3 * 1024 * 1024) {
+server/routers.ts-393-          throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الشعار يجب ألا يتجاوز 3 ميجابايت." });
+server/routers.ts-394-        }
+server/routers.ts-395-        const uploaded = await storagePut(`users/${ctx.user!.id}/agency/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
+server/routers.ts-396-        await getDb().then(async db => {
+server/routers.ts-397-          if (db) await db.update(users).set({ agencyLogoUrl: uploaded.url }).where(eq(users.id, ctx.user!.id));
+server/routers.ts-398-        });
+server/routers.ts-399-        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType };
+server/routers.ts-400-      }),
+server/routers.ts:401:    uploadImage: ownerProcedure
+server/routers.ts-402-      .input(z.object({
+server/routers.ts-403-        fileName: z.string().trim().min(1).max(160),
+server/routers.ts-404-        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+server/routers.ts-405-        contentBase64: z.string().min(1).max(8_500_000),
+server/routers.ts-406-      }))
+server/routers.ts-407-      .mutation(async ({ ctx, input }) => {
+server/routers.ts-408-        const normalizedName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120) || "listing-image";
+server/routers.ts-409-        const imageBuffer = Buffer.from(input.contentBase64, "base64");
+server/routers.ts-410-        if (imageBuffer.length === 0 || imageBuffer.length > 6 * 1024 * 1024) {
+server/routers.ts-411-          throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الصورة يجب أن يكون بين 1 بايت و6 ميجابايت." });
+server/routers.ts-412-        }
+server/routers.ts:413:        const verification = await verifyOriginalListingImage({ base64: input.contentBase64, mimeType: input.mimeType });
+server/routers.ts-414-        if (!verification.accepted) {
+server/routers.ts-415-          const notificationTitle = "تم رفض صورة الإعلان / Image refusée";
+server/routers.ts-416-          const notificationMessage = `${ORIGINAL_IMAGE_REJECTION_MESSAGE}\n\nالأسباب: ${verification.reasons.join("، ") || "لم تستوفِ الصورة معايير الأصالة."}`;
+server/routers.ts-417-          await safeNotifyUser({
+server/routers.ts-418-            userId: ctx.user!.id,
+server/routers.ts-419-            type: "listing_rejected",
+server/routers.ts-420-            title: notificationTitle,
+server/routers.ts-421-            message: notificationMessage,
+server/routers.ts-422-            href: "/host",
+server/routers.ts-423-            entityType: "listing_image_verification",
+server/routers.ts-424-            dedupeKey: `listing-image-rejected:${ctx.user!.id}:${normalizedName}:${verification.confidence}`,
+server/routers.ts-425-            email: ctx.user!.email ? { to: ctx.user!.email, subject: notificationTitle, ...buildEmailContent(notificationTitle, notificationMessage, "/host") } : undefined,
+server/routers.ts-426-          });
+server/routers.ts-427-          throw new TRPCError({
+server/routers.ts-428-            code: "BAD_REQUEST",
+server/routers.ts-429-            message: ORIGINAL_IMAGE_REJECTION_MESSAGE,
+server/routers.ts-430-            cause: { confidence: verification.confidence, reasons: verification.reasons },
+server/routers.ts-431-          });
+server/routers.ts-432-        }
+server/routers.ts-433-        const uploaded = await storagePut(`users/${ctx.user!.id}/listings/${Date.now()}-${normalizedName}`, imageBuffer, input.mimeType);
+server/routers.ts:434:        const verificationProof = createImageVerificationProof({ ownerId: ctx.user!.id, url: uploaded.url, bytes: imageBuffer });
+server/routers.ts-435-        return { ...uploaded, fileName: normalizedName, mimeType: input.mimeType, verification: { confidence: verification.confidence }, verificationProof };
+server/routers.ts-436-      }),
+server/routers.ts-437-  }),
+server/routers.ts-438-
+server/routers.ts-439-  kyc: router({
+server/routers.ts-440-    listMine: protectedProcedure.query(async ({ ctx }) => {
+server/routers.ts-441-      const db = await getDb();
+server/routers.ts-442-      if (!db) return [];
+server/routers.ts-443-      return db.select({
+server/routers.ts-444-        id: kycSubmissions.id,
+server/routers.ts-445-        applicantRole: kycSubmissions.applicantRole,
+server/routers.ts-446-        documentType: kycSubmissions.documentType,
+server/routers.ts-447-        originalFileName: kycSubmissions.originalFileName,
+server/routers.ts-448-        mimeType: kycSubmissions.mimeType,
+server/routers.ts-449-        status: kycSubmissions.status,
+server/routers.ts-450-        rejectionReason: kycSubmissions.rejectionReason,
+--
+server/support-dispute.audit.test.ts-39-    expect(routerSource).toMatch(/where\(and\(eq\(bookings\.id, input\.bookingId\), eq\(bookings\.status, "Pending"\)\)\)/);
+server/support-dispute.audit.test.ts-40-  });
+server/support-dispute.audit.test.ts-41-
+server/support-dispute.audit.test.ts-42-  it("requires a confirmed booking before contract generation and keeps review content server-backed", () => {
+server/support-dispute.audit.test.ts-43-    expect(routerSource).toMatch(/commercialLeaseContracts:[\s\S]*?booking\[0\]\.status !== "Confirmed"/);
+server/support-dispute.audit.test.ts-44-    expect(successPage).toMatch(/trpc\.bookings\.getById\.useQuery/);
+server/support-dispute.audit.test.ts-45-    expect(successPage).toMatch(/const isPending = !booking \|\| bookingStatus !== ['"]Confirmed['"]/);
+server/support-dispute.audit.test.ts-46-    expect(successPage).not.toMatch(/const bookingStatus = searchParams\.get\(['"]bookingStatus/);
+server/support-dispute.audit.test.ts-47-    expect(successPage).toMatch(/if \(isPending\) \{/);
+server/support-dispute.audit.test.ts-48-    expect(carPage).not.toMatch(/reviews:\s*\[/);
+server/support-dispute.audit.test.ts-49-    expect(carPage).not.toMatch(/ratingValue:\s*[0-9]/);
+server/support-dispute.audit.test.ts-50-    expect(reviewsSection).toMatch(/trpc\.reviews\.listByListing\.useQuery/);
+server/support-dispute.audit.test.ts-51-    expect(reviewsSection).not.toMatch(/useState<Review\[\]>\(\[/);
+server/support-dispute.audit.test.ts-52-  });
+server/support-dispute.audit.test.ts-53-
+server/support-dispute.audit.test.ts-54-  it("uses protected storage upload for listing media instead of persisting local preview URLs", () => {
+server/support-dispute.audit.test.ts:55:    expect(routerSource).toMatch(/storage:\s*router\([\s\S]*?uploadImage:\s*ownerProcedure/);
+server/support-dispute.audit.test.ts:56:    expect(routerSource).toMatch(/uploadImage:[\s\S]*?contentBase64:\s*z\.string\(\)\.min\(1\)\.max\(/);
+server/support-dispute.audit.test.ts:57:    expect(routerSource).toMatch(/uploadImage:[\s\S]*?storagePut\(`users\/\$\{ctx\.user!\.id\}\/listings/);
+server/support-dispute.audit.test.ts:58:    expect(mediaUpload).toMatch(/trpc\.storage\.uploadImage\.useMutation/);
+server/support-dispute.audit.test.ts:59:    expect(mediaUpload).toMatch(/await uploadImage\.mutateAsync/);
+server/support-dispute.audit.test.ts-60-    expect(mediaUpload).not.toMatch(/mockUploadedUrls/);
+server/support-dispute.audit.test.ts-61-  });
+server/support-dispute.audit.test.ts-62-
+server/support-dispute.audit.test.ts-63-  it("uses server-backed queries and explicit loading/error/empty states in both pages", () => {
+server/support-dispute.audit.test.ts-64-    expect(supportPage).toMatch(/trpc\.supportTickets\.list\.useQuery\(\)/);
+server/support-dispute.audit.test.ts-65-    expect(supportPage).toMatch(/ticketsQuery\.isLoading/);
+server/support-dispute.audit.test.ts-66-    expect(supportPage).toMatch(/ticketsQuery\.isError/);
+server/support-dispute.audit.test.ts-67-    expect(supportPage).toMatch(/tickets\.length === 0/);
+server/support-dispute.audit.test.ts-68-    expect(supportPage).not.toMatch(/useState<Ticket\[\]>\(\[/);
+server/support-dispute.audit.test.ts-69-
+server/support-dispute.audit.test.ts-70-    expect(disputePage).toMatch(/trpc\.disputes\.listMine\.useQuery\(\)/);
+server/support-dispute.audit.test.ts-71-    expect(disputePage).toMatch(/disputesQuery\.isLoading/);
+server/support-dispute.audit.test.ts-72-    expect(disputePage).toMatch(/disputesQuery\.isError/);
+server/support-dispute.audit.test.ts-73-    expect(disputePage).toMatch(/disputes\.length === 0/);
+server/support-dispute.audit.test.ts-74-    expect(disputePage).not.toMatch(/useState\(\[\s*\{/);
+server/support-dispute.audit.test.ts-75-  });
+--
+server/imageVerification.ts-11-  reasons: string[];
+server/imageVerification.ts-12-};
+server/imageVerification.ts-13-
+server/imageVerification.ts-14-type ImageProofPayload = {
+server/imageVerification.ts-15-  ownerId: number;
+server/imageVerification.ts-16-  url: string;
+server/imageVerification.ts-17-  sha256: string;
+server/imageVerification.ts-18-  issuedAt: number;
+server/imageVerification.ts-19-};
+server/imageVerification.ts-20-
+server/imageVerification.ts-21-function proofSignature(payload: string) {
+server/imageVerification.ts-22-  const signingSecret = ENV.cookieSecret ?? process.env.JWT_SECRET;
+server/imageVerification.ts-23-  if (!signingSecret) throw new Error("Image verification signing secret is not configured");
+server/imageVerification.ts-24-  return createHmac("sha256", signingSecret).update(payload).digest("base64url");
+server/imageVerification.ts-25-}
+server/imageVerification.ts-26-
+server/imageVerification.ts:27:export function createImageVerificationProof(input: { ownerId: number; url: string; bytes: Uint8Array }) {
+server/imageVerification.ts-28-  const payload: ImageProofPayload = {
+server/imageVerification.ts-29-    ownerId: input.ownerId,
+server/imageVerification.ts-30-    url: input.url,
+server/imageVerification.ts-31-    sha256: createHash("sha256").update(input.bytes).digest("hex"),
+server/imageVerification.ts-32-    issuedAt: Date.now(),
+server/imageVerification.ts-33-  };
+server/imageVerification.ts-34-  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+server/imageVerification.ts-35-  return `${encoded}.${proofSignature(encoded)}`;
+server/imageVerification.ts-36-}
+server/imageVerification.ts-37-
+server/imageVerification.ts-38-export function verifyImageVerificationProof(input: { proof: string; ownerId: number; url: string; bytes?: Uint8Array }) {
+server/imageVerification.ts-39-  try {
+server/imageVerification.ts-40-    const [encoded, signature] = input.proof.split(".");
+server/imageVerification.ts-41-    if (!encoded || !signature) return false;
+server/imageVerification.ts-42-    const expected = proofSignature(encoded);
+server/imageVerification.ts-43-    const actualBuffer = Buffer.from(signature);
+--
+server/imageVerification.ts-71-  strict: true,
+server/imageVerification.ts-72-} as const;
+server/imageVerification.ts-73-
+server/imageVerification.ts-74-function readAssistantJson(result: Awaited<ReturnType<typeof invokeLLM>>) {
+server/imageVerification.ts-75-  const content = result.choices[0]?.message?.content;
+server/imageVerification.ts-76-  if (typeof content !== "string") throw new Error("Vision AI returned no text result");
+server/imageVerification.ts-77-  return JSON.parse(content) as {
+server/imageVerification.ts-78-    isRealistic: boolean;
+server/imageVerification.ts-79-    isPromotional: boolean;
+server/imageVerification.ts-80-    isStockLike: boolean;
+server/imageVerification.ts-81-    isAiGenerated: boolean;
+server/imageVerification.ts-82-    confidence: number;
+server/imageVerification.ts-83-    reasons: string[];
+server/imageVerification.ts-84-  };
+server/imageVerification.ts-85-}
+server/imageVerification.ts-86-
+server/imageVerification.ts:87:export async function verifyOriginalListingImage(input: {
+server/imageVerification.ts-88-  base64: string;
+server/imageVerification.ts-89-  mimeType: "image/jpeg" | "image/png" | "image/webp";
+server/imageVerification.ts-90-}): Promise<ImageVerificationResult> {
+server/imageVerification.ts-91-  try {
+server/imageVerification.ts-92-    const result = await invokeLLM({
+server/imageVerification.ts-93-      messages: [
+server/imageVerification.ts-94-        {
+server/imageVerification.ts-95-          role: "system",
+server/imageVerification.ts-96-          content:
+server/imageVerification.ts-97-            "You are a strict marketplace image authenticity screener. Assess only visible evidence. Accept only realistic, user-captured-looking photos of the listed asset. Reject stock-photo-like, promotional graphic, screenshots, collages, watermarks, heavy marketing edits, and AI-generated-looking images. You cannot prove provenance or capture source; use conservative decisions and explain uncertainty.",
+server/imageVerification.ts-98-        },
+server/imageVerification.ts-99-        {
+server/imageVerification.ts-100-          role: "user",
+server/imageVerification.ts-101-          content: [
+server/imageVerification.ts-102-            {
+server/imageVerification.ts-103-              type: "text",
+--
+server/imageVerification.test.ts-1-import { describe, expect, it } from "vitest";
+server/imageVerification.test.ts-2-
+server/imageVerification.test.ts-3-process.env.JWT_SECRET ??= "b2-rent-image-proof-unit-test-secret";
+server/imageVerification.test.ts-4-
+server/imageVerification.test.ts:5:const { createImageVerificationProof, verifyImageVerificationProof } = await import("./imageVerification");
+server/imageVerification.test.ts-6-
+server/imageVerification.test.ts-7-describe("image verification proof security", () => {
+server/imageVerification.test.ts-8-  const bytes = new TextEncoder().encode("original-listing-photo");
+server/imageVerification.test.ts-9-  const url = "https://storage.example/listing-photo.webp";
+server/imageVerification.test.ts-10-
+server/imageVerification.test.ts-11-  it("accepts a proof only for the same owner, URL, and bytes", () => {
+server/imageVerification.test.ts:12:    const proof = createImageVerificationProof({ ownerId: 42, url, bytes });
+server/imageVerification.test.ts-13-    expect(verifyImageVerificationProof({ proof, ownerId: 42, url, bytes })).toBe(true);
+server/imageVerification.test.ts-14-    expect(verifyImageVerificationProof({ proof, ownerId: 43, url, bytes })).toBe(false);
+server/imageVerification.test.ts-15-    expect(verifyImageVerificationProof({ proof, ownerId: 42, url: `${url}?changed=1`, bytes })).toBe(false);
+server/imageVerification.test.ts-16-    expect(verifyImageVerificationProof({ proof, ownerId: 42, url, bytes: new TextEncoder().encode("tampered") })).toBe(false);
+server/imageVerification.test.ts-17-  });
+server/imageVerification.test.ts-18-
+server/imageVerification.test.ts-19-  it("rejects malformed and forged proofs", () => {
+server/imageVerification.test.ts-20-    expect(verifyImageVerificationProof({ proof: "forged.proof", ownerId: 42, url, bytes })).toBe(false);
+server/imageVerification.test.ts:21:    const proof = createImageVerificationProof({ ownerId: 42, url, bytes });
+server/imageVerification.test.ts-22-    const [payload] = proof.split(".");
+server/imageVerification.test.ts-23-    expect(verifyImageVerificationProof({ proof: `${payload}.forged-signature`, ownerId: 42, url, bytes })).toBe(false);
+server/imageVerification.test.ts-24-  });
+server/imageVerification.test.ts-25-});
+--
+server/readiness.security.test.ts-1-import { readFileSync } from "node:fs";
+server/readiness.security.test.ts-2-import { resolve } from "node:path";
+server/readiness.security.test.ts-3-import { describe, expect, it } from "vitest";
+server/readiness.security.test.ts-4-
+server/readiness.security.test.ts-5-const root = resolve(import.meta.dirname, "..");
+server/readiness.security.test.ts-6-const read = (relativePath: string) => readFileSync(resolve(root, relativePath), "utf8");
+server/readiness.security.test.ts-7-
+server/readiness.security.test.ts-8-describe("final readiness security audit", () => {
+server/readiness.security.test.ts-9-  it("requires a server-issued image proof before direct publication", () => {
+server/readiness.security.test.ts-10-    const routers = read("server/routers.ts");
+server/readiness.security.test.ts-11-    const listingsBlock = routers.slice(routers.indexOf("listings: router({"));
+server/readiness.security.test.ts-12-    expect(listingsBlock).toContain("imageVerificationProof: z.string().min(1)");
+server/readiness.security.test.ts-13-    expect(listingsBlock).toContain("verifyImageVerificationProof");
+server/readiness.security.test.ts:14:    expect(routers).toContain("createImageVerificationProof");
+server/readiness.security.test.ts-15-    expect(listingsBlock).toContain("imageVerificationProof: z.string().optional()");
+server/readiness.security.test.ts-16-  });
+server/readiness.security.test.ts-17-
+server/readiness.security.test.ts-18-  it("never returns owner WhatsApp from booking or voucher paths before confirmation", () => {
+server/readiness.security.test.ts-19-    const routers = read("server/routers.ts");
+server/readiness.security.test.ts-20-    expect(routers).toContain('ownerWhatsApp: booking.status === "Confirmed" ? booking.ownerWhatsApp : null');
+server/readiness.security.test.ts-21-    expect(routers).toContain('result.bookingStatus !== "Confirmed"');
+server/readiness.security.test.ts-22-    expect(routers).toContain('ownerWhatsApp: result.bookingStatus === "Confirmed" ? result.ownerWhatsApp : null');
+server/readiness.security.test.ts-23-  });
+server/readiness.security.test.ts-24-
+server/readiness.security.test.ts-25-  it("does not use a client-only phone or WhatsApp gate", () => {
+server/readiness.security.test.ts-26-    const success = read("client/src/pages/Success.tsx");
+server/readiness.security.test.ts-27-    expect(success).toContain("booking?.ownerWhatsApp");
+server/readiness.security.test.ts-28-    expect(success).toContain("bookingStatus === 'Confirmed'");
+server/readiness.security.test.ts-29-    expect(success).not.toMatch(/searchParams\.get\(["'](?:phone|whatsapp|ownerPhone)["']\)/);
+server/readiness.security.test.ts-30-  });
+--
+client/src/components/AdvancedMediaUpload.tsx-23-
+client/src/components/AdvancedMediaUpload.tsx-24-function fileToBase64(file: File): Promise<string> {
+client/src/components/AdvancedMediaUpload.tsx-25-  return new Promise((resolve, reject) => {
+client/src/components/AdvancedMediaUpload.tsx-26-    const reader = new FileReader();
+client/src/components/AdvancedMediaUpload.tsx-27-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+client/src/components/AdvancedMediaUpload.tsx-28-    reader.onerror = () => reject(new Error(`تعذر قراءة الصورة ${file.name}`));
+client/src/components/AdvancedMediaUpload.tsx-29-    reader.readAsDataURL(file);
+client/src/components/AdvancedMediaUpload.tsx-30-  });
+client/src/components/AdvancedMediaUpload.tsx-31-}
+client/src/components/AdvancedMediaUpload.tsx-32-
+client/src/components/AdvancedMediaUpload.tsx-33-export function AdvancedMediaUpload({ onImagesUploaded }: AdvancedMediaUploadProps) {
+client/src/components/AdvancedMediaUpload.tsx-34-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+client/src/components/AdvancedMediaUpload.tsx-35-  const [previews, setPreviews] = useState<string[]>([]);
+client/src/components/AdvancedMediaUpload.tsx-36-  const [isUploading, setIsUploading] = useState(false);
+client/src/components/AdvancedMediaUpload.tsx-37-  const [uploadProgress, setUploadProgress] = useState(0);
+client/src/components/AdvancedMediaUpload.tsx-38-  const previewsRef = useRef(previews);
+client/src/components/AdvancedMediaUpload.tsx:39:  const uploadImage = trpc.storage.uploadImage.useMutation();
+client/src/components/AdvancedMediaUpload.tsx-40-
+client/src/components/AdvancedMediaUpload.tsx-41-  useEffect(() => {
+client/src/components/AdvancedMediaUpload.tsx-42-    previewsRef.current = previews;
+client/src/components/AdvancedMediaUpload.tsx-43-  }, [previews]);
+client/src/components/AdvancedMediaUpload.tsx-44-
+client/src/components/AdvancedMediaUpload.tsx-45-  useEffect(() => () => {
+client/src/components/AdvancedMediaUpload.tsx-46-    previewsRef.current.forEach((preview) => URL.revokeObjectURL(preview));
+client/src/components/AdvancedMediaUpload.tsx-47-  }, []);
+client/src/components/AdvancedMediaUpload.tsx-48-
+client/src/components/AdvancedMediaUpload.tsx-49-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+client/src/components/AdvancedMediaUpload.tsx-50-    const incoming = Array.from(e.target.files ?? []);
+client/src/components/AdvancedMediaUpload.tsx-51-    e.target.value = '';
+client/src/components/AdvancedMediaUpload.tsx-52-    if (incoming.length === 0) return;
+client/src/components/AdvancedMediaUpload.tsx-53-
+client/src/components/AdvancedMediaUpload.tsx-54-    const invalidType = incoming.find((file) => !ALLOWED_TYPES.includes(file.type as AllowedMimeType));
+client/src/components/AdvancedMediaUpload.tsx-55-    if (invalidType) {
+--
+client/src/components/AdvancedMediaUpload.tsx-91-  };
+client/src/components/AdvancedMediaUpload.tsx-92-
+client/src/components/AdvancedMediaUpload.tsx-93-  const handleStartUpload = async () => {
+client/src/components/AdvancedMediaUpload.tsx-94-    if (selectedFiles.length === 0) {
+client/src/components/AdvancedMediaUpload.tsx-95-      toast.error('يرجى اختيار صور أولاً');
+client/src/components/AdvancedMediaUpload.tsx-96-      return;
+client/src/components/AdvancedMediaUpload.tsx-97-    }
+client/src/components/AdvancedMediaUpload.tsx-98-
+client/src/components/AdvancedMediaUpload.tsx-99-    setIsUploading(true);
+client/src/components/AdvancedMediaUpload.tsx-100-    setUploadProgress(5);
+client/src/components/AdvancedMediaUpload.tsx-101-    try {
+client/src/components/AdvancedMediaUpload.tsx-102-      const uploadedImages: UploadedImage[] = [];
+client/src/components/AdvancedMediaUpload.tsx-103-      for (let index = 0; index < selectedFiles.length; index += 1) {
+client/src/components/AdvancedMediaUpload.tsx-104-        const file = selectedFiles[index];
+client/src/components/AdvancedMediaUpload.tsx-105-        if (!file) continue;
+client/src/components/AdvancedMediaUpload.tsx-106-        const contentBase64 = await fileToBase64(file);
+client/src/components/AdvancedMediaUpload.tsx:107:        const uploaded = await uploadImage.mutateAsync({
+client/src/components/AdvancedMediaUpload.tsx-108-          fileName: file.name,
+client/src/components/AdvancedMediaUpload.tsx-109-          mimeType: file.type as AllowedMimeType,
+client/src/components/AdvancedMediaUpload.tsx-110-          contentBase64,
+client/src/components/AdvancedMediaUpload.tsx-111-        });
+client/src/components/AdvancedMediaUpload.tsx-112-        uploadedImages.push({ url: uploaded.url, verificationProof: uploaded.verificationProof });
+=== SEARCH STATE ===
+38-const toListingItem = (item: {
+39-  id: number;
+40-  ownerId: number;
+41-  title: string;
+42-  description: string | null;
+43-  category: string;
+44-  pricePerDay: number;
+45-  imageUrl: string | null;
+46:  city: string;
+47:  fuelType: string | null;
+48:  transmission: string | null;
+49-  rooms: number | null;
+50-  officeType: string | null;
+51-  rentalPeriod: 'daily' | 'monthly' | 'yearly' | null;
+52-  amenities: string | null;
+53-  dynamicPricePerDay?: number;
+54-  ownerName?: string | null;
+55-}): ListingItem => {
+56-  const normalizedCategory = item.category.toLowerCase();
+--
+67-    : type === 'car' ? 'درهم / يوم' : 'درهم / ليلة';
+68-  return {
+69-    id: String(item.id),
+70-    providerId: String(item.ownerId),
+71-    providerName: item.ownerName || `مالك الإعلان #${item.ownerId}`,
+72-    type,
+73-    title: item.title,
+74-    category: item.category,
+75:    city: item.city,
+76-    pricePerUnit: item.dynamicPricePerDay ?? item.pricePerDay,
+77-    unitLabel,
+78-    image: item.imageUrl || '',
+79-    images: item.imageUrl ? [item.imageUrl] : [],
+80:    features: [item.fuelType, item.transmission, ...amenities].filter((value): value is string => Boolean(value)),
+81-    description: item.description || '',
+82-    officeType: type === 'office' && ['private', 'coworking', 'meeting_room', 'company_headquarters'].includes(item.officeType || '')
+83-      ? item.officeType as ListingItem['officeType']
+84-      : undefined,
+85-    amenities: amenities.length ? amenities : undefined,
+86-    rentalTerms: item.rentalPeriod ? [item.rentalPeriod] : undefined,
+87-    specs: {
+88:      transmission: item.transmission || undefined,
+89:      fuel: item.fuelType || undefined,
+90-      rooms: item.rooms ? String(item.rooms) : undefined,
+91-    },
+92-  };
+93-};
+94-
+95:const cityMap: Record<string, string> = {
+96-  agadir: 'أغادير',
+97-  marrakech: 'مراكش',
+98-  casablanca: 'الدار البيضاء',
+99-  tangier: 'طنجة',
+100-  rabat: 'الرباط',
+101-};
+102-
+103-export default function Search() {
+104-  const [, setLocation] = useLocation();
+105-  const { language, t } = useLanguage();
+106-  const searchParams = new URLSearchParams(window.location.search);
+107-
+108:  const rawCity = searchParams.get('city') || 'all';
+109:  const resolvedCity = cityMap[rawCity] || rawCity;
+110-
+111-  const naturalQuery = searchParams.get('q') || '';
+112-  const brandParam = searchParams.get('brand') || '';
+113-  const categoryParam = searchParams.get('category') || '';
+114-  const rawMaxPrice = Number(searchParams.get('maxPrice'));
+115-  const startDateParam = searchParams.get('startDate') || undefined;
+116-  const endDateParam = searchParams.get('endDate') || undefined;
+117:  const [cityFilter, setCityFilter] = useState(resolvedCity);
+118:  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
+119:  const [searchQuery, setSearchQuery] = useState(naturalQuery);
+120:  const [maxPrice, setMaxPrice] = useState(Number.isFinite(rawMaxPrice) && rawMaxPrice > 0 ? rawMaxPrice : 4000);
+121:  const [excellenceOnly, setExcellenceOnly] = useState(false);
+122-  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc'>('price-asc');
+123-  const [officeTypeFilter, setOfficeTypeFilter] = useState<string>('all');
+124-  const [amenityFilters, setAmenityFilters] = useState<string[]>([]);
+125-  const [rentalTermFilter, setRentalTermFilter] = useState<string>('all');
+126-  const listingInput = useMemo(() => ({ startDate: startDateParam, endDate: endDateParam }), [startDateParam, endDateParam]);
+127-  const listingsQuery = trpc.listings.list.useQuery(listingInput);
+128-  const serverListings = useMemo(() => (listingsQuery.data ?? []).map(toListingItem), [listingsQuery.data]);
+129-  const catalogListings = useMemo(() => serverListings.length > 0 ? serverListings : LISTINGS, [serverListings]);
+--
+134-      ? current.filter((value) => value !== amenity)
+135-      : [...current, amenity]);
+136-  };
+137-
+138-  // ميزة العرض السريع (Quick View Modal)
+139-  const [quickViewItem, setQuickViewItem] = useState<ListingItem | null>(null);
+140-
+141-  // عرض الخريطة التفاعلية
+142:  const [showMap, setShowMap] = useState(false);
+143-
+144-  // ميزة المقارنة (Side-by-Side Comparison)
+145-  const [compareList, setCompareList] = useState<ListingItem[]>([]);
+146:  const [showCompareModal, setShowCompareModal] = useState(false);
+147-
+148-  const toggleCompare = (item: ListingItem) => {
+149-    if (compareList.find(c => c.id === item.id)) {
+150-      setCompareList(compareList.filter(c => c.id !== item.id));
+151-      toast.info('تمت إزالة العنصر من قائمة المقارنة');
+152-    } else {
+153-      if (compareList.length >= 2) {
+154-        toast.error('يمكنك مقارنة عنصرين كحد أقصى في نفس الوقت');
+--
+156-      }
+157-      setCompareList([...compareList, item]);
+158-      toast.success('تمت إضافة العنصر إلى قائمة المقارنة');
+159-    }
+160-  };
+161-
+162-  const filteredListings = useMemo(() => {
+163-    return catalogListings.filter((item: ListingItem) => {
+164:      if (cityFilter !== 'all' && item.city !== cityFilter) return false;
+165-      if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+166-      if (typeFilter === 'office' && officeTypeFilter !== 'all' && item.officeType !== officeTypeFilter) return false;
+167-      if (typeFilter === 'office' && rentalTermFilter !== 'all' && !item.rentalTerms?.includes(rentalTermFilter as 'daily' | 'monthly' | 'yearly')) return false;
+168-      if (typeFilter === 'office' && amenityFilters.length > 0 && !amenityFilters.every((amenity) => item.amenities?.includes(amenity as NonNullable<ListingItem['amenities']>[number]))) return false;
+169-      if (item.pricePerUnit > maxPrice) return false;
+170-      if (brandParam) {
+171-        const b = brandParam.toLowerCase();
+172-        if (!item.title.toLowerCase().includes(b) && !item.category.toLowerCase().includes(b)) return false;
+--
+174-      if (categoryParam) {
+175-        const c = categoryParam.toLowerCase();
+176-        if (!item.category.toLowerCase().includes(c) && !item.title.toLowerCase().includes(c) && !item.description.toLowerCase().includes(c)) return false;
+177-      }
+178-      if (searchQuery.trim()) {
+179-        const q = searchQuery.toLowerCase();
+180-        const matches = item.title.toLowerCase().includes(q) ||
+181-                        item.description.toLowerCase().includes(q) ||
+182:                        item.city.toLowerCase().includes(q) ||
+183-                        item.category.toLowerCase().includes(q) ||
+184-                        item.features.some(f => f.toLowerCase().includes(q));
+185-        if (!matches) return false;
+186-      }
+187-      return true;
+188-    }).sort((a: ListingItem, b: ListingItem) => {
+189-      if (sortBy === 'price-asc') return a.pricePerUnit - b.pricePerUnit;
+190-      if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
+191-      return 0;
+192-    });
+193:  }, [catalogListings, cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
+194-
+195:  const [isSearching, setIsSearching] = useState(false);
+196:  const cityLabel = (city: string) => language === 'fr' ? ({ 'جميع المدن': 'Toutes les villes', 'مراكش': 'Marrakech', 'أغادير': 'Agadir', 'الدار البيضاء': 'Casablanca', 'طنجة': 'Tanger', 'الرباط': 'Rabat' }[city] ?? city) : city;
+197-
+198-  return (
+199-    <div className="min-h-screen bg-background text-foreground pb-20" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+200-      <div className="container mx-auto px-4 space-y-8">
+201-
+202-        {isDemoInventory && (
+203-          <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100" role="status">
+204-            {language === 'fr'
+--
+341-                      </label>
+342-                    ))}
+343-                  </div>
+344-                </div>
+345-              </>
+346-            )}
+347-
+348-            <div className="space-y-2">
+349:              <label className="text-xs font-semibold text-slate-300">{t('city')}</label>
+350-              <select
+351:                value={cityFilter}
+352-                onChange={(e) => setCityFilter(e.target.value)}
+353-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+354-              >
+355-                {CITIES.map((c) => (
+356-                  <option key={c.id} value={c.name}>
+357:                    {cityLabel(c.name)}
+358-                  </option>
+359-                ))}
+360-              </select>
+361-            </div>
+362-
+363-            <div className="space-y-2">
+364-              <div className="flex justify-between text-xs">
+365-                <span className="font-semibold text-slate-300">{t('maxPrice')}</span>
+--
+466-                          height={448}
+467-                          className="b2-responsive-media group-hover:scale-110 transition-transform duration-700 ease-out"
+468-                        />
+469-                      ) : (
+470-                        <div className="h-full w-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center" aria-label="لا توجد صورة للإعلان">
+471-                          <Home className="w-12 h-12 text-slate-600" />
+472-                        </div>
+473-                      )}
+474:                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
+475-
+476-                      <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-md text-amber-400 font-bold px-3 py-1 rounded-xl text-xs border border-amber-500/30">
+477:                        {item.city}
+478-                      </div>
+479-
+480-
+481-                      {/* زر المقارنة */}
+482-                      <button
+483-                        onClick={() => toggleCompare(item)}
+484-                        className={`absolute bottom-4 left-4 min-h-11 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg ${isCompared ? 'bg-amber-500 text-slate-950' : 'bg-slate-950/80 text-white hover:bg-slate-900 border border-slate-700'}`}
+485-                      >
+--
+548-                alt={quickViewItem.title}
+549-                loading="lazy"
+550-                decoding="async"
+551-                width={800}
+552-                height={512}
+553-                className="w-full h-full object-cover"
+554-              />
+555-              <div className="absolute top-4 right-4 bg-amber-500 text-slate-950 px-3 py-1 rounded-xl text-xs font-bold">
+556:                {quickViewItem.city}
+557-              </div>
+558-            </div>
+559-
+560-            <div className="space-y-4">
+561-              <div className="flex items-center justify-between">
+562-                <div>
+563-                  <span className="text-xs text-amber-400 font-bold">{quickViewItem.providerName}</span>
+564-                  <h2 className="text-xl font-black text-white">{quickViewItem.title}</h2>
+--
+579-                ))}
+580-              </div>
+581-
+582-              <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-800">
+583-                <div className="flex items-center gap-2">
+584-                  <span className="text-xs text-slate-400">مشاركة:</span>
+585-                  <button
+586-                    onClick={() => {
+587:                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`شاهد هذا العرض الرائع: ${quickViewItem.title} - ${quickViewItem.pricePerUnit} ${quickViewItem.unitLabel} في ${quickViewItem.city} عبر منصة B2-Rent: ${window.location.href}`)}`, '_blank');
+588-                    }}
+589-                    className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 p-2 rounded-xl text-xs flex items-center gap-1 transition-colors"
+590-                    title="مشاركة عبر واتساب"
+591-                  >
+592-                    واتساب
+593-                  </button>
+594-                  <button
+595-                    onClick={() => {
+--
+652-                  <h3 className="text-lg font-bold text-white text-center">{c.title}</h3>
+653-                  <div className="space-y-2 text-xs text-slate-300">
+654-                    <div className="flex justify-between py-2 border-b border-slate-800">
+655-                      <span className="text-slate-400">السعر:</span>
+656-                      <span className="font-extrabold text-amber-400">{c.pricePerUnit} {c.unitLabel}</span>
+657-                    </div>
+658-                    <div className="flex justify-between py-2 border-b border-slate-800">
+659-                      <span className="text-slate-400">المدينة:</span>
+660:                      <span className="font-bold">{c.city}</span>
+661-                    </div>
+662-                    <div className="flex justify-between py-2">
+663-                      <span className="text-slate-400">المزود:</span>
+664-                      <span className="font-bold">{c.providerName}</span>
+665-                    </div>
+666-                  </div>
+667-                </div>
+668-              ))}

@@ -31,6 +31,17 @@ describe("home search and service balance", () => {
     expect(source).toContain("text-[var(--brand-navy-deep)]");
   });
 
+  it("binds the visible search form labels and action to the active language", async () => {
+    const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("searchTypeLabel: 'Type de recherche'");
+    expect(source).toContain("searchTypeLabel: 'Search type'");
+    expect(source).toContain("searchTypeLabel: 'نوع البحث'");
+    expect(source).toContain("{heroCopy.carCityLabel}");
+    expect(source).toContain("{heroCopy.searchSubmit}");
+    expect(source).toContain("aria-label={heroCopy.searchTypeLabel}");
+  });
+
   it("presents real-estate category cards alongside featured vehicle brands", async () => {
     const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
 

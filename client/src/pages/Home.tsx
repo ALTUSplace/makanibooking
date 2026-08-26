@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useRef } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
@@ -18,7 +17,7 @@ function getListingPath(item: { id: string; type: string }) {
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { language, direction } = useLanguage();
+  const { language, direction, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'cars' | 'properties'>('cars');
 
   const heroCopy = language === 'fr'
@@ -36,6 +35,17 @@ export default function Home() {
       swipe: 'Faites glisser pour explorer',
       carsCount: 'voiture(s)',
       propertyCount: 'bien(s) / espace(s)',
+      searchTypeLabel: 'Type de recherche',
+      carCityLabel: 'Ville ou agence',
+      pickupDateLabel: 'Date de prise en charge',
+      dropoffDateLabel: 'Date de restitution',
+      propertyCityLabel: 'Zone / ville',
+      propertyTypeLabel: 'Type de bien',
+      maxPriceLabel: 'Budget maximum (MAD / nuit)',
+      openCities: 'Ouvrir la liste des villes',
+      openPickup: 'Ouvrir le calendrier de prise en charge',
+      openDropoff: 'Ouvrir le calendrier de restitution',
+      searchSubmit: 'Rechercher et afficher les offres',
     }
     : language === 'en'
       ? {
@@ -52,6 +62,17 @@ export default function Home() {
         swipe: 'Swipe to explore',
         carsCount: 'car(s)',
         propertyCount: 'property / space(s)',
+        searchTypeLabel: 'Search type',
+        carCityLabel: 'City or agency',
+        pickupDateLabel: 'Pickup date',
+        dropoffDateLabel: 'Return date',
+        propertyCityLabel: 'Area / city',
+        propertyTypeLabel: 'Property type',
+        maxPriceLabel: 'Maximum budget (MAD / night)',
+        openCities: 'Open the city list',
+        openPickup: 'Open the pickup date picker',
+        openDropoff: 'Open the return date picker',
+        searchSubmit: 'Search and display listings',
       }
       : {
         cars: 'كراء السيارات',
@@ -67,6 +88,17 @@ export default function Home() {
         swipe: 'اسحب للتصفح',
         carsCount: 'سيارة',
         propertyCount: 'عقار/مساحة',
+        searchTypeLabel: 'نوع البحث',
+        carCityLabel: 'المدينة أو الوكالة',
+        pickupDateLabel: 'تاريخ الاستلام',
+        dropoffDateLabel: 'تاريخ التسليم',
+        propertyCityLabel: 'المنطقة / المدينة',
+        propertyTypeLabel: 'نوع العقار',
+        maxPriceLabel: 'الحد الأقصى للسعر (درهم/ليلة)',
+        openCities: 'فتح قائمة المدن',
+        openPickup: 'فتح تقويم تاريخ الاستلام',
+        openDropoff: 'فتح تقويم تاريخ التسليم',
+        searchSubmit: 'بحث متقدم وعرض النتائج الفورية',
       };
 
   // Search states for Cars
@@ -118,11 +150,11 @@ export default function Home() {
   })) : LISTINGS;
 
   const quickDestinations = [
-    { id: 'casablanca', city: 'الدار البيضاء', label: 'الدار البيضاء', helper: 'الأعمال والإقامات', icon: MapPin },
-    { id: 'marrakech', city: 'مراكش', label: 'مراكش', helper: 'المدينة الحمراء', icon: MapPin },
-    { id: 'tangier', city: 'طنجة', label: 'طنجة', helper: 'البوابة الشمالية', icon: MapPin },
-    { id: 'agadir', city: 'أغادير', label: 'أغادير', helper: 'الساحل والرحلات', icon: MapPin },
-    { id: 'cmn', city: 'الدار البيضاء', label: 'مطار محمد الخامس', helper: 'ضمن نطاق الدار البيضاء', icon: Plane },
+    { id: 'casablanca', city: 'الدار البيضاء', label: t('cityCasablanca'), helper: t('cityCasablancaHelper'), icon: MapPin },
+    { id: 'marrakech', city: 'مراكش', label: t('cityMarrakech'), helper: t('cityMarrakechHelper'), icon: MapPin },
+    { id: 'tangier', city: 'طنجة', label: t('cityTangier'), helper: t('cityTangierHelper'), icon: MapPin },
+    { id: 'agadir', city: 'أغادير', label: t('cityAgadir'), helper: t('cityAgadirHelper'), icon: MapPin },
+    { id: 'cmn', city: 'الدار البيضاء', label: t('airportMohammedV'), helper: t('airportMohammedVHelper'), icon: Plane },
   ] as const;
 
   const destinationInventory = quickDestinations.map((destination) => {
@@ -140,9 +172,9 @@ export default function Home() {
 
   const browseRailItems = [
     ...availableBrands.map((brand) => ({ label: brand, href: `/search?type=car&brand=${encodeURIComponent(brand)}`, kind: 'car' as const })),
-    { label: 'شقق', href: `/search?type=property&category=${encodeURIComponent('شقة')}`, kind: 'property' as const },
-    { label: 'فيلات', href: `/search?type=property&category=${encodeURIComponent('فيلا')}`, kind: 'property' as const },
-    { label: 'مكاتب', href: '/search?type=office', kind: 'property' as const },
+    { label: t('apartments'), href: `/search?type=property&category=${encodeURIComponent('شقة')}`, kind: 'property' as const },
+    { label: t('villas'), href: `/search?type=property&category=${encodeURIComponent('فيلا')}`, kind: 'property' as const },
+    { label: t('offices'), href: '/search?type=office', kind: 'property' as const },
   ];
 
   const propertyCategoryQuery: Record<string, string> = {
@@ -190,7 +222,7 @@ export default function Home() {
           {/* Tabbed Search Bar (Cars vs Properties) */}
           <div className="mx-auto max-w-4xl rounded-2xl border border-white/20 bg-white/10 p-3 text-right shadow-2xl backdrop-blur-2xl md:rounded-3xl md:p-6">
             {/* Tabs Header */}
-            <div className="mb-4 flex gap-2 border-b border-white/10 pb-3 md:mb-6 md:pb-4" role="tablist" aria-label="نوع الحجز">
+            <div className="mb-4 flex gap-2 border-b border-white/10 pb-3 md:mb-6 md:pb-4" role="tablist" aria-label={heroCopy.searchTypeLabel}>
               <button
                 type="button"
                 onClick={() => setActiveTab('cars')}
@@ -226,9 +258,9 @@ export default function Home() {
               {activeTab === 'cars' ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">المدينة أو الوكالة</label>
+                    <label className="text-xs font-semibold text-slate-300">{heroCopy.carCityLabel}</label>
                     <div className="relative">
-                      <button type="button" onClick={() => openSelect(carCityRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح قائمة المدن">
+                      <button type="button" onClick={() => openSelect(carCityRef.current)} className="absolute end-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label={heroCopy.openCities}>
                         <MapPin className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <select
@@ -247,9 +279,9 @@ export default function Home() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">تاريخ الاستلام</label>
+                    <label className="text-xs font-semibold text-slate-300">{heroCopy.pickupDateLabel}</label>
                     <div className="relative">
-                      <button type="button" onClick={() => openDatePicker(pickupDateRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح تقويم تاريخ الاستلام">
+                      <button type="button" onClick={() => openDatePicker(pickupDateRef.current)} className="absolute end-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label={heroCopy.openPickup}>
                         <Calendar className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <input
@@ -263,9 +295,9 @@ export default function Home() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">تاريخ التسليم</label>
+                    <label className="text-xs font-semibold text-slate-300">{heroCopy.dropoffDateLabel}</label>
                     <div className="relative">
-                      <button type="button" onClick={() => openDatePicker(dropoffDateRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح تقويم تاريخ التسليم">
+                      <button type="button" onClick={() => openDatePicker(dropoffDateRef.current)} className="absolute end-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label={heroCopy.openDropoff}>
                         <Calendar className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <input
@@ -281,9 +313,9 @@ export default function Home() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">المنطقة / المدينة</label>
+                    <label className="text-xs font-semibold text-slate-300">{heroCopy.propertyCityLabel}</label>
                     <div className="relative">
-                      <button type="button" onClick={() => openSelect(propertyLocationRef.current)} className="absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label="فتح قائمة المدن">
+                      <button type="button" onClick={() => openSelect(propertyLocationRef.current)} className="absolute end-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)]" aria-label={heroCopy.openCities}>
                         <MapPin className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <select
@@ -301,7 +333,7 @@ export default function Home() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">نوع العقار</label>
+                    <label className="text-xs font-semibold text-slate-300">{heroCopy.propertyTypeLabel}</label>
                     <div className="relative">
                       <Building2 className="absolute right-3.5 top-3.5 w-5 h-5 text-slate-400" />
                       <select
@@ -317,7 +349,7 @@ export default function Home() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">الحد الأقصى للسعر (درهم/ليلة)</label>
+                    <label className="text-xs font-semibold text-slate-300">{heroCopy.maxPriceLabel}</label>
                     <div className="relative">
                       <DollarSign className="absolute right-3.5 top-3.5 w-5 h-5 text-slate-400" />
                       <select
@@ -341,7 +373,7 @@ export default function Home() {
                   className="w-full bg-[var(--brand-amber)] hover:bg-[var(--brand-amber-dark)] text-[var(--brand-navy-deep)] font-black py-3.5 md:py-4 rounded-xl md:rounded-2xl text-sm md:text-base shadow-xl shadow-[var(--brand-orange)]/35 flex items-center justify-center gap-2 cursor-pointer transition-all"
                 >
                   <Search className="w-5 h-5" />
-                  <span>بحث متقدم وعرض النتائج الفورية</span>
+                  <span>{heroCopy.searchSubmit}</span>
                 </Button>
               </div>
             </form>
@@ -384,7 +416,7 @@ export default function Home() {
               <p className="text-xs font-bold tracking-wide text-slate-200">{heroCopy.brands}</p>
               <span className="text-[11px] text-[var(--brand-amber)]">{heroCopy.swipe}</span>
             </div>
-            <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]" aria-label="علامات السيارات وفئات العقارات">
+            <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]" aria-label={t('browseRailAria')}>
               {browseRailItems.map((item) => (
                 <Link
                   key={`${item.kind}-${item.label}`}
@@ -408,14 +440,14 @@ export default function Home() {
       <section className="border-y border-slate-200 bg-slate-50 py-8 md:py-12">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="mb-6 text-center md:mb-8">
-            <p className="text-xs font-bold uppercase tracking-widest text-[var(--brand-orange-dark)]">تصفح حسب احتياجك</p>
-            <h2 className="mt-2 text-xl font-black text-[var(--brand-navy)] md:text-2xl">سيارات وعقارات، بتجربة بحث متوازنة</h2>
+            <p className="text-xs font-bold uppercase tracking-widest text-[var(--brand-orange-dark)]">{t('browseByNeed')}</p>
+            <h2 className="mt-2 text-xl font-black text-[var(--brand-navy)] md:text-2xl">{t('balancedSearchTitle')}</h2>
           </div>
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="rounded-2xl border border-[var(--brand-border)] bg-white p-4 md:p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[var(--brand-navy)]"><Car className="h-5 w-5" aria-hidden="true" /><h3 className="font-black">ماركات السيارات</h3></div>
-                <Link href="/search?type=car" className="text-xs font-bold text-[var(--brand-orange-dark)] hover:underline">كل السيارات</Link>
+                <div className="flex items-center gap-2 text-[var(--brand-navy)]"><Car className="h-5 w-5" aria-hidden="true" /><h3 className="font-black">{t('carBrands')}</h3></div>
+                <Link href="/search?type=car" className="text-xs font-bold text-[var(--brand-orange-dark)] hover:underline">{t('allCars')}</Link>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {["Dacia", "Audi", "BMW", "Mercedes-Benz"].map((brand) => (
@@ -428,15 +460,15 @@ export default function Home() {
             </div>
             <div className="rounded-2xl border border-[var(--brand-border)] bg-white p-4 md:p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-[var(--brand-navy)]"><Building2 className="h-5 w-5" aria-hidden="true" /><h3 className="font-black">أنواع العقارات</h3></div>
-                <Link href="/search?type=property" className="text-xs font-bold text-[var(--brand-orange-dark)] hover:underline">كل العقارات</Link>
+                <div className="flex items-center gap-2 text-[var(--brand-navy)]"><Building2 className="h-5 w-5" aria-hidden="true" /><h3 className="font-black">{t('propertyTypes')}</h3></div>
+                <Link href="/search?type=property" className="text-xs font-bold text-[var(--brand-orange-dark)] hover:underline">{t('allProperties')}</Link>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
-                  { title: "شقق", href: `/search?type=property&category=${encodeURIComponent('شقة')}`, icon: Building2 },
-                  { title: "فيلات", href: `/search?type=property&category=${encodeURIComponent('فيلا')}`, icon: House },
-                  { title: "مكاتب", href: '/search?type=office', icon: BriefcaseBusiness },
-                  { title: "استوديوهات", href: `/search?type=property&category=${encodeURIComponent('استوديو')}`, icon: House },
+                  { title: t('apartments'), href: `/search?type=property&category=${encodeURIComponent('شقة')}`, icon: Building2 },
+                  { title: t('villas'), href: `/search?type=property&category=${encodeURIComponent('فيلا')}`, icon: House },
+                  { title: t('offices'), href: '/search?type=office', icon: BriefcaseBusiness },
+                  { title: t('studios'), href: `/search?type=property&category=${encodeURIComponent('استوديو')}`, icon: House },
                 ].map((category) => {
                   const CategoryIcon = category.icon;
                   return <Link key={category.title} href={category.href} className="group flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--brand-orange)]/25 bg-[var(--brand-amber-soft)] px-2 text-center text-sm font-extrabold text-[var(--brand-navy)] transition-colors hover:border-[var(--brand-orange)] hover:bg-[var(--brand-amber)]">
@@ -454,11 +486,11 @@ export default function Home() {
       <section className="py-10 md:py-16 px-4 container mx-auto max-w-6xl">
         <div className="text-center space-y-3 mb-8 md:mb-12">
           <span className="text-[#E57C23] font-bold text-xs uppercase tracking-widest bg-[#E57C23]/10 px-3 py-1 rounded-full border border-[#E57C23]/30">
-            تصميم هندسي متطور
+            {t('advancedDesign')}
           </span>
-          <h2 className="text-2xl md:text-3xl font-black text-[#0B3C5D]">استكشف الأقسام الرئيسية (Bento Grid)</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-[#0B3C5D]">{t('exploreMainSections')}</h2>
           <p className="text-slate-600 text-sm max-w-xl mx-auto">
-            اختر ما بين أسطول السيارات الفاخرة أو العقارات الحصرية مع ضمانات حماية كاملة.
+            {t('bentoSubtitle')}
           </p>
         </div>
 
@@ -471,14 +503,14 @@ export default function Home() {
               <div className="w-12 h-12 bg-[#E57C23] rounded-2xl flex items-center justify-center text-white shadow-lg">
                 <Car className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-black">أسطول السيارات الفاخرة والاقتصادية</h3>
+              <h3 className="text-2xl font-black">{t('carFleetTitle')}</h3>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                أحدث موديلات سيارات الدفع الرباعي، السيارات العائلية، والسيارات الرياضية في الدار البيضاء، مراكش، طنجة وأغادير مع توصيل مجاني.
+                {t('carFleetDescription')}
               </p>
               <div>
                 <Link href="/search?type=car">
                   <Button className="bg-[#E57C23] hover:bg-[#d46b1d] text-white font-bold px-6 py-3 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-[#E57C23]/40 cursor-pointer">
-                    <span>تصفح السيارات المتاحة</span>
+                    <span>{t('browseCars')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
@@ -499,14 +531,14 @@ export default function Home() {
               <div className="w-12 h-12 bg-[#0B3C5D] rounded-2xl flex items-center justify-center text-white shadow-lg">
                 <Building2 className="w-6 h-6 text-[#E57C23]" />
               </div>
-              <h3 className="text-xl font-black text-[#0B3C5D]">العقارات والشقق الفاخرة</h3>
+              <h3 className="text-xl font-black text-[#0B3C5D]">{t('propertyTitle')}</h3>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                شقق مودرن مطلة على الكورنيش وفيلات خاصة بمسبح في أرقى الأحياء السكنية.
+                {t('propertyDescription')}
               </p>
               <div>
                 <Link href="/search?type=property">
                   <Button className="bg-[#0B3C5D] hover:bg-[#062940] text-white font-bold px-6 py-3 rounded-xl text-xs flex items-center gap-2 shadow-md cursor-pointer">
-                    <span>تصفح العقارات</span>
+                    <span>{t('browseProperties')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
@@ -534,13 +566,13 @@ export default function Home() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-7 md:mb-10 gap-4">
           <div>
             <span className="text-[#E57C23] font-bold text-xs uppercase tracking-widest bg-[#E57C23]/10 px-3 py-1 rounded-full border border-[#E57C23]/30">
-              إعلانات متاحة للتصفح
+              {t('availableListingsEyebrow')}
             </span>
-            <h2 className="text-2xl md:text-3xl font-black text-[#0B3C5D] mt-2">إعلانات مختارة من المنصة</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-[#0B3C5D] mt-2">{t('featuredListings')}</h2>
           </div>
           <Link href="/search">
             <Button variant="outline" className="w-full md:w-auto border-[#0B3C5D] text-[#0B3C5D] hover:bg-[#0B3C5D] hover:text-white font-bold rounded-xl text-xs">
-              عرض كافة الإعلانات ({activeListings.length})
+              {t('viewAllListings')} ({activeListings.length})
             </Button>
           </Link>
         </div>
@@ -588,13 +620,13 @@ export default function Home() {
 
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                   <div>
-                    <span className="text-xs text-slate-400 block">السعر اليومي</span>
+                    <span className="text-xs text-slate-400 block">{t('dailyPrice')}</span>
                     <span className="text-lg font-black text-[#E57C23]">{item.pricePerUnit} درهم</span>
                   </div>
                   <div className="flex gap-2">
                     <Link href={getListingPath(item)}>
                       <Button className="b2-card-action bg-[#0B3C5D] hover:bg-[#062940] text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md cursor-pointer">
-                        عرض التفاصيل التجريبية
+                        {t('demoDetails')}
                       </Button>
                     </Link>
                   </div>
@@ -610,12 +642,12 @@ export default function Home() {
         <div className="container mx-auto max-w-6xl px-4 space-y-8">
           <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
             <div>
-              <span className="text-[#E57C23] font-bold text-xs uppercase tracking-widest bg-[#E57C23]/10 px-3 py-1 rounded-full">مدونة المنصة</span>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0B3C5D] mt-2">أحدث المقالات والنصائح العقارية والسياحية</h2>
+              <span className="text-[#E57C23] font-bold text-xs uppercase tracking-widest bg-[#E57C23]/10 px-3 py-1 rounded-full">{t('blogEyebrow')}</span>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#0B3C5D] mt-2">{t('latestArticles')}</h2>
             </div>
             <Link href="/blog">
               <Button variant="outline" className="border-[#0B3C5D] text-[#0B3C5D] hover:bg-[#0B3C5D] hover:text-white rounded-xl text-xs font-bold gap-2">
-                <span>تصفح جميع المقالات</span>
+                <span>{t('browseAllArticles')}</span>
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
@@ -624,42 +656,42 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-40 sm:h-48 overflow-hidden">
-                <OptimizedImage src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" alt="Car rental" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" alt={t('carRentalAlt')} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between space-y-3">
-                <span className="text-xs font-bold text-[#E57C23]">دليل السفر</span>
-                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">دليلك الشامل لكراء السيارات في الدار البيضاء ومراكش 2026</h3>
-                <p className="text-xs text-slate-600 line-clamp-2">تعرف على أهم النصائح القانونية والتقنية لتأجير السيارات بكل أمان في المدن الكبرى بالمغرب.</p>
+                <span className="text-xs font-bold text-[#E57C23]">{t('travelGuide')}</span>
+                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">{t('travelGuideTitle')}</h3>
+                <p className="text-xs text-slate-600 line-clamp-2">{t('travelGuideDescription')}</p>
                 <Link href="/blog">
-                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">اقرأ المزيد <ArrowRight className="w-3 h-3" /></span>
+                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">{t('readMore')} <ArrowRight className="w-3 h-3" /></span>
                 </Link>
               </div>
             </div>
 
             <div className="bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-40 sm:h-48 overflow-hidden">
-                <OptimizedImage src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" alt="Real Estate" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800" alt={t('realEstateAlt')} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between space-y-3">
-                <span className="text-xs font-bold text-[#E57C23]">استثمار عقاري</span>
-                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">أفضل المناطق الاستثمارية العقارية في طنجة وأغادير</h3>
-                <p className="text-xs text-slate-600 line-clamp-2">استعراض لأهم الأحياء المطلة على البحر والتي تشهد إقبالاً كبيراً من السياح والمستثمرين.</p>
+                <span className="text-xs font-bold text-[#E57C23]">{t('realEstateInvestment')}</span>
+                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">{t('realEstateInvestmentTitle')}</h3>
+                <p className="text-xs text-slate-600 line-clamp-2">{t('realEstateInvestmentDescription')}</p>
                 <Link href="/blog">
-                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">اقرأ المزيد <ArrowRight className="w-3 h-3" /></span>
+                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">{t('readMore')} <ArrowRight className="w-3 h-3" /></span>
                 </Link>
               </div>
             </div>
 
             <div className="bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-sm border border-slate-200 hover:-translate-y-2 hover:shadow-xl hover:border-[#E57C23]/40 transition-all duration-300 flex flex-col group">
               <div className="h-40 sm:h-48 overflow-hidden">
-                <OptimizedImage src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" alt="Driving" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <OptimizedImage src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=800" alt={t('drivingAlt')} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between space-y-3">
-                <span className="text-xs font-bold text-[#E57C23]">نصائح قيادة</span>
-                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">كيف تختار السيارة المناسبة لرحلتك العائلية عبر الطرق السيارة؟</h3>
-                <p className="text-xs text-slate-600 line-clamp-2">مقارنة شاملة بين سيارات الـ SUV والاقتصادية والفاخرة لضمان أقصى درجات الراحة والأمان.</p>
+                <span className="text-xs font-bold text-[#E57C23]">{t('drivingTips')}</span>
+                <h3 className="font-black text-[#0B3C5D] text-base group-hover:text-[#E57C23] transition-colors">{t('drivingTipsTitle')}</h3>
+                <p className="text-xs text-slate-600 line-clamp-2">{t('drivingTipsDescription')}</p>
                 <Link href="/blog">
-                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">اقرأ المزيد <ArrowRight className="w-3 h-3" /></span>
+                  <span className="text-xs font-bold text-[#0B3C5D] flex items-center gap-1 pt-2 hover:underline">{t('readMore')} <ArrowRight className="w-3 h-3" /></span>
                 </Link>
               </div>
             </div>
@@ -677,22 +709,22 @@ export default function Home() {
             <div className="w-14 h-14 bg-[#E57C23] text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg">
               <ShieldCheck className="w-7 h-7" />
             </div>
-            <h4 className="font-bold text-base md:text-lg">حماية ودفع آمن 100%</h4>
-            <p className="text-xs text-slate-300">بوابات دفع معتمدة وعقود رقمية مختومة قانونياً.</p>
+            <h4 className="font-bold text-base md:text-lg">{t('securePaymentTitle')}</h4>
+            <p className="text-xs text-slate-300">{t('securePaymentDescription')}</p>
           </div>
           <div className="space-y-3">
             <div className="w-14 h-14 bg-[#E57C23] text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg">
               <Award className="w-7 h-7" />
             </div>
-            <h4 className="font-bold text-base md:text-lg">وكالات معتمدة وموثوقة</h4>
-            <p className="text-xs text-slate-300">مراجعة وتدقيق دوري لجميع شركائنا في المغرب.</p>
+            <h4 className="font-bold text-base md:text-lg">{t('trustedAgenciesTitle')}</h4>
+            <p className="text-xs text-slate-300">{t('trustedAgenciesDescription')}</p>
           </div>
           <div className="space-y-3">
             <div className="w-14 h-14 bg-[#E57C23] text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg">
               <Clock className="w-7 h-7" />
             </div>
-            <h4 className="font-bold text-base md:text-lg">دعم فني على مدار الساعة</h4>
-            <p className="text-xs text-slate-300">فريق خدمة عملاء متواجد دائماً لمساعدتك.</p>
+            <h4 className="font-bold text-base md:text-lg">{t('supportTitle')}</h4>
+            <p className="text-xs text-slate-300">{t('supportDescription')}</p>
           </div>
         </div>
       </section>

@@ -1,0 +1,6 @@
+Vercel team discovered via configured Vercel MCP on 2026-08-27:
+- Team name: B2-Rent morocco
+- Team slug: b2-rent
+- Team ID: team_hjPMwDz7qyfSKcaWN2t5otJK
+- Plan: hobby
+Purpose: inspect the MAKANIbooking Vercel project and recent deployments after pushing commit e860669 to kamalbouragba/makanibooking.

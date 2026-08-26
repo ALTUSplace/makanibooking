@@ -122,10 +122,20 @@ export default function Register() {
             </label>
 
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:col-span-2">
-              <Checkbox id="legal-consent" checked={accepted} onCheckedChange={(value) => setAccepted(value === true)} className="mt-1" />
-              <label htmlFor="legal-consent" className="cursor-pointer text-sm font-semibold leading-6 text-slate-800">
+              <Checkbox
+                id="legal-consent"
+                checked={accepted}
+                onCheckedChange={(value) => setAccepted(value === true)}
+                aria-label={isArabic ? "الموافقة على الشروط والأحكام" : "Accepter les conditions générales"}
+                className="mt-1"
+              />
+              <button
+                type="button"
+                onClick={() => setAccepted((value) => !value)}
+                className="cursor-pointer text-start text-sm font-semibold leading-6 text-slate-800 outline-none focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-[#0A2540]/40"
+              >
                 {isArabic ? "أقر بأنني قرأت هذه البنود وفهمتها وأوافق عليها قبل إنشاء حساب أو تنفيذ عملية على المنصة." : "Je reconnais avoir lu et compris ces clauses et les accepter avant de créer un compte ou d'effectuer une opération sur la plateforme."}
-              </label>
+              </button>
             </div>
 
             {message && <p role="alert" className="text-sm font-semibold leading-6 text-red-700 sm:col-span-2">{message}</p>}

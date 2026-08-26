@@ -35,6 +35,22 @@ describe("Supabase private storage acceptance probe", () => {
     expect(JSON.stringify(result)).not.toContain(secret);
   });
 
+  it("accepts Supabase's 400 NoSuchBucket response for a private bucket public URL", async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response("", { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ statusCode: "404", code: "NoSuchBucket" }), { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ signedURL: "/object/sign/b2rent-private-documents/probe?token=opaque" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response("b2rent-storage-acceptance-probe-v1", { status: 200 }))
+      .mockResolvedValueOnce(new Response("", { status: 200 }));
+
+    await expect(runSupabasePrivateStorageAcceptanceProbe({ ...baseConfig, fetchImpl })).resolves.toMatchObject({
+      ok: true,
+      effects: { publicAccessBlocked: true },
+    });
+    expect(fetchImpl.mock.calls.at(-1)?.[1]?.method).toBe("DELETE");
+  });
+
   it("removes the probe even when signing fails and does not expose the service key", async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()

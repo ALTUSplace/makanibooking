@@ -116,7 +116,10 @@ export async function runSupabasePrivateStorageAcceptanceProbe(
     uploaded = true;
 
     const publicRead = await fetchImpl(`${baseUrl.origin}/storage/v1/object/public/${storageObjectPath}`);
-    if (![401, 403, 404].includes(publicRead.status)) throw new Error("storage_acceptance_public_access_failed");
+    const publicReadBody = await publicRead.text().catch(() => "");
+    const publicAccessBlocked = [401, 403, 404].includes(publicRead.status)
+      || (publicRead.status === 400 && /NoSuchBucket|not found|private/i.test(publicReadBody));
+    if (!publicAccessBlocked) throw new Error("storage_acceptance_public_access_failed");
 
     const signed = await fetchImpl(`${baseUrl.origin}/storage/v1/object/sign/${storageObjectPath}`, {
       method: "POST",

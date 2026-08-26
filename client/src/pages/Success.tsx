@@ -70,8 +70,8 @@ export default function Success() {
       toast.error('يرجى توقيع العقد أولاً قبل فتح رسالة البريد الإلكتروني.');
       return;
     }
-    const subject = `B2-Rent — عقد الحجز ${bookingRef}`;
-    const body = `مرحباً، أرفق لكم عقد الحجز ${bookingRef} الذي تم تنزيله من منصة B2-Rent.`;
+    const subject = `MAKANIbooking — عقد الحجز ${bookingRef}`;
+    const body = `مرحباً، أرفق لكم عقد الحجز ${bookingRef} الذي تم تنزيله من منصة MAKANIbooking.`;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     toast.success('تم فتح تطبيق البريد لإرفاق ملف العقد وإرساله.');
   };
@@ -300,7 +300,7 @@ export default function Success() {
         doc.text("(Electronically Agreed)", 140, 190);
       }
 
-        doc.save(`B2-Rent-Contract-${bookingRef}.pdf`);
+        doc.save(`MAKANIbooking-Contract-${bookingRef}.pdf`);
         toast.success('تم تحميل عقد الإيجار الرقمي بنجاح!');
         setShowDownloadModal(true); // إظهار نافذة التأكيد المرئية المنبثقة
       } catch (error) {
@@ -464,7 +464,7 @@ export default function Success() {
                   <span className="text-[11px] text-emerald-300">جاهز للتحميل — المرجع: {commercialContractReference}</span>
                   <a
                     href={commercialContractUrl}
-                    download={`B2-Rent-${contractType}-lease-${commercialContractReference}.pdf`}
+                    download={`MAKANIbooking-${contractType}-lease-${commercialContractReference}.pdf`}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-amber-300"
                   >
                     <Download className="h-4 w-4" /> تحميل عقد الكراء PDF

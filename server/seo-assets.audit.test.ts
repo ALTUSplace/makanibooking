@@ -10,11 +10,11 @@ const sitemap = readFileSync(
   "utf8",
 );
 
-describe("B2-Rent static SEO assets", () => {
+describe("MAKANIbooking static SEO assets", () => {
   it("provides descriptive, canonical, and share metadata for the official site", () => {
     expect(indexHtml).toContain('name="description"');
     expect(indexHtml).toContain('rel="canonical" href="https://b2rentmorocc-muehrc85.manus.space/"');
-    expect(indexHtml).toContain('property="og:site_name" content="B2-Rent Morocco"');
+    expect(indexHtml).toContain('property="og:site_name" content="MAKANIbooking"');
     expect(indexHtml).toContain('name="twitter:card" content="summary"');
     expect(indexHtml).toContain('"@type": "WebSite"');
   });

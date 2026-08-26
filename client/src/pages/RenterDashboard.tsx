@@ -17,7 +17,7 @@ export default function RenterDashboard() {
   const handleSendSupport = (e: React.FormEvent) => {
     e.preventDefault();
     if (!supportMessage.trim()) return;
-    toast.success('تم إرسال رسالتك بنجاح إلى فريق الدعم الفني b2rentt@gmail.com. سنرد عليك خلال دقائق!');
+    toast.success('تم إرسال رسالتك بنجاح إلى فريق الدعم الفني contact@makanibooking.com. سنرد عليك خلال دقائق!');
     setSupportMessage('');
   };
 
@@ -167,7 +167,7 @@ export default function RenterDashboard() {
               <form onSubmit={handleSendSupport} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">البريد الإلكتروني المعتمد</label>
-                  <input type="email" value={user?.email || 'b2rentt@gmail.com'} disabled className="w-full p-3 rounded-xl bg-muted border border-border text-sm" />
+                  <input type="email" value={user?.email || 'contact@makanibooking.com'} disabled className="w-full p-3 rounded-xl bg-muted border border-border text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">نص الاستفسار أو المشكلة</label>

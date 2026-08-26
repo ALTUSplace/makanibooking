@@ -24,7 +24,7 @@ describe("desktop navigation contrast", () => {
   it("uses the hosted brand image in the mobile drawer instead of the retired text lockup", async () => {
     const source = await readFile(new URL("./Navbar.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('/manus-storage/b2-rent-morocco-logo-pixel-alpha_35db21e6.png');
+    expect(source).toContain('/manus-storage/makanibooking-logo_3354849c.png');
     expect(source).toContain('renderNavLinks(navLinks, "mobile")');
     expect(source).not.toContain("بي تو رينت");
   });

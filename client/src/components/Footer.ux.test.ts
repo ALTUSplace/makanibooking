@@ -1,15 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
-describe('B2-Rent SEO footer', () => {
+describe('MAKANIbooking SEO footer', () => {
   it('uses the approved hosted identity and verified contact channels', async () => {
     const source = await readFile(new URL('./Footer.tsx', import.meta.url), 'utf8');
 
-    expect(source).toContain('/manus-storage/b2-rent-morocco-logo-pixel-alpha_35db21e6.png');
+    expect(source).toContain('/manus-storage/makanibooking-logo_3354849c.png');
     expect(source).toContain('bg-transparent p-0');
     expect(source).toContain("const supportPhoneDisplay = '+212 754 382 654'");
     expect(source).toContain("tel:+212754382654");
-    expect(source).toContain('b2rentt@gmail.com');
+    expect(source).toContain('contact@makanibooking.com');
     expect(source).toContain('https://www.facebook.com/share/1D3rxRiw25/');
     expect(source).toContain('https://www.tiktok.com/@b2rent8?_r=1&_t=ZS-99BeDi0sIiK');
   });

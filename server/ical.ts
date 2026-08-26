@@ -70,11 +70,11 @@ export async function icalExportHandler(req: Request, res: Response) {
       `DTSTAMP:${toIcalDate(now)}`,
       `DTSTART:${toIcalDate(new Date(booking.startDate))}`,
       `DTEND:${toIcalDate(new Date(booking.endDate))}`,
-      `SUMMARY:${escapeIcal(`B2-Rent — ${listing.title}`)}`,
+      `SUMMARY:${escapeIcal(`MAKANIbooking — ${listing.title}`)}`,
       `LOCATION:${escapeIcal(listing.city ?? "Morocco")}`,
       "END:VEVENT",
     ].join("\r\n"));
-    const calendar = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//B2-Rent Morocco//iCal//EN", "CALSCALE:GREGORIAN", ...events, "END:VCALENDAR", ""].join("\r\n");
+    const calendar = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MAKANIbooking//iCal//EN", "CALSCALE:GREGORIAN", ...events, "END:VCALENDAR", ""].join("\r\n");
     res.setHeader("Content-Type", "text/calendar; charset=utf-8");
     res.setHeader("Content-Disposition", `inline; filename="b2rent-${listing.id}.ics"`);
     return res.send(calendar);

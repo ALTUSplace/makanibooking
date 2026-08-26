@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 
 export const DisasterRecoveryTab: React.FC = () => {
   const [backups, setBackups] = useState([
-    { id: 'bk_908', name: 'B2Rent_Full_DB_Snapshot_2026_08_21.sql', size: '14.2 MB', type: 'تلقائي (يومي)', time: 'منذ ساعتين', status: 'مستقر وآمن' },
-    { id: 'bk_907', name: 'B2Rent_Full_DB_Snapshot_2026_08_20.sql', size: '13.9 MB', type: 'تلقائي (يومي)', time: 'أمس، 02:00 صباحاً', status: 'مستقر وآمن' },
-    { id: 'bk_906', name: 'B2Rent_Manual_Backup_Pre_Deploy.sql', size: '13.5 MB', type: 'يدوي', time: '18 غشت 2026', status: 'مؤرشف' },
+    { id: 'bk_908', name: 'MAKANIbooking_Full_DB_Snapshot_2026_08_21.sql', size: '14.2 MB', type: 'تلقائي (يومي)', time: 'منذ ساعتين', status: 'مستقر وآمن' },
+    { id: 'bk_907', name: 'MAKANIbooking_Full_DB_Snapshot_2026_08_20.sql', size: '13.9 MB', type: 'تلقائي (يومي)', time: 'أمس، 02:00 صباحاً', status: 'مستقر وآمن' },
+    { id: 'bk_906', name: 'MAKANIbooking_Manual_Backup_Pre_Deploy.sql', size: '13.5 MB', type: 'يدوي', time: '18 غشت 2026', status: 'مؤرشف' },
   ]);
   const [isCreating, setIsCreating] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -20,7 +20,7 @@ export const DisasterRecoveryTab: React.FC = () => {
     setTimeout(() => {
       const newBackup = {
         id: `bk_${Math.floor(Math.random() * 900 + 100)}`,
-        name: `B2Rent_Manual_Snapshot_${new Date().toISOString().slice(0, 10)}.sql`,
+        name: `MAKANIbooking_Manual_Snapshot_${new Date().toISOString().slice(0, 10)}.sql`,
         size: '14.5 MB',
         type: 'يدوي',
         time: 'الآن تفصيلياً',

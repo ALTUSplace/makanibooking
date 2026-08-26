@@ -50,7 +50,7 @@ export default function AdminDashboard() {
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 rounded-2xl bg-[#0B3C5D] p-6 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-300">B2-Rent Morocco</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-300">MAKANIbooking</p>
             <h1 className="mt-1 text-2xl font-black">لوحة الإدارة العامة</h1>
             <p className="mt-1 text-sm text-slate-200">مركز المراقبة والمراجعة المالية والتشغيلية للمنصة.</p>
           </div>

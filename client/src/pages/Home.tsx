@@ -25,6 +25,7 @@ export default function Home() {
       cars: 'Location de voitures',
       properties: 'Immobilier',
       title: 'Trouvez une voiture ou un bien au Maroc, rapidement.',
+      tagline: 'Votre place, partout',
       subtitle: 'Comparez les offres publiées et consultez leurs détails dans cette version de démonstration.',
       destinations: 'Disponibilités par destination',
       activeListings: 'Calculé à partir des annonces actives',
@@ -52,6 +53,7 @@ export default function Home() {
         cars: 'Car rentals',
         properties: 'Real estate',
         title: 'Find a car or property in Morocco, fast.',
+        tagline: 'Your Place, Anywhere',
         subtitle: 'Compare published listings and explore their details in this demonstration version.',
         destinations: 'Availability by destination',
         activeListings: 'Calculated from active listings',
@@ -78,6 +80,7 @@ export default function Home() {
         cars: 'كراء السيارات',
         properties: 'العقارات',
         title: 'ابحث عن سيارة أو عقار في المغرب، بسرعة.',
+        tagline: 'مكانك.. في أي مكان',
         subtitle: 'قارن العروض المنشورة، واستكشف تفاصيلها ضمن هذه النسخة التجريبية.',
         destinations: 'التوفر حسب الوجهة',
         activeListings: 'محسوب من الإعلانات النشطة',
@@ -141,7 +144,7 @@ export default function Home() {
     pricePerUnit: item.pricePerDay,
     image: item.imageUrl || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800',
     city: item.city || 'الدار البيضاء',
-    providerName: 'بيانات الإعلان من B2-Rent',
+    providerName: 'بيانات الإعلان من MAKANIbooking',
     specs: {
       transmission: 'أوتوماتيك',
       fuel: 'ديزل / بنزين',
@@ -215,6 +218,9 @@ export default function Home() {
             {heroCopy.title}
           </h1>
 
+          <p className="text-sm font-black tracking-wide text-[var(--brand-orange)] md:text-base">
+            {heroCopy.tagline}
+          </p>
           <p className="mx-auto max-w-2xl text-xs leading-relaxed text-slate-200 sm:text-sm md:text-base">
             {heroCopy.subtitle}
           </p>

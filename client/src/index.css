@@ -2,17 +2,17 @@
 
 @layer base {
   :root {
-    /* B2-Rent design tokens: identity */
-    --brand-navy: #003f70;
-    --brand-navy-deep: #002b4d;
-    --brand-orange: #ff9208;
+    /* MAKANIbooking design tokens: identity */
+    --brand-navy: #0A2540;
+    --brand-navy-deep: #0A2540;
+    --brand-orange: #FF6B00;
     --brand-orange-dark: #e98000;
     --brand-coral: #ff6b61;
     --brand-coral-dark: #e85850;
     --brand-amber: var(--brand-orange);
     --brand-amber-dark: var(--brand-orange-dark);
     --brand-amber-soft: #fff4e6;
-    --brand-ink: #002b4d;
+    --brand-ink: #0A2540;
     --brand-surface: #ffffff;
     --brand-surface-muted: #f6f8fb;
     --brand-border: #e3eaf1;
@@ -31,7 +31,7 @@
     --duration-standard: 220ms;
     --ease-standard: cubic-bezier(0.23, 1, 0.32, 1);
 
-    /* B2-Rent design tokens: semantic theme values */
+    /* MAKANIbooking design tokens: semantic theme values */
     --background: 36 40% 98%;
     --foreground: 207 100% 15%;
     --card: 0 0% 100%;
@@ -53,7 +53,7 @@
     --ring: 35 100% 52%;
     --radius: 1rem;
 
-    /* B2-Rent design tokens: rhythm and elevation */
+    /* MAKANIbooking design tokens: rhythm and elevation */
     --space-section: clamp(3rem, 8vw, 6rem);
     --content-max-width: 1180px;
     --radius-sm: 0.625rem;
@@ -62,7 +62,7 @@
     --radius-xl: 1.75rem;
     --shadow-soft: 0 8px 24px rgba(0, 43, 77, 0.06);
     --shadow-card: 0 14px 34px rgba(0, 43, 77, 0.09);
-    --shadow-amber: 0 12px 28px rgba(255, 146, 8, 0.22);
+    --shadow-amber: 0 12px 28px rgba(255, 107, 0, 0.22);
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
@@ -328,7 +328,7 @@ textarea:focus-visible {
   transform: translateY(0);
 }
 
-/* Existing B2-Rent utility classes kept for page compatibility */
+/* Existing MAKANIbooking utility classes kept for page compatibility */
 .luxury-card {
   background: var(--brand-surface);
   border: 1px solid var(--brand-border);

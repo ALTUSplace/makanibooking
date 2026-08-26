@@ -22,7 +22,7 @@ export default function Help() {
     },
     {
       q: 'كيف يمكنني التواصل مع فريق الدعم الفني مباشرة؟',
-      a: 'يمكنك إرسال استفسارك عبر البريد الإلكتروني الرسمي b2rentt@gmail.com أو استخدام نموذج الدعم أدناه وسيتم الرد عليك في أسرع وقت.',
+      a: 'يمكنك إرسال استفسارك عبر البريد الإلكتروني الرسمي contact@makanibooking.com أو استخدام نموذج الدعم أدناه وسيتم الرد عليك في أسرع وقت.',
     },
   ];
 
@@ -73,7 +73,7 @@ export default function Help() {
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">إرسال استفسار للدعم الفني</h3>
-              <p className="text-xs text-slate-400">سيتم إرسال رسالتك مباشرة إلى البريد المعتمد: b2rentt@gmail.com</p>
+              <p className="text-xs text-slate-400">سيتم إرسال رسالتك مباشرة إلى البريد المعتمد: contact@makanibooking.com</p>
             </div>
           </div>
 
@@ -161,7 +161,7 @@ export default function Help() {
           </div>
           <div>
             <div className="text-xs text-slate-400 text-center">البريد الإلكتروني الرسمي المعتمد للدعم الفني</div>
-            <a href="mailto:b2rentt@gmail.com" className="text-lg font-bold text-white hover:text-amber-400">b2rentt@gmail.com</a>
+            <a href="mailto:contact@makanibooking.com" className="text-lg font-bold text-white hover:text-amber-400">contact@makanibooking.com</a>
           </div>
         </div>
 

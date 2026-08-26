@@ -1384,7 +1384,7 @@ export const appRouter = router({
               href: `/voucher/${voucher.code}`,
               entityType: "voucher",
               entityId: voucher.id,
-              email: ctx.user!.email ? { to: ctx.user!.email, subject: "B2-Rent — تذكرة الوصول الذكي", ...buildEmailContent("تذكرة الوصول الذكي جاهزة / Voucher prêt", renterMessage, voucherUrl) } : undefined,
+              email: ctx.user!.email ? { to: ctx.user!.email, subject: "MAKANIbooking — تذكرة الوصول الذكي", ...buildEmailContent("تذكرة الوصول الذكي جاهزة / Voucher prêt", renterMessage, voucherUrl) } : undefined,
             });
             if (detail.ownerId !== booking.renterId) {
               await safeNotifyUser({
@@ -1395,7 +1395,7 @@ export const appRouter = router({
                 href: "/host",
                 entityType: "booking",
                 entityId: booking.id,
-                email: detail.ownerEmail ? { to: detail.ownerEmail, subject: "B2-Rent — دفع حجز جديد", ...buildEmailContent("دفع جديد وتجهيز الخدمة / Paiement reçu", ownerMessage, `${requestOrigin}/host`) } : undefined,
+                email: detail.ownerEmail ? { to: detail.ownerEmail, subject: "MAKANIbooking — دفع حجز جديد", ...buildEmailContent("دفع جديد وتجهيز الخدمة / Paiement reçu", ownerMessage, `${requestOrigin}/host`) } : undefined,
               });
             }
           }

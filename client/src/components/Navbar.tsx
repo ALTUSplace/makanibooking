@@ -314,7 +314,7 @@ export default function Navbar() {
       <header className="glass-header sticky top-0 z-50 text-foreground" dir={direction}>
         <div className="container mx-auto flex h-16 items-center justify-between gap-3 px-3 sm:h-[4.5rem] sm:px-4">
           <Link href="/" className="b2-logo-link group flex shrink-0 items-center" aria-label={t("brandHomeAria")}>
-            <img src="/manus-storage/b2-rent-morocco-logo-pixel-alpha_35db21e6.png" alt="B2-Rent Morocco" width={1647} height={668} className="b2-brand-mark h-10 w-36 object-contain sm:h-11 sm:w-44" />
+            <img src="/manus-storage/makanibooking-logo_3354849c.png" alt="MAKANIbooking" width={1647} height={668} className="b2-brand-mark h-10 w-36 object-contain sm:h-11 sm:w-44" />
           </Link>
           <span className="b2-preview-badge hidden sm:inline-flex" title={t("demoBadgeTitle")}>{t("demoBadge")}</span>
 
@@ -504,7 +504,7 @@ export default function Navbar() {
         <div className="fixed inset-0 z-[60] md:hidden" role="presentation">
           <button type="button" className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" aria-label={t("close")} onClick={() => setMobileMenuOpen(false)} />
           <aside ref={mobileMenuRef} id="mobile-navigation" className={`absolute top-0 flex h-full w-[min(88vw,22rem)] flex-col overflow-y-auto bg-background p-4 shadow-2xl ${direction === "rtl" ? "right-0" : "left-0"}`} dir={direction} aria-label={t("search")} aria-modal="true" role="dialog" tabIndex={-1}>
-          <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="b2-logo-link inline-flex h-12 w-36 items-center"><img src="/manus-storage/b2-rent-morocco-logo-pixel-alpha_35db21e6.png" alt="B2-Rent Morocco" width={1647} height={668} className="b2-brand-mark h-full w-full object-contain" /></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface-muted)]" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
+          <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-4"><Link href="/" onClick={() => setMobileMenuOpen(false)} className="b2-logo-link inline-flex h-12 w-36 items-center"><img src="/manus-storage/makanibooking-logo_3354849c.png" alt="MAKANIbooking" width={1647} height={668} className="b2-brand-mark h-full w-full object-contain" /></Link><button type="button" onClick={() => setMobileMenuOpen(false)} className="b2-icon-button border border-[var(--brand-border)] bg-[var(--brand-surface-muted)]" aria-label={t("close")}><X className="h-5 w-5" /></button></div>
           <div className="mx-auto flex w-full flex-1 flex-col gap-2 pt-4">
             <nav className="space-y-1" aria-label={t("mobileNavigation")}>
               {renderNavLinks(navLinks, "mobile")}

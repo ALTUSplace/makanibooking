@@ -20,10 +20,10 @@ import {
 } from 'lucide-react';
 import { type Language, useLanguage } from '@/contexts/LanguageContext';
 
-const logoUrl = "/manus-storage/b2-rent-morocco-logo-pixel-alpha_35db21e6.png";
+const logoUrl = "/manus-storage/makanibooking-logo_3354849c.png";
 const supportPhoneDisplay = '+212 754 382 654';
 const supportPhoneHref = 'tel:+212754382654';
-const supportEmail = 'b2rentt@gmail.com';
+const supportEmail = 'contact@makanibooking.com';
 const facebookUrl = 'https://www.facebook.com/share/1D3rxRiw25/';
 const tiktokUrl = 'https://www.tiktok.com/@b2rent8?_r=1&_t=ZS-99BeDi0sIiK';
 
@@ -49,7 +49,7 @@ type FooterCopy = {
 
 const copy: Record<Language, FooterCopy> = {
   ar: {
-    summary: 'منصة B2-Rent تجمع كراء السيارات والعقارات في المغرب في تجربة واحدة، مع حجوزات شفافة وعقود رقمية وتوقيع إلكتروني.',
+    summary: 'منصة MAKANIbooking تجمع كراء السيارات والعقارات في المغرب في تجربة واحدة، مع حجوزات شفافة وعقود رقمية وتوقيع إلكتروني.',
     serviceArea: 'منطقة الخدمة: قرب مطار محمد الخامس، الدار البيضاء / الدروة',
     contact: 'التواصل والدعم',
     cars: 'وجهات كراء السيارات',
@@ -59,8 +59,8 @@ const copy: Record<Language, FooterCopy> = {
     partner: 'مساحة الشركاء',
     paymentSecurity: 'طرق دفع واضحة وحجز موثّق',
     language: 'اللغة',
-    follow: 'تابع B2-Rent',
-    rights: '© 2026 B2-Rent. جميع الحقوق محفوظة.',
+    follow: 'تابع MAKANIbooking',
+    rights: '© 2026 MAKANIbooking. جميع الحقوق محفوظة.',
     serviceAreaLabel: 'نطاق الخدمة',
     emailLabel: 'البريد الإلكتروني',
     phoneLabel: 'الدعم المباشر',
@@ -77,7 +77,7 @@ const copy: Record<Language, FooterCopy> = {
     ],
   },
   fr: {
-    summary: 'B2-Rent réunit la location de voitures et l’immobilier au Maroc, avec réservations transparentes, contrats numériques et signature électronique.',
+    summary: 'MAKANIbooking réunit la location de voitures et l’immobilier au Maroc, avec réservations transparentes, contrats numériques et signature électronique.',
     serviceArea: 'Zone de service : près de l’aéroport Mohammed V, Casablanca / Deroua',
     contact: 'Contact et assistance',
     cars: 'Destinations voiture',
@@ -87,8 +87,8 @@ const copy: Record<Language, FooterCopy> = {
     partner: 'Espace partenaires',
     paymentSecurity: 'Paiement clair et réservation documentée',
     language: 'Langue',
-    follow: 'Suivre B2-Rent',
-    rights: '© 2026 B2-Rent. Tous droits réservés.',
+    follow: 'Suivre MAKANIbooking',
+    rights: '© 2026 MAKANIbooking. Tous droits réservés.',
     serviceAreaLabel: 'Zone de service',
     emailLabel: 'E-mail',
     phoneLabel: 'Support direct',
@@ -105,7 +105,7 @@ const copy: Record<Language, FooterCopy> = {
     ],
   },
   en: {
-    summary: 'B2-Rent brings car rentals and real estate in Morocco together, with transparent bookings, digital contracts, and electronic signatures.',
+    summary: 'MAKANIbooking brings car rentals and real estate in Morocco together, with transparent bookings, digital contracts, and electronic signatures.',
     serviceArea: 'Service area: near Mohammed V Airport, Casablanca / Deroua',
     contact: 'Contact and support',
     cars: 'Car rental destinations',
@@ -115,8 +115,8 @@ const copy: Record<Language, FooterCopy> = {
     partner: 'Partner area',
     paymentSecurity: 'Clear payment and documented booking',
     language: 'Language',
-    follow: 'Follow B2-Rent',
-    rights: '© 2026 B2-Rent. All rights reserved.',
+    follow: 'Follow MAKANIbooking',
+    rights: '© 2026 MAKANIbooking. All rights reserved.',
     serviceAreaLabel: 'Service area',
     emailLabel: 'Email',
     phoneLabel: 'Direct support',
@@ -160,9 +160,9 @@ export default function Footer() {
 
       <div className="container relative z-10 py-14 sm:py-16">
         <div className="grid gap-x-10 gap-y-12 xl:grid-cols-[1.45fr_1fr_1fr_1fr]">
-          <section className="max-w-md" aria-label="B2-Rent">
+          <section className="max-w-md" aria-label="MAKANIbooking">
             <Link href="/" onClick={scrollToTop} className="inline-flex rounded-xl bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--brand-navy-deep)]">
-              <img src={logoUrl} alt="B2-Rent Morocco" width={1647} height={668} className="h-14 w-36 bg-transparent object-contain sm:h-16 sm:w-40" />
+              <img src={logoUrl} alt="MAKANIbooking" width={1647} height={668} className="h-14 w-36 bg-transparent object-contain sm:h-16 sm:w-40" />
             </Link>
             <p className="mt-5 text-sm leading-7 text-slate-300">{content.summary}</p>
 
@@ -229,8 +229,8 @@ export default function Footer() {
             <section aria-label={content.follow}>
               <FooterTitle>{content.follow}</FooterTitle>
               <div className="flex items-center gap-2">
-                <a href={facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook B2-Rent" className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/5 text-slate-100 transition-colors hover:border-[var(--brand-gold)] hover:text-[var(--brand-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)]"><Facebook className="h-4 w-4" aria-hidden="true" /></a>
-                <a href={tiktokUrl} target="_blank" rel="noreferrer" aria-label="TikTok B2-Rent" className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/5 text-slate-100 transition-colors hover:border-[var(--brand-gold)] hover:text-[var(--brand-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)]"><Music2 className="h-4 w-4" aria-hidden="true" /></a>
+                <a href={facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook MAKANIbooking" className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/5 text-slate-100 transition-colors hover:border-[var(--brand-gold)] hover:text-[var(--brand-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)]"><Facebook className="h-4 w-4" aria-hidden="true" /></a>
+                <a href={tiktokUrl} target="_blank" rel="noreferrer" aria-label="TikTok MAKANIbooking" className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/5 text-slate-100 transition-colors hover:border-[var(--brand-gold)] hover:text-[var(--brand-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-gold)]"><Music2 className="h-4 w-4" aria-hidden="true" /></a>
                 <span title="Instagram — رابط رسمي قريباً" aria-label="Instagram link pending" className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-500"><Instagram className="h-4 w-4" aria-hidden="true" /></span>
                 <span title="LinkedIn — رابط رسمي قريباً" aria-label="LinkedIn link pending" className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-500"><Linkedin className="h-4 w-4" aria-hidden="true" /></span>
               </div>

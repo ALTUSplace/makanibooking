@@ -50,6 +50,6 @@ export function generateServerCommercialLeasePdf(input: CommercialLeaseInput): B
   doc.setFont(hasUnicodeFont ? "DejaVuSans" : "helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
-  doc.text(isArabic ? shapeArabic("B2-Rent — نموذج تقني للمراجعة القانونية قبل الاستعمال.") : "B2-Rent — Modèle technique à faire valider par un professionnel du droit.", margin, 287);
+  doc.text(isArabic ? shapeArabic("MAKANIbooking — نموذج تقني للمراجعة القانونية قبل الاستعمال.") : "MAKANIbooking — Modèle technique à faire valider par un professionnel du droit.", margin, 287);
   return Buffer.from(doc.output("arraybuffer"));
 }

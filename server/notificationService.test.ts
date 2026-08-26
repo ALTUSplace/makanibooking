@@ -27,8 +27,8 @@ describe("notificationService", () => {
 
     expect(approved.text).toContain("Annonce publiée");
     expect(rejected.text).toContain("Image refusée");
-    expect(approved.html).toContain("B2-Rent Morocco");
-    expect(rejected.html).toContain("B2-Rent Morocco");
+    expect(approved.html).toContain("MAKANIbooking");
+    expect(rejected.html).toContain("MAKANIbooking");
   });
 
   it("does not attempt external delivery until the provider is configured", async () => {

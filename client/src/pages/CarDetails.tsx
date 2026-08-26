@@ -24,7 +24,7 @@ export default function CarDetails() {
   const car = listing ? {
     id: String(listing.id),
     name: listing.title,
-    brand: listing.title.split(' ')[0] || 'B2-Rent',
+    brand: listing.title.split(' ')[0] || 'MAKANIbooking',
     cityName: listing.city,
     pricePerDay: listing.pricePerDay,
     image: listing.imageUrl || '',
@@ -32,11 +32,11 @@ export default function CarDetails() {
     fuel: listing.fuelType || 'غير محدد',
     seats: 5,
     features: listing.amenities ? listing.amenities.split(',').map((item) => item.trim()).filter(Boolean) : [],
-    agency: { name: 'المؤجر على B2-Rent', address: listing.city, whatsapp: '' },
+    agency: { name: 'المؤجر على MAKANIbooking', address: listing.city, whatsapp: '' },
   } : fallbackCar ? {
     id: fallbackCar.id,
     name: fallbackCar.title,
-    brand: fallbackCar.category.split(/[ /]/)[0] || 'B2-Rent',
+    brand: fallbackCar.category.split(/[ /]/)[0] || 'MAKANIbooking',
     cityName: fallbackCar.city,
     pricePerDay: fallbackCar.pricePerUnit,
     image: fallbackCar.image,
@@ -97,7 +97,7 @@ export default function CarDetails() {
 
   const handleShare = (platform: string) => {
     const url = window.location.href;
-    const text = `استأجر ${car.name} في ${car.cityName} عبر منصة B2-Rent الرائدة!`;
+    const text = `استأجر ${car.name} في ${car.cityName} عبر منصة MAKANIbooking الرائدة!`;
     if (platform === 'whatsapp') {
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
     } else if (platform === 'facebook') {
@@ -303,7 +303,7 @@ export default function CarDetails() {
                     ) : reviews.map((rev) => (
                       <div key={rev.id} className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-sm">{rev.userName || 'مستخدم B2-Rent'}</span>
+                          <span className="font-bold text-white text-sm">{rev.userName || 'مستخدم MAKANIbooking'}</span>
                           <span className="text-xs text-slate-500">{new Date(rev.createdAt).toLocaleDateString('ar-MA')}</span>
                         </div>
                         <div className="flex items-center gap-1 text-amber-400">

@@ -6,14 +6,20 @@ import { useRef, useState, useEffect } from 'react';
 import { playSuccessSound } from '@/lib/sound';
 import { trpc } from '@/lib/trpc';
 import { cancellationRefundPolicy } from '@/lib/legalDisclosure';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { buildWhatsappBookingMessage } from '@/lib/whatsappMessage';
 
 export default function Success() {
   const [, setLocation] = useLocation();
+  const { language: currentLanguage } = useLanguage();
   const searchParams = new URLSearchParams(window.location.search);
   const bookingId = Number(searchParams.get('bookingId') || 0);
   const voucherCode = searchParams.get('voucherCode') || '';
   const contractType = searchParams.get('contractType') as 'commercial' | 'professional' | null;
-  const language = searchParams.get('language') === 'ar' ? 'ar' : 'fr';
+  const requestedLanguage = searchParams.get('language');
+  const language = requestedLanguage === 'ar' || requestedLanguage === 'fr' || requestedLanguage === 'en'
+    ? requestedLanguage
+    : currentLanguage;
   const bookingQuery = trpc.bookings.getById.useQuery(
     { bookingId },
     { enabled: bookingId > 0, retry: false, refetchInterval: bookingId > 0 ? 15000 : false },
@@ -43,9 +49,15 @@ export default function Success() {
       toast.info('لا يتوفر رقم واتساب مؤكد للوكالة في بيانات هذا الحجز.');
       return;
     }
-    const message = language === 'ar'
-      ? `مرحباً، أود التواصل بخصوص الحجز ${bookingRef} — ${premises}.`
-      : `Bonjour, je souhaite échanger au sujet de la réservation ${bookingRef} — ${premises}.`;
+    const message = buildWhatsappBookingMessage({
+      language,
+      bookingRef,
+      listingTitle: premises,
+      startDate: start,
+      endDate: end,
+      total: totalAmount,
+      currency,
+    });
     window.open(`https://wa.me/${booking.ownerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
@@ -77,7 +89,9 @@ export default function Success() {
   const createLeaseMutation = trpc.commercialLeaseContracts.create.useMutation();
   const invoiceQuery = trpc.invoices.getByBooking.useQuery({ bookingId }, { enabled: bookingId > 0, retry: false });
   const invoice = invoiceQuery.data;
-  const total = invoice ? String(invoice.total) : '—';
+  const totalAmount = invoice?.total ?? booking?.totalPrice ?? null;
+  const currency = invoice?.currency ?? 'MAD';
+  const total = totalAmount === null ? '—' : String(totalAmount);
 
   const handleInvoiceDownload = async () => {
     if (!invoice) {
@@ -114,7 +128,7 @@ export default function Success() {
     createLeaseMutation.mutate({
       bookingId,
       leaseType: contractType,
-      language,
+      language: language === 'ar' ? 'ar' : 'fr',
     }, {
       onSuccess: (result) => {
         if (!active) return;

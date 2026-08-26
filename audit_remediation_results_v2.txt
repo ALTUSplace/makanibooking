@@ -1,0 +1,190 @@
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+> b2_rent_platform@1.0.0 check /home/ubuntu/b2_rent_platform
+> tsc --noEmit
+
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+> b2_rent_platform@1.0.0 test /home/ubuntu/b2_rent_platform
+> vitest run
+
+
+ RUN  v2.1.9 /home/ubuntu/b2_rent_platform
+
+ ✓ client/src/pages/Home.ux.test.ts (8 tests) 9ms
+ ✓ server/support-dispute.audit.test.ts (6 tests) 6ms
+ ✓ server/supabasePreviewCatalog.test.ts (4 tests) 10ms
+ ✓ server/supabasePrivateStorageAcceptance.test.ts (4 tests) 46ms
+ ✓ server/supabasePrivateStorage.test.ts (5 tests) 36ms
+ ✓ server/invoice-profile.audit.test.ts (4 tests) 5ms
+ ✓ server/notification-center.audit.test.ts (5 tests) 4ms
+ ✓ server/notificationService.test.ts (4 tests) 7ms
+stdout | server/supabasePreviewHealth.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+stdout | server/supabasePrivateStorageHealth.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+stdout | server/vercelCron.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+ ✓ server/supabasePreviewHealth.test.ts (4 tests) 34ms
+ ✓ server/supabasePrivateStorageHealth.test.ts (4 tests) 32ms
+ ✓ server/vercelCron.test.ts (7 tests) 85ms
+stdout | server/panel-flows.authorization.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+stdout | server/admin.authorization.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+ ✓ server/vercel-deployment.audit.test.ts (3 tests) 6ms
+ ✓ client/src/components/Footer.ux.test.ts (3 tests) 6ms
+ ✓ client/src/lib/commercialLease.test.ts (2 tests) 39ms
+ ✓ server/billing.test.ts (4 tests) 6ms
+ ✓ server/checkout-ui.audit.test.ts (4 tests) 3ms
+ ✓ server/runtimeReadiness.test.ts (3 tests) 4ms
+ ✓ server/readiness.security.test.ts (3 tests) 5ms
+stdout | server/operations.audit.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+ ✓ server/panel-flows.authorization.test.ts (4 tests) 1003ms
+   ✓ keeps an authenticated admin boundary separate from host data workflows 992ms
+ ✓ server/operations.audit.test.ts (4 tests) 7ms
+stdout | server/agency-dashboard.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+ ✓ server/agency-dashboard.test.ts (1 test) 5ms
+ ✓ server/profile-contract.audit.test.ts (3 tests) 4ms
+ ✓ client/src/lib/legalDisclosure.test.ts (3 tests) 3ms
+ ✓ server/admin.authorization.test.ts (5 tests) 1186ms
+   ✓ Admin authorization boundary > allows an admin to access the overview even when the database is unavailable 1180ms
+stdout | server/auth.logout.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+ ✓ server/auth.logout.test.ts (1 test) 4ms
+ ✓ client/src/components/Navbar.contrast.test.ts (3 tests) 4ms
+ ✓ server/imageVerification.test.ts (2 tests) 4ms
+ ✓ server/ical.test.ts (3 tests) 5ms
+ ✓ server/voucher.test.ts (3 tests) 4ms
+ ✓ server/cancellationPolicySnapshot.test.ts (2 tests) 3ms
+ ✓ server/marketplace.audit.test.ts (2 tests) 5ms
+ ✓ client/src/pages/Search.demoInventory.test.ts (2 tests) 4ms
+ ✓ server/supabaseCredentials.integration.test.ts (2 tests) 468ms
+   ✓ Supabase production credentials > connects to health and REST metadata endpoints using server-only configuration 466ms
+ ✓ server/seo-assets.audit.test.ts (2 tests) 2ms
+ ✓ client/src/contexts/LanguageContext.test.ts (3 tests) 3ms
+ ✓ client/src/branding.test.ts (2 tests) 4ms
+ ✓ client/src/pages/CarDetails.demo.test.ts (2 tests) 2ms
+ ✓ client/src/components/CarListingCard.test.ts (3 tests) 3ms
+ ✓ client/src/components/AIChatWidget.test.ts (1 test) 3ms
+ ✓ client/src/components/HostingReadinessBanner.test.ts (2 tests) 3ms
+ ✓ client/src/components/BrandAsset.hosting.test.ts (1 test) 2ms
+ ✓ server/auth.me.security.test.ts (1 test) 3ms
+stdout | server/agency-settings.test.ts
+[OAuth] Initialized with baseURL: https://api.manus.im
+
+ ✓ client/src/lib/analyticsSecrets.test.ts (1 test) 105ms
+ ✓ server/agency-settings.test.ts (1 test) 4ms
+ ✓ client/src/pages/LocationLanding.contrast.test.ts (1 test) 2ms
+ ✓ client/src/pages/AdminDashboard.contrast.test.ts (1 test) 3ms
+ ✓ server/arabicShaper.test.ts (2 tests) 3ms
+ ✓ server/admin.http.integration.test.ts (1 test) 64ms
+ ✓ server/legalConsent.schema.test.ts (1 test) 2ms
+ ✓ server/app-identity.test.ts (1 test) 3651ms
+   ✓ B2-Rent app identity > serves the configured application logo 3650ms
+
+ Test Files  50 passed (50)
+      Tests  143 passed (143)
+   Start at  14:19:26
+   Duration  7.99s (transform 868ms, setup 0ms, collect 8.34s, tests 6.92s, environment 9ms, prepare 3.16s)
+
+[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.patchedDependencies", "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+
+> b2_rent_platform@1.0.0 build /home/ubuntu/b2_rent_platform
+> vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && pnpm build:vercel-api && pnpm verify:vercel-api
+
+vite v7.1.9 building for production...
+transforming...
+✓ 2696 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                                    370.48 kB │ gzip: 106.35 kB
+../dist/public/assets/index-BSSQVdR8.css                     161.95 kB │ gzip:  25.68 kB
+../dist/public/assets/usePersistFn-BEsndKz4.js                 0.22 kB │ gzip:   0.17 kB
+../dist/public/assets/OptimizedImage-BqJUdMNm.js               0.95 kB │ gzip:   0.62 kB
+../dist/public/assets/textarea-Dlg1dJA_.js                     1.26 kB │ gzip:   0.68 kB
+../dist/public/assets/checkbox-DqbhruOV.js                     1.34 kB │ gzip:   0.58 kB
+../dist/public/assets/badge-D5pHfCnW.js                        1.39 kB │ gzip:   0.69 kB
+../dist/public/assets/input-DvMk-AJH.js                        1.44 kB │ gzip:   0.74 kB
+../dist/public/assets/invoicePdf-C2-n0qeJ.js                   3.06 kB │ gzip:   1.52 kB
+../dist/public/assets/shared-vendor-eOI3pOFD.js                4.71 kB │ gzip:   2.12 kB
+../dist/public/assets/About-B9U3M-R6.js                        5.04 kB │ gzip:   1.30 kB
+../dist/public/assets/CarListingCard-BFgEUnE9.js               5.08 kB │ gzip:   1.60 kB
+../dist/public/assets/useComposition-DfCrc1zT.js               5.25 kB │ gzip:   1.54 kB
+../dist/public/assets/Register-CZNOhzv9.js                     5.85 kB │ gzip:   1.72 kB
+../dist/public/assets/PrivacyPolicy-Di2eeSeD.js                6.64 kB │ gzip:   1.91 kB
+../dist/public/assets/Booking-Dj9oKQzI.js                      6.91 kB │ gzip:   1.86 kB
+../dist/public/assets/b2rent-BI55VMYG.js                       7.45 kB │ gzip:   2.27 kB
+../dist/public/assets/LocationLanding-B6V36b-U.js              8.42 kB │ gzip:   2.18 kB
+../dist/public/assets/BookingMessages-74Aitako.js              8.48 kB │ gzip:   2.30 kB
+../dist/public/assets/WhatsAppNotificationModal-DocuMyOK.js    8.53 kB │ gzip:   1.96 kB
+../dist/public/assets/AIChatWidget-BcmhoGO9.js                 8.77 kB │ gzip:   2.21 kB
+../dist/public/assets/BlogPage-aaZCyDU2.js                    10.46 kB │ gzip:   2.58 kB
+../dist/public/assets/CMIPaymentModal-X-uKYR7x.js             10.61 kB │ gzip:   2.21 kB
+../dist/public/assets/KycVerification-C91vQXHx.js             10.70 kB │ gzip:   2.73 kB
+../dist/public/assets/AdvancedMediaUpload-DMK4CgiX.js         11.29 kB │ gzip:   3.03 kB
+../dist/public/assets/Favorites-DjxX20H6.js                   11.70 kB │ gzip:   2.58 kB
+../dist/public/assets/MyBookings-Df__fsVx.js                  12.90 kB │ gzip:   3.08 kB
+../dist/public/assets/Help-DsmSr6os.js                        13.69 kB │ gzip:   2.93 kB
+../dist/public/assets/Voucher-CSnFv8cK.js                     15.45 kB │ gzip:   3.24 kB
+../dist/public/assets/TermsOfService-C50VlJoN.js              15.52 kB │ gzip:   3.49 kB
+../dist/public/assets/PropertyDetailWithVideo-BPhbwmUY.js     15.66 kB │ gzip:   3.63 kB
+../dist/public/assets/AddCar-CVD614wR.js                      16.01 kB │ gzip:   3.20 kB
+../dist/public/assets/TwoFactorAuthModal-1zBBWpwP.js          16.21 kB │ gzip:   3.14 kB
+../dist/public/assets/SupportTickets-CIy4i5QF.js              16.25 kB │ gzip:   3.42 kB
+../dist/public/assets/AgencySettings-MT9FRCug.js              17.56 kB │ gzip:   3.79 kB
+../dist/public/assets/NotificationsPage-Brgw0Xp-.js           18.23 kB │ gzip:   3.79 kB
+../dist/public/assets/Profile-D9Ui7Yzu.js                     20.53 kB │ gzip:   4.16 kB
+../dist/public/assets/navigation-vendor-CGK2sIdi.js           22.98 kB │ gzip:   6.33 kB
+../dist/public/assets/Checkout-DkfBOMGd.js                    34.50 kB │ gzip:   6.50 kB
+../dist/public/assets/react-vendor-aQpHWFvn.js                36.62 kB │ gzip:  10.44 kB
+../dist/public/assets/DisputeResolution-CPvIHxXu.js           37.50 kB │ gzip:   7.10 kB
+../dist/public/assets/Success-CA3hNHtw.js                     37.81 kB │ gzip:   8.21 kB
+../dist/public/assets/utils-vendor-CBW22sOS.js                39.73 kB │ gzip:  12.28 kB
+../dist/public/assets/CarDetails-DykI3Vm-.js                  43.01 kB │ gzip:   7.44 kB
+../dist/public/assets/icons-vendor-V6l_uYvL.js                45.94 kB │ gzip:   8.73 kB
+../dist/public/assets/Search-BwqtLXj1.js                      46.70 kB │ gzip:   9.13 kB
+../dist/public/assets/AdminDashboard-uAgJYfbi.js              47.91 kB │ gzip:   6.38 kB
+../dist/public/assets/HostDashboard-BNC5frp5.js               53.44 kB │ gzip:   8.98 kB
+../dist/public/assets/Home-pBxkXKam.js                        67.27 kB │ gzip:   9.88 kB
+../dist/public/assets/data-vendor-GTg4zOxF.js                 86.24 kB │ gzip:  24.07 kB
+../dist/public/assets/ui-vendor-BACadaN5.js                   95.02 kB │ gzip:  32.43 kB
+../dist/public/assets/index-C2LH4zYy.js                      156.14 kB │ gzip:  37.16 kB
+../dist/public/assets/charts-vendor-DJMt-DOK.js              243.53 kB │ gzip:  56.87 kB
+../dist/public/assets/pdf-vendor-BQ7zPEJz.js                 342.51 kB │ gzip: 112.58 kB
+../dist/public/assets/react-dom-vendor-Diz5egT7.js           359.50 kB │ gzip: 107.57 kB
+../dist/public/assets/vendor-CVxpQw_A.js                     603.03 kB │ gzip: 183.96 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.04s
+
+  dist/index.js  220.7kb
+
+⚡ Done in 14ms
+
+> b2_rent_platform@1.0.0 build:vercel-api /home/ubuntu/b2_rent_platform
+> esbuild server/_core/app.ts --platform=node --bundle --format=cjs --target=node22 --outfile=api/_generated/app.cjs
+
+
+  api/_generated/app.cjs  5.8mb ⚠️
+
+⚡ Done in 182ms
+
+> b2_rent_platform@1.0.0 verify:vercel-api /home/ubuntu/b2_rent_platform
+> node scripts/verify-vercel-api.mjs
+
+[OAuth] Initialized with baseURL: https://api.manus.im
+Vercel server bundle loaded and created an Express application successfully.

@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
-import { Bot, X, Send, Sparkles, MessageCircle, ArrowRight, Car, Building2, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { Bot, X, Send, Car, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+type ChatMessage = { sender: 'ai' | 'user'; text: string };
+
+const interpolate = (template: string, values: Record<string, string>) =>
+  Object.entries(values).reduce((result, [key, value]) => result.replaceAll(`{${key}}`, value), template);
 
 export default function AIChatWidget() {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { sender: 'ai', text: 'سلام! مرحباً بك في B2-Rent 🇲🇦. واش كتقلّب على كراء سيارة أوّلا عقار؟' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [{ sender: 'ai', text: t('aiGreeting') }]);
   const [inputVal, setInputVal] = useState('');
   const [step, setStep] = useState<'category' | 'city' | 'budget' | 'done'>('category');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -17,43 +22,32 @@ export default function AIChatWidget() {
     const text = textToSend || inputVal;
     if (!text.trim()) return;
 
-    const userMsg = { sender: 'user', text };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => [...prev, { sender: 'user', text }]);
     setInputVal('');
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       if (step === 'category') {
         const lower = text.toLowerCase();
-        if (lower.includes('سيارة') || lower.includes('طوموبيل') || lower.includes('car')) {
-          setSelectedCategory('سيارة');
+        if (lower.includes('سيارة') || lower.includes('طوموبيل') || lower.includes('car') || lower.includes('voiture')) {
+          setSelectedCategory(t('car'));
           setStep('city');
-          setMessages(prev => [...prev, { sender: 'ai', text: 'اختيار موفق! فإي مدينة بغيتي تكري السيارة؟ (مثال: الدار البيضاء، مراكش، طنجة، الرباط)' }]);
-        } else if (lower.includes('عقار') || lower.includes('شقة') || lower.includes('فيلا') || lower.includes('appartement')) {
-          setSelectedCategory('عقار');
+          setMessages(prev => [...prev, { sender: 'ai', text: t('aiCarPrompt') }]);
+        } else if (lower.includes('عقار') || lower.includes('شقة') || lower.includes('فيلا') || lower.includes('appartement') || lower.includes('property') || lower.includes('bien')) {
+          setSelectedCategory(t('property'));
           setStep('city');
-          setMessages(prev => [...prev, { sender: 'ai', text: 'رائع جداً! فإي مدينة تبحث عن العقار؟ (مثال: الدار البيضاء، مراكش، أكادير)' }]);
+          setMessages(prev => [...prev, { sender: 'ai', text: t('aiPropertyPrompt') }]);
         } else {
-          setMessages(prev => [...prev, { sender: 'ai', text: 'عافاك واش كتقلّب على (سيارة) أو (عقار) باش نقترح عليك العروض المناسبة؟' }]);
+          setMessages(prev => [...prev, { sender: 'ai', text: t('aiCategoryPrompt') }]);
         }
       } else if (step === 'city') {
         setSelectedCity(text);
         setStep('budget');
-        setMessages(prev => [...prev, { sender: 'ai', text: `ممتاز في ${text}! شحال الميزانية اليومية التقريبية ديالك بالدرهم (MAD)؟` }]);
+        setMessages(prev => [...prev, { sender: 'ai', text: interpolate(t('aiBudgetPrompt'), { city: text }) }]);
       } else if (step === 'budget') {
         setStep('done');
-        const offerText = selectedCategory === 'سيارة' ? 
-          '🚗 Dacia Logan 2025 (300 درهم/يوم) - متوفرة في الفوري.\n🚙 Range Rover Vogue 2024 (1500 درهم/يوم) - فاخرة.' :
-          '🏢 شقة مودرن مطلة على البحر (1200 درهم/ليلة) - عين الذئاب.\n🏡 فيلا هادئة بمسبح خاص (2500 درهم/ليلة) - مراكش.';
-
-        setMessages(prev => [
-          ...prev, 
-          { 
-            sender: 'ai', 
-            text: `لقد وجدنا لك عروضاً ممتازة لـ "${selectedCategory}" في مدينة "${selectedCity}" بـ "${text} درهم/اليوم"! إليك أبرز المقترحات المتاحة حالياً:\n\n${offerText}` 
-          }
-        ]);
+        setMessages(prev => [...prev, { sender: 'ai', text: interpolate(t('aiResults'), { category: selectedCategory, city: selectedCity, budget: text }) }]);
       } else {
-        setMessages(prev => [...prev, { sender: 'ai', text: 'هل ترغب في الانتقال لصفحة البحث المتقدم أو حجز هذا العرض مباشرة؟ يمكنك استخدام شريط البحث في الأعلى.' }]);
+        setMessages(prev => [...prev, { sender: 'ai', text: t('aiNextStep') }]);
       }
     }, 600);
   };
@@ -64,82 +58,63 @@ export default function AIChatWidget() {
         <button
           onClick={() => setIsOpen(true)}
           className="b2-ai-chat-trigger group relative flex items-center gap-3 rounded-full border-2 border-amber-500 bg-[#0B3C5D] p-4 text-white shadow-2xl transition-transform hover:scale-105"
-          title="مساعد الذكاء الاصطناعي"
-          aria-label="فتح مساعد B2-Rent الذكي"
+          title={t('aiAssistant')}
+          aria-label={t('aiAssistantAria')}
           aria-expanded={isOpen}
         >
           <span className="b2-ai-chat-trigger__halo" aria-hidden="true" />
           <Bot className="b2-ai-chat-trigger__bot h-6 w-6 text-amber-400" aria-hidden="true" />
-          <span className="hidden sm:inline font-bold text-sm tracking-wide">مساعد B2-Rent الذكي</span>
-          <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-full">AI</span>
+          <span className="hidden text-sm font-bold tracking-wide sm:inline">{t('aiAssistant')}</span>
+          <span className="absolute -right-1 -top-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-black text-slate-950">AI</span>
         </button>
       )}
 
       {isOpen && (
-        <div className="bg-white w-[350px] sm:w-[380px] h-[500px] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-          
-          {/* Chat Header */}
-          <div className="bg-[#0B3C5D] text-white p-4 flex items-center justify-between border-b border-amber-500/30">
+        <div className="flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-[380px]">
+          <div className="flex items-center justify-between border-b border-amber-500/30 bg-[#0B3C5D] p-4 text-white">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-400">
-                <Bot className="w-5 h-5 text-amber-400" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-400 bg-amber-500/20">
+                <Bot className="h-5 w-5 text-amber-400" />
               </div>
               <div>
-                <h3 className="font-bold text-sm">مساعد الذكاء الاصطناعي</h3>
-                <p className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> متصل الآن للاستشارة
+                <h3 className="text-sm font-bold">{t('aiAssistant')}</h3>
+                <p className="flex items-center gap-1 text-[10px] font-medium text-emerald-400">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" /> {t('aiOnline')}
                 </p>
               </div>
             </div>
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <X className="w-5 h-5" />
+            <button onClick={() => setIsOpen(false)} className="rounded-lg p-1 text-slate-300 hover:bg-white/10 hover:text-white" aria-label={t('close')}>
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50">
+          <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50/50 p-4">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3 rounded-2xl text-xs sm:text-sm whitespace-pre-line leading-relaxed ${
-                  msg.sender === 'user' ? 
-                  'bg-[#0B3C5D] text-white rounded-bl-none shadow-sm' : 
-                  'bg-white text-slate-800 rounded-br-none shadow-sm border border-slate-100 font-medium'
-                }`}>
+                <div className={`max-w-[85%] whitespace-pre-line rounded-2xl p-3 text-xs leading-relaxed sm:text-sm ${msg.sender === 'user' ? 'rounded-bl-none bg-[#0B3C5D] text-white shadow-sm' : 'rounded-br-none border border-slate-100 bg-white font-medium text-slate-800 shadow-sm'}`}>
                   {msg.text}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Quick Suggestions based on step */}
           {step === 'category' && (
-            <div className="p-2 bg-white border-t border-slate-100 flex gap-2 justify-center">
-              <Button size="sm" variant="outline" className="text-xs gap-1 border-amber-500 text-amber-700 hover:bg-amber-50" onClick={() => handleSend('كراء سيارة')}>
-                <Car className="w-3.5 h-3.5" /> كراء سيارة
+            <div className="flex justify-center gap-2 border-t border-slate-100 bg-white p-2">
+              <Button size="sm" variant="outline" className="gap-1 border-amber-500 text-xs text-amber-700 hover:bg-amber-50" onClick={() => handleSend(t('aiCarSuggestion'))}>
+                <Car className="h-3.5 w-3.5" /> {t('aiCarSuggestion')}
               </Button>
-              <Button size="sm" variant="outline" className="text-xs gap-1 border-blue-500 text-blue-700 hover:bg-blue-50" onClick={() => handleSend('كراء عقار')}>
-                <Building2 className="w-3.5 h-3.5" /> كراء عقار
+              <Button size="sm" variant="outline" className="gap-1 border-blue-500 text-xs text-blue-700 hover:bg-blue-50" onClick={() => handleSend(t('aiPropertySuggestion'))}>
+                <Building2 className="h-3.5 w-3.5" /> {t('aiPropertySuggestion')}
               </Button>
             </div>
           )}
 
-          {/* Input Area */}
-          <div className="p-3 bg-white border-t border-slate-100 flex gap-2">
-            <Input 
-              placeholder="اكتب ردك هنا..." 
-              value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              className="text-xs sm:text-sm"
-            />
-            <Button size="icon" onClick={() => handleSend()} className="bg-[#0B3C5D] hover:bg-[#0B3C5D]/90 text-white shrink-0">
-              <Send className="w-4 h-4" />
+          <div className="flex gap-2 border-t border-slate-100 bg-white p-3">
+            <Input placeholder={t('aiInputPlaceholder')} value={inputVal} onChange={(e) => setInputVal(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} className="text-xs sm:text-sm" />
+            <Button size="icon" onClick={() => handleSend()} className="shrink-0 bg-[#0B3C5D] text-white hover:bg-[#0B3C5D]/90" aria-label={t('sendMessage')}>
+              <Send className="h-4 w-4" />
             </Button>
           </div>
-
         </div>
       )}
     </div>

@@ -45,11 +45,11 @@ describe("home search and service balance", () => {
   it("presents real-estate category cards alongside featured vehicle brands", async () => {
     const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("ماركات السيارات");
-    expect(source).toContain("أنواع العقارات");
-    expect(source).toContain('title: "شقق"');
-    expect(source).toContain('title: "فيلات"');
-    expect(source).toContain('title: "مكاتب"');
+    expect(source).toContain("{t('carBrands')}");
+    expect(source).toContain("{t('propertyTypes')}");
+    expect(source).toContain("title: t('apartments')");
+    expect(source).toContain("title: t('villas')");
+    expect(source).toContain("title: t('offices')");
   });
 
   it("derives destination counters from active listings and sends cards to supported searches", async () => {
@@ -80,7 +80,7 @@ describe("home search and service balance", () => {
     expect(source).toContain("function getListingPath(item");
     expect(source).toContain("item.type === 'car' ? `/car/${item.id}` : `/property/${item.id}`");
     expect(source).toContain("isDemo");
-    expect(source).toContain("عرض التفاصيل التجريبية");
-    expect(source).toContain("ضمن هذه النسخة التجريبية");
+    expect(source).toContain("{t('demoDetails')}");
+    expect(source).toContain("isDemo");
   });
 });

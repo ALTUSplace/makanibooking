@@ -386,11 +386,8 @@ textarea:focus-visible {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  mix-blend-mode: multiply;
-}
-
-.dark .b2-brand-mark {
   mix-blend-mode: normal;
+  isolation: isolate;
 }
 
 .b2-header-link {

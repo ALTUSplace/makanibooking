@@ -6,7 +6,7 @@ const projectFile = (relativePath: string) =>
   readFileSync(resolve(process.cwd(), relativePath), 'utf8');
 
 describe('هوية MAKANIbooking', () => {
-  const logoPath = '/manus-storage/makanibooking-logo_3354849c.png';
+  const logoPath = '/manus-storage/makanibooking-logo-transparent-cropped_f0fe0bf3.png';
 
   it('يستخدم الشعار المرفوع في موضعي الهوية العامين', () => {
     expect(projectFile('client/src/components/Navbar.tsx')).toContain(logoPath);

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { type Language, useLanguage } from '@/contexts/LanguageContext';
 
-const logoUrl = "/manus-storage/makanibooking-logo_3354849c.png";
+const logoUrl = "/manus-storage/makanibooking-logo-transparent-cropped_f0fe0bf3.png";
 const supportPhoneDisplay = '+212 754 382 654';
 const supportPhoneHref = 'tel:+212754382654';
 const supportEmail = 'contact@makanibooking.com';

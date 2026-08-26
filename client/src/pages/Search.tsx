@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { ListingItem } from '@/data/b2rent';
+import { LISTINGS, ListingItem } from '@/data/b2rent';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/OptimizedImage';
@@ -126,6 +126,8 @@ export default function Search() {
   const listingInput = useMemo(() => ({ startDate: startDateParam, endDate: endDateParam }), [startDateParam, endDateParam]);
   const listingsQuery = trpc.listings.list.useQuery(listingInput);
   const serverListings = useMemo(() => (listingsQuery.data ?? []).map(toListingItem), [listingsQuery.data]);
+  const catalogListings = useMemo(() => serverListings.length > 0 ? serverListings : LISTINGS, [serverListings]);
+  const isDemoInventory = serverListings.length === 0;
 
   const toggleAmenity = (amenity: string) => {
     setAmenityFilters((current) => current.includes(amenity)
@@ -158,7 +160,7 @@ export default function Search() {
   };
 
   const filteredListings = useMemo(() => {
-    return serverListings.filter((item: ListingItem) => {
+    return catalogListings.filter((item: ListingItem) => {
       if (cityFilter !== 'all' && item.city !== cityFilter) return false;
       if (typeFilter !== 'all' && item.type !== typeFilter) return false;
       if (typeFilter === 'office' && officeTypeFilter !== 'all' && item.officeType !== officeTypeFilter) return false;
@@ -188,14 +190,24 @@ export default function Search() {
       if (sortBy === 'price-desc') return b.pricePerUnit - a.pricePerUnit;
       return 0;
     });
-  }, [serverListings, cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
+  }, [catalogListings, cityFilter, typeFilter, maxPrice, sortBy, searchQuery, brandParam, categoryParam, excellenceOnly, officeTypeFilter, amenityFilters, rentalTermFilter]);
 
   const [isSearching, setIsSearching] = useState(false);
   const cityLabel = (city: string) => language === 'fr' ? ({ 'جميع المدن': 'Toutes les villes', 'مراكش': 'Marrakech', 'أغادير': 'Agadir', 'الدار البيضاء': 'Casablanca', 'طنجة': 'Tanger', 'الرباط': 'Rabat' }[city] ?? city) : city;
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground pb-20" dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="container mx-auto px-4 space-y-8">
+
+        {isDemoInventory && (
+          <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100" role="status">
+            {language === 'fr'
+              ? 'Mode démo : ces annonces sont visibles pour consultation; la réservation et le paiement ne sont pas encore disponibles.'
+              : language === 'en'
+                ? 'Demo mode: these listings are available for viewing; booking and payment are not available yet.'
+                : 'وضع تجريبي: هذه العروض متاحة للمعاينة فقط، والحجز والدفع غير متاحين بعد.'}
+          </div>
+        )}
 
         {/* شريط عائم للمقارنة */}
         {compareList.length > 0 && (
@@ -391,7 +403,7 @@ export default function Search() {
                 ))}
               </div>
             )}
-            {listingsQuery.error && (
+            {listingsQuery.error && !isDemoInventory && (
               <div className="rounded-2xl border border-red-500/30 bg-red-950/20 p-6 text-red-200" role="alert">
                 {t('listingsLoadError')}
               </div>
@@ -411,6 +423,7 @@ export default function Search() {
                       key={item.id}
                       item={item}
                       detailsHref={listingRoute(item)}
+                      isDemo={isDemoInventory}
                       className="b2-touch-card"
                       imageActions={(
                         <>
@@ -504,7 +517,7 @@ export default function Search() {
                           onClick={() => setLocation(listingRoute(item))}
                           className="b2-card-action min-h-11 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20"
                         >
-                          التفاصيل والحجز
+                          {isDemoInventory ? 'عرض التفاصيل التجريبية' : 'التفاصيل والحجز'}
                         </Button>
                       </div>
                     </div>

@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { LISTINGS } from "@/data/b2rent";
 
 function parseAmenities(value: string | null | undefined): string[] {
   if (!value) return [];
@@ -25,7 +26,22 @@ export default function PropertyDetailWithVideo() {
   const { language, direction, t } = useLanguage();
   const listingId = Number(params.id);
   const listingQuery = trpc.listings.getById.useQuery({ id: listingId }, { enabled: Number.isInteger(listingId) && listingId > 0 });
-  const listing = listingQuery.data;
+  const fallbackListing = LISTINGS.find((item) => item.id === params.id && item.type !== "car");
+  const isFallbackListing = !listingQuery.data && Boolean(fallbackListing);
+  const listing = listingQuery.data ?? (fallbackListing ? {
+    id: fallbackListing.id,
+    title: fallbackListing.title,
+    description: fallbackListing.description,
+    amenities: fallbackListing.features.join(","),
+    imageUrl: fallbackListing.image,
+    city: fallbackListing.city,
+    pricePerDay: fallbackListing.pricePerUnit,
+    status: "demo",
+    officeType: fallbackListing.type === "office" ? fallbackListing.officeType || "office" : undefined,
+    category: fallbackListing.category,
+    rooms: fallbackListing.specs.rooms ? Number(fallbackListing.specs.rooms) : null,
+    rentalPeriod: fallbackListing.rentalTerms?.[0] || null,
+  } : undefined);
   const amenities = useMemo(() => parseAmenities(listing?.amenities), [listing?.amenities]);
   const imageUrl = listing?.imageUrl || "";
   const title = listing?.title || (language === "fr" ? "Détails de l’annonce" : "تفاصيل الإعلان");
@@ -69,6 +85,7 @@ export default function PropertyDetailWithVideo() {
         </div>
 
         <header className="space-y-2">
+          {isFallbackListing && <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">هذا عرض تجريبي للمعاينة فقط؛ لا يتوفر حجز أو دفع عبره حالياً.</div>}
           <div className="flex flex-wrap items-center gap-2"><Badge className="bg-amber-500">{listing.status}</Badge><span className="text-xs text-slate-500">{language === "fr" ? "Aucun avis vérifié pour le moment" : "لا توجد مراجعات موثقة بعد"}</span></div>
           <h1 className="text-2xl sm:text-4xl font-bold text-slate-900">{title}</h1>
           <p className="flex items-center gap-1.5 text-sm text-slate-600"><MapPin className="w-4 h-4 text-amber-600" />{listing.city}</p>
@@ -78,7 +95,7 @@ export default function PropertyDetailWithVideo() {
           <div className="md:col-span-2 min-h-[280px] sm:min-h-[420px] rounded-2xl overflow-hidden bg-slate-200">
             {imageUrl ? <OptimizedImage src={imageUrl} alt={title} width={1400} height={820} widthHint={1400} sizes="100vw" className="w-full h-full min-h-[280px] sm:min-h-[420px] object-cover" /> : <div className="h-full min-h-[280px] sm:min-h-[420px] flex items-center justify-center text-slate-500">{language === "fr" ? "Aucune image fournie" : "لا توجد صورة مضافة"}</div>}
           </div>
-          <Card><CardContent className="p-5 space-y-4"><div><p className="text-xs text-slate-500">{t("price")}</p><p className="text-3xl font-bold text-slate-900">{listing.pricePerDay.toLocaleString()} <span className="text-sm font-normal">MAD / {language === "fr" ? "jour" : "يوم"}</span></p></div><Button asChild className="w-full bg-amber-500 hover:bg-amber-600"><Link href={`/booking?listingId=${listing.id}`}>{t("bookNow")}</Link></Button><p className="text-xs text-slate-500">{language === "fr" ? "Le prix final est calculé côté serveur lors de la réservation." : "يُحتسب السعر النهائي على الخادم أثناء الحجز."}</p></CardContent></Card>
+          <Card><CardContent className="p-5 space-y-4"><div><p className="text-xs text-slate-500">{isFallbackListing ? (language === "fr" ? "Prix indicatif" : "سعر إرشادي") : t("price")}</p><p className="text-3xl font-bold text-slate-900">{listing.pricePerDay.toLocaleString()} <span className="text-sm font-normal">MAD / {language === "fr" ? "jour" : "يوم"}</span></p></div>{isFallbackListing ? <Button disabled className="w-full bg-slate-300 text-slate-700">{language === "fr" ? "Annonce de démonstration — réservation indisponible" : "عرض تجريبي — الحجز غير متاح"}</Button> : <Button asChild className="w-full bg-amber-500 hover:bg-amber-600"><Link href={`/booking?listingId=${listing.id}`}>{t("bookNow")}</Link></Button>}<p className="text-xs text-slate-500">{isFallbackListing ? (language === "fr" ? "Aucune donnée de réservation ou de paiement n’est envoyée depuis cette annonce." : "لا تُرسل أي بيانات حجز أو دفع من هذا العرض التجريبي.") : (language === "fr" ? "Le prix final est calculé côté serveur lors de la réservation." : "يُحتسب السعر النهائي على الخادم أثناء الحجز.")}</p></CardContent></Card>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

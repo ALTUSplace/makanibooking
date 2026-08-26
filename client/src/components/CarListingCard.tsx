@@ -17,6 +17,7 @@ type CardCopy = {
   listing: string;
   perDay: string;
   bookNow: string;
+  viewDemo: string;
   missingImage: string;
 };
 
@@ -26,6 +27,7 @@ export function getCarListingCardCopy(language: Language): CardCopy {
       listing: 'Annonce voiture',
       perDay: 'MAD / jour',
       bookNow: 'Réserver',
+      viewDemo: 'Voir la démo',
       missingImage: 'Aucune image disponible',
     };
   }
@@ -35,6 +37,7 @@ export function getCarListingCardCopy(language: Language): CardCopy {
       listing: 'Car listing',
       perDay: 'MAD / day',
       bookNow: 'Book now',
+      viewDemo: 'View demo',
       missingImage: 'No image available',
     };
   }
@@ -43,6 +46,7 @@ export function getCarListingCardCopy(language: Language): CardCopy {
     listing: 'عرض سيارة',
     perDay: 'درهم/يوم',
     bookNow: 'احجز الآن',
+    viewDemo: 'عرض التفاصيل التجريبية',
     missingImage: 'لا توجد صورة متاحة',
   };
 }
@@ -56,6 +60,7 @@ function formatPrice(value: number, language: Language) {
 type CarListingCardProps = {
   item: CarListingCardItem;
   detailsHref: string;
+  isDemo?: boolean;
   imageActions?: ReactNode;
   className?: string;
 };
@@ -64,7 +69,7 @@ type CarListingCardProps = {
  * بطاقة سيارات مشتركة للواجهة العامة. لا تدّعي اعتماد وكالة لأن نموذج بيانات
  * الإعلان لا يتضمن حالة تحقق للوكالة؛ تعرض فقط حقول الإعلان المنشور فعلياً.
  */
-export function CarListingCard({ item, detailsHref, imageActions, className = '' }: CarListingCardProps) {
+export function CarListingCard({ item, detailsHref, isDemo = false, imageActions, className = '' }: CarListingCardProps) {
   const { language, direction } = useLanguage();
   const copy = getCarListingCardCopy(language);
 
@@ -118,7 +123,7 @@ export function CarListingCard({ item, detailsHref, imageActions, className = ''
           href={detailsHref}
           className="mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
         >
-          {copy.bookNow}
+          {isDemo ? copy.viewDemo : copy.bookNow}
         </Link>
       </div>
     </article>

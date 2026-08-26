@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 function getListingPath(item: { id: string; type: string }) {
-  return item.type === 'property' ? `/property/${item.id}` : `/car/${item.id}`;
+  return item.type === 'car' ? `/car/${item.id}` : `/property/${item.id}`;
 }
 
 export default function Home() {
@@ -26,10 +26,10 @@ export default function Home() {
       cars: 'Location de voitures',
       properties: 'Immobilier',
       trust: 'Plateforme de mise en relation entre voyageurs et partenaires au Maroc',
-      eyebrow: 'Réservation fluide sur mobile',
+      eyebrow: 'Exploration fluide sur mobile',
       title: 'Trouvez une voiture ou un bien au Maroc, rapidement.',
-      subtitle: 'Comparez les offres vérifiées, obtenez un devis immédiat et réservez en quelques étapes.',
-      mobile: 'Réservez facilement depuis votre téléphone',
+      subtitle: 'Comparez les offres publiées et consultez leurs détails dans cette version de démonstration.',
+      mobile: 'Explorez facilement les offres depuis votre téléphone',
       destinations: 'Disponibilités par destination',
       activeListings: 'Calculé à partir des annonces actives',
       destinationHint: 'Choisissez une destination pour consulter les offres',
@@ -45,10 +45,10 @@ export default function Home() {
         cars: 'Car rentals',
         properties: 'Real estate',
         trust: 'A marketplace connecting travellers and rental partners across Morocco',
-        eyebrow: 'Smooth mobile reservations',
+        eyebrow: 'Smooth mobile browsing',
         title: 'Find a car or property in Morocco, fast.',
-        subtitle: 'Compare verified listings, get an instant quote, and book in just a few steps.',
-        mobile: 'Book easily from your phone',
+        subtitle: 'Compare published listings and explore their details in this demonstration version.',
+        mobile: 'Explore listings easily from your phone',
         destinations: 'Availability by destination',
         activeListings: 'Calculated from active listings',
         destinationHint: 'Choose a destination to view listings',
@@ -63,10 +63,10 @@ export default function Home() {
         cars: 'كراء السيارات',
         properties: 'العقارات',
         trust: 'منصة وسيطة تربط المسافرين وشركاء الكراء في المغرب',
-        eyebrow: 'حجز سلس من الهاتف',
+        eyebrow: 'استكشاف سلس من الهاتف',
         title: 'ابحث عن سيارة أو عقار في المغرب، بسرعة.',
-        subtitle: 'قارن العروض الموثّقة، واحصل على عرض سعر فوري، وأتمم حجزك في خطوات قليلة.',
-        mobile: 'احجز بسهولة من هاتفك',
+        subtitle: 'قارن العروض المنشورة، واستكشف تفاصيلها ضمن هذه النسخة التجريبية.',
+        mobile: 'استكشف العروض بسهولة من هاتفك',
         destinations: 'التوفر حسب الوجهة',
         activeListings: 'محسوب من الإعلانات النشطة',
         destinationHint: 'اضغط على الوجهة لعرض العروض',
@@ -572,6 +572,7 @@ export default function Home() {
               key={item.id}
               item={item}
               detailsHref={getListingPath(item)}
+              isDemo
               className="b2-touch-card"
             />
           ) : (
@@ -613,7 +614,7 @@ export default function Home() {
                   <div className="flex gap-2">
                     <Link href={getListingPath(item)}>
                       <Button className="b2-card-action bg-[#0B3C5D] hover:bg-[#062940] text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md cursor-pointer">
-                        احجز الآن
+                        عرض التفاصيل التجريبية
                       </Button>
                     </Link>
                   </div>

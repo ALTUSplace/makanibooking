@@ -54,4 +54,14 @@ describe("home search and service balance", () => {
     expect(source).toContain("startDate=${encodeURIComponent(pickupDate)}");
     expect(source).toContain("endDate=${encodeURIComponent(dropoffDate)}");
   });
+
+  it("routes all fallback inventory to valid demo detail paths instead of booking actions", async () => {
+    const source = await readFile(new URL("./Home.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("function getListingPath(item");
+    expect(source).toContain("item.type === 'car' ? `/car/${item.id}` : `/property/${item.id}`");
+    expect(source).toContain("isDemo");
+    expect(source).toContain("عرض التفاصيل التجريبية");
+    expect(source).toContain("ضمن هذه النسخة التجريبية");
+  });
 });

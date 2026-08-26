@@ -6,6 +6,7 @@ import { Star, ShieldCheck, Users, Car as CarIcon, Fuel, MapPin, Phone, CheckCir
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { OptimizedImage } from '@/components/OptimizedImage';
+import { LISTINGS } from '@/data/b2rent';
 
 export default function CarDetails() {
   const [, params] = useRoute('/car/:id');
@@ -18,6 +19,8 @@ export default function CarDetails() {
     { enabled: Number.isInteger(numericListingId) && numericListingId > 0 },
   );
   const listing = listingQuery.data;
+  const fallbackCar = LISTINGS.find((item) => item.id === carId && item.type === 'car');
+  const isFallbackListing = !listing && Boolean(fallbackCar);
   const car = listing ? {
     id: String(listing.id),
     name: listing.title,
@@ -30,6 +33,18 @@ export default function CarDetails() {
     seats: 5,
     features: listing.amenities ? listing.amenities.split(',').map((item) => item.trim()).filter(Boolean) : [],
     agency: { name: 'المؤجر على B2-Rent', address: listing.city, whatsapp: '' },
+  } : fallbackCar ? {
+    id: fallbackCar.id,
+    name: fallbackCar.title,
+    brand: fallbackCar.category.split(/[ /]/)[0] || 'B2-Rent',
+    cityName: fallbackCar.city,
+    pricePerDay: fallbackCar.pricePerUnit,
+    image: fallbackCar.image,
+    transmission: fallbackCar.specs.transmission || 'غير محدد',
+    fuel: fallbackCar.specs.fuel || 'غير محدد',
+    seats: Number(fallbackCar.specs.seats) || 5,
+    features: fallbackCar.features,
+    agency: { name: fallbackCar.providerName, address: fallbackCar.city, whatsapp: '' },
   } : null;
 
   const [startDate, setStartDate] = useState(() => {
@@ -49,11 +64,11 @@ export default function CarDetails() {
 
   const { data: bookedDatesData, isLoading: bookedDatesLoading, isError: bookedDatesError } = trpc.listings.getBookedDates.useQuery(
     { listingId: numericListingId },
-    { enabled: Boolean(car) },
+    { enabled: Boolean(car) && !isFallbackListing },
   );
   const reviewsQuery = trpc.reviews.listByListing.useQuery(
     { listingId: numericListingId },
-    { enabled: Boolean(car) },
+    { enabled: Boolean(car) && !isFallbackListing },
   );
   const reviews = reviewsQuery.data ?? [];
 
@@ -96,6 +111,10 @@ export default function CarDetails() {
   };
 
   const handleProceedBooking = () => {
+    if (isFallbackListing) {
+      toast.info('هذا عرض تجريبي؛ الحجز والدفع غير متاحين بعد.');
+      return;
+    }
     if (!startDate || !endDate) {
       toast.error('يرجى تحديد تاريخ الاستلام والإرجاع');
       return;
@@ -137,6 +156,11 @@ export default function CarDetails() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(carSchema) }}
       />
       <div className="container mx-auto px-4 space-y-8">
+        {isFallbackListing && (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+            هذا عرض تجريبي للمعاينة. السعر والمواصفات إرشادية ولا يتوفر حجز أو دفع عبره حالياً.
+          </div>
+        )}
         
         {/* Breadcrumb */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -301,24 +325,44 @@ export default function CarDetails() {
           {/* Booking Card Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-slate-950 border border-slate-800 p-6 rounded-3xl shadow-2xl sticky top-28 space-y-6">
-              
-              <div className="flex items-baseline justify-between border-b border-slate-800 pb-4">
-                <div>
-                  <span className="text-2xl font-black text-white">{car.pricePerDay} درهم</span>
-                  <span className="text-xs text-slate-400 mr-1">/ اليوم</span>
+              {isFallbackListing ? (
+                <div className="space-y-5" role="status">
+                  <div className="flex items-baseline justify-between border-b border-slate-800 pb-4">
+                    <div>
+                      <span className="text-2xl font-black text-white">{car.pricePerDay} درهم</span>
+                      <span className="text-xs text-slate-400 mr-1">/ اليوم — سعر إرشادي</span>
+                    </div>
+                    <div className="text-xs text-amber-300 font-bold bg-amber-500/10 px-2.5 py-1 rounded-xl">عرض تجريبي</div>
+                  </div>
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm leading-relaxed text-amber-100">
+                    يعرض هذا النموذج مواصفات وسعراً إرشادياً فقط. لا يتوفر تقويم مباشر أو طلب حجز أو دفع لهذا العرض حالياً.
+                  </div>
+                  <Button
+                    onClick={() => setLocation('/search?type=car')}
+                    variant="outline"
+                    className="w-full border-amber-500/50 text-amber-200 hover:bg-amber-500/10"
+                  >
+                    استعراض عروض السيارات
+                  </Button>
                 </div>
-                <div className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-xl">
-                  طلب الحجز يحتاج موافقة المالك
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-baseline justify-between border-b border-slate-800 pb-4">
+                    <div>
+                      <span className="text-2xl font-black text-white">{car.pricePerDay} درهم</span>
+                      <span className="text-xs text-slate-400 mr-1">/ اليوم</span>
+                    </div>
+                    <div className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-xl">
+                      طلب الحجز يحتاج موافقة المالك
+                    </div>
+                  </div>
 
-              <div className="space-y-4">
-                {/* Interactive Calendar Widget */}
-                <div className="space-y-2">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" /> تقويم التوفر المباشر
-                  </label>
-                  {bookedDatesLoading ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-amber-400" /> تقويم التوفر المباشر
+                      </label>
+                      {bookedDatesLoading ? (
                     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 text-sm text-slate-400">جاري تحميل التوفر...</div>
                   ) : bookedDatesError ? (
                     <div className="rounded-2xl border border-rose-800/60 bg-rose-950/30 p-5 text-sm text-rose-200">تعذر تحميل التوفر حالياً. حاول تحديث الصفحة قبل المتابعة.</div>
@@ -330,86 +374,38 @@ export default function CarDetails() {
                         setStartDate(start);
                         setEndDate(end);
                       }}
-                    />
-                  )}
-                </div>
+                      />
+                    )}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-slate-400 font-semibold">تاريخ الاستلام</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                    />
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-semibold">تاريخ الاستلام</label>
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-semibold">تاريخ الإرجاع</label>
+                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-3 border-t border-slate-800">
+                      <label className="flex items-center justify-between text-xs cursor-pointer"><span className="text-slate-300">تأمين شامل ضد الحوادث (+100 درهم/يوم)</span><input type="checkbox" checked={includeInsurance} onChange={(e) => setIncludeInsurance(e.target.checked)} className="accent-amber-500 rounded w-4 h-4" /></label>
+                      <label className="flex items-center justify-between text-xs cursor-pointer"><span className="text-slate-300">مقعد أطفال مخصص (+50 درهم/يوم)</span><input type="checkbox" checked={includeBabySeat} onChange={(e) => setIncludeBabySeat(e.target.checked)} className="accent-amber-500 rounded w-4 h-4" /></label>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-slate-400 font-semibold">تاريخ الإرجاع</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
-                    />
+
+                  <div className="space-y-2 pt-4 border-t border-slate-800">
+                    <div className="flex justify-between text-xs text-slate-400"><span>مدة الإيجار ({daysCount} أيام)</span><span>{dailyPrice * daysCount} درهم</span></div>
+                    {includeInsurance && <div className="flex justify-between text-xs text-slate-400"><span>التأمين الشامل</span><span>{insurancePrice} درهم</span></div>}
+                    {includeBabySeat && <div className="flex justify-between text-xs text-slate-400"><span>مقعد أطفال</span><span>{babySeatPrice} درهم</span></div>}
+                    <div className="flex justify-between text-base font-extrabold text-white pt-2 border-t border-slate-800"><span>المبلغ الإجمالي</span><span className="text-amber-400">{totalPrice} درهم</span></div>
                   </div>
-                </div>
 
-                <div className="space-y-3 pt-3 border-t border-slate-800">
-                  <label className="flex items-center justify-between text-xs cursor-pointer">
-                    <span className="text-slate-300">تأمين شامل ضد الحوادث (+100 درهم/يوم)</span>
-                    <input
-                      type="checkbox"
-                      checked={includeInsurance}
-                      onChange={(e) => setIncludeInsurance(e.target.checked)}
-                      className="accent-amber-500 rounded w-4 h-4"
-                    />
-                  </label>
-                  <label className="flex items-center justify-between text-xs cursor-pointer">
-                    <span className="text-slate-300">مقعد أطفال مخصص (+50 درهم/يوم)</span>
-                    <input
-                      type="checkbox"
-                      checked={includeBabySeat}
-                      onChange={(e) => setIncludeBabySeat(e.target.checked)}
-                      className="accent-amber-500 rounded w-4 h-4"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-4 border-t border-slate-800">
-                <div className="flex justify-between text-xs text-slate-400">
-                  <span>مدة الإيجار ({daysCount} أيام)</span>
-                  <span>{dailyPrice * daysCount} درهم</span>
-                </div>
-                {includeInsurance && (
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>التأمين الشامل</span>
-                    <span>{insurancePrice} درهم</span>
-                  </div>
-                )}
-                {includeBabySeat && (
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>مقعد أطفال</span>
-                    <span>{babySeatPrice} درهم</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-base font-extrabold text-white pt-2 border-t border-slate-800">
-                  <span>المبلغ الإجمالي</span>
-                  <span className="text-amber-400">{totalPrice} درهم</span>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleProceedBooking}
-                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black py-4 rounded-2xl text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
-              >
-                المتابعة إلى الحجز والدفع
-              </Button>
-
-              <div className="text-center text-[10px] text-slate-500">
-                سيُرسل الطلب للموافقة قبل اعتبار الحجز نهائياً. الدفع محاكاة داخل المنصة.
-              </div>
+                  <Button onClick={handleProceedBooking} className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black py-4 rounded-2xl text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer">المتابعة إلى الحجز والدفع</Button>
+                  <div className="text-center text-[10px] text-slate-500">سيُرسل الطلب للموافقة قبل اعتبار الحجز نهائياً. الدفع محاكاة داخل المنصة.</div>
+                </>
+              )}
 
             </div>
           </div>

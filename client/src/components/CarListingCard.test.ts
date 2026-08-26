@@ -14,4 +14,10 @@ describe('getCarListingCardCopy', () => {
     expect(getCarListingCardCopy('fr').bookNow).toBe('Réserver');
     expect(getCarListingCardCopy('en').perDay).toBe('MAD / day');
   });
+
+  it('يوفر تسمية معاينة صريحة للعروض غير التشغيلية', () => {
+    expect(getCarListingCardCopy('ar').viewDemo).toBe('عرض التفاصيل التجريبية');
+    expect(getCarListingCardCopy('fr').viewDemo).toBe('Voir la démo');
+    expect(getCarListingCardCopy('en').viewDemo).toBe('View demo');
+  });
 });

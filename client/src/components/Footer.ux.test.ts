@@ -12,6 +12,10 @@ describe('MAKANIbooking SEO footer', () => {
     expect(source).toContain('contact@makanibooking.com');
     expect(source).toContain('https://www.facebook.com/share/1D3rxRiw25/');
     expect(source).toContain('https://www.tiktok.com/@b2rent8?_r=1&_t=ZS-99BeDi0sIiK');
+    expect(source).toContain('aria-label="Facebook MAKANIbooking"');
+    expect(source).toContain('aria-label="TikTok MAKANIbooking"');
+    expect(source).toContain('Instagram — رابط رسمي قريباً');
+    expect(source).toContain('LinkedIn — رابط رسمي قريباً');
   });
 
   it('keeps internal destination and property links connected to supported search filters', async () => {
@@ -30,7 +34,10 @@ describe('MAKANIbooking SEO footer', () => {
     expect(source).toContain('const copy: Record<Language, FooterCopy>');
     expect(source).toContain('Visa');
     expect(source).toContain('Mastercard');
+    expect(source).toContain('عند الاستلام');
     expect(source).toContain('<FileSignature');
+    expect(source).toContain('aria-label="Visa"');
+    expect(source).toContain('aria-label="Mastercard"');
     expect(source).toContain('href="/privacy"');
     expect(source).toContain('href="/terms"');
     expect(source).toContain('href="/partner"');

@@ -688,11 +688,11 @@
 
 # Full GitHub–Supabase–Vercel Automation
 
-- [ ] Audit current repository history, build configuration, deployment state, and external integration status.
-- [ ] Preserve the shared project state and document any GitHub history divergence before synchronization.
+- [x] Audit current repository history, build configuration, deployment state, and external integration status.
+- [x] Preserve the shared project state and document any GitHub history divergence before synchronization.
 - [ ] Clean production configuration and add safe `.env.example` / local-development templates without committing secrets.
 - [ ] Generate and validate the Supabase PostgreSQL schema/migration assets; apply only verified non-destructive migrations.
 - [ ] Configure Vercel build settings and production environment-variable structure without inventing OAuth or payment secrets.
-- [ ] Establish repeatable GitHub synchronization and CI/CD documentation for future Manus changes.
-- [ ] Run type checks, unit tests, build checks, and production smoke checks after migration changes.
+- [x] Establish repeatable GitHub synchronization and CI/CD documentation for future Manus changes.
+- [x] Run type checks, unit tests, build checks, and production smoke checks after migration changes.
 - [ ] Save a stable checkpoint and report automation completed plus account-level approvals still required.

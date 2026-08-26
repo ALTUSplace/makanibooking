@@ -1,7 +1,7 @@
 # تحقق نشر تدفق العروض التجريبية على Vercel
 
-**آخر تحقق مكتمل:** 26 أغسطس 2026.  
-**النطاق العام:** <https://b2-rentmorocco.vercel.app>.  
+**آخر تحقق مكتمل:** 26 أغسطس 2026.
+**النطاق العام:** <https://b2-rentmorocco.vercel.app>.
 **النشر المعتمد:** الالتزام `148781e` — `fix: align demo listing discovery flow`.
 
 ## الملخص التنفيذي

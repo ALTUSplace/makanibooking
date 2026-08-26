@@ -14,7 +14,7 @@ function escapeHtml(value: unknown) {
 }
 
 async function injectSocialMetadata(template: string, url: string) {
-  const origin = process.env.VITE_APP_URL || "https://b2rentmorocc-muehrc85.manus.space";
+  const origin = process.env.VITE_APP_URL || "https://makanibooking-morocco.vercel.app";
   let title = "MAKANIbooking | كراء السيارات والعقارات في المغرب";
   let description = "اكتشف عروض كراء السيارات والعقارات من شركاء محليين موثوقين في المغرب.";
   let image = `${origin}/favicon.ico`;

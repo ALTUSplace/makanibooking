@@ -7,11 +7,11 @@ describe("notificationService", () => {
   });
 
   it("escapes user-controlled content in the bilingual email template", () => {
-    const content = buildEmailContent("<حجز>", "رسالة & تفاصيل\nLigne française", "https://b2rentmorocc-muehrc85.manus.space/my-bookings");
+    const content = buildEmailContent("<حجز>", "رسالة & تفاصيل\nLigne française", "https://makanibooking-morocco.vercel.app/my-bookings");
 
     expect(content.html).toContain("&lt;حجز&gt;");
     expect(content.html).toContain("رسالة &amp; تفاصيل");
-    expect(content.html).toContain("https://b2rentmorocc-muehrc85.manus.space/my-bookings");
+    expect(content.html).toContain("https://makanibooking-morocco.vercel.app/my-bookings");
     expect(content.text).toContain("Ligne française");
   });
 

@@ -1,8 +1,7 @@
-import { AlertTriangle, ArrowUpRight } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const OFFICIAL_SITE_URL = "https://b2rentmorocc-muehrc85.manus.space";
 
 type HealthPayload = {
   ready?: boolean;
@@ -12,17 +11,17 @@ const copy = {
   ar: {
     label: "نسخة تجريبية",
     message: "هذه النسخة قيد التهيئة التقنية ولا تستقبل الحجوزات حالياً.",
-    action: "فتح النسخة الرسمية",
+    action: "نسخة Vercel الحالية",
   },
   fr: {
     label: "Version de test",
     message: "Cette version est en cours de configuration technique et ne reçoit pas encore de réservations.",
-    action: "Ouvrir le site officiel",
+    action: "Version Vercel actuelle",
   },
   en: {
     label: "Preview version",
     message: "This version is still being configured and is not accepting bookings yet.",
-    action: "Open the official site",
+    action: "Current Vercel version",
   },
 } as const;
 
@@ -67,13 +66,7 @@ export default function HostingReadinessBanner() {
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700" aria-hidden="true" />
           <span><strong>{content.label}:</strong> {content.message}</span>
         </div>
-        <a
-          href={OFFICIAL_SITE_URL}
-          className="inline-flex shrink-0 items-center gap-1 font-bold text-[#0B3C5D] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B3C5D]"
-        >
-          {content.action}
-          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-        </a>
+        <span className="shrink-0 font-bold text-[#0B3C5D]">{content.action}</span>
       </div>
     </aside>
   );

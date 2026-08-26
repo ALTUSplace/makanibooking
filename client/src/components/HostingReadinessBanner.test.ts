@@ -5,10 +5,10 @@ import { resolve } from "node:path";
 const source = readFileSync(resolve(process.cwd(), "client/src/components/HostingReadinessBanner.tsx"), "utf8");
 
 describe("HostingReadinessBanner", () => {
-  it("checks the safe health endpoint only on Vercel and links to the official site", () => {
+  it("checks the safe health endpoint only on Vercel and labels the current deployment", () => {
     expect(source).toContain('hostname.endsWith(".vercel.app")');
     expect(source).toContain('fetch("/api/health"');
-    expect(source).toContain("https://b2rentmorocc-muehrc85.manus.space");
+    expect(source).toContain("نسخة Vercel الحالية");
   });
 
   it("keeps Arabic, French, and English preview guidance available", () => {

@@ -21,7 +21,7 @@ import {
 import { type Language, useLanguage } from '@/contexts/LanguageContext';
 
 const logoPath = '/manus-storage/b2-rent-morocco-logo_ee8a6cb0.jpg';
-const supportPhoneDisplay = '+212 754-382654';
+const supportPhoneDisplay = '+212 754 382 654';
 const supportPhoneHref = 'tel:+212754382654';
 const supportEmail = 'b2rentt@gmail.com';
 const facebookUrl = 'https://www.facebook.com/share/1D3rxRiw25/';

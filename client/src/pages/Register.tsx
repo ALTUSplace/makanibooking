@@ -4,7 +4,6 @@ import { ArrowLeft, CheckCircle2, FileText, Loader2, ShieldCheck } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { startLogin } from "@/const";
 import { legalDisclosure, persistLegalConsent } from "@/lib/legalDisclosure";
 import { supabase } from "@/lib/supabase";
 
@@ -28,33 +27,51 @@ export default function Register() {
   const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
-    if (!accepted) return;
+    if (!accepted) {
+      setMessage(isArabic
+        ? "يرجى تحديد مربع الموافقة على الشروط والأحكام قبل إنشاء الحساب."
+        : "Veuillez cocher l'acceptation des conditions avant de créer le compte.");
+      return;
+    }
     persistLegalConsent();
 
     if (!supabase) {
-      startLogin();
+      setMessage(isArabic
+        ? "التسجيل غير مهيأ حالياً: يرجى إضافة VITE_SUPABASE_URL وVITE_SUPABASE_ANON_KEY في بيئة Vercel ثم إعادة النشر."
+        : "L'inscription n'est pas configurée : ajoutez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans l'environnement Vercel, puis redéployez.");
       return;
     }
 
     setPending(true);
-    const result = mode === "sign-up"
-      ? await supabase.auth.signUp({ email: email.trim(), password })
-      : await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setPending(false);
+    try {
+      const result = mode === "sign-up"
+        ? await supabase.auth.signUp({ email: email.trim(), password })
+        : await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
-    if (result.error) {
-      setMessage(result.error.message);
-      return;
-    }
+      if (result.error) {
+        setMessage(result.error.message);
+        return;
+      }
 
-    if (mode === "sign-up" && !result.data.session) {
+      if (mode === "sign-up" && !result.data.session) {
+        setMessage(isArabic
+          ? "تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب قبل الدخول."
+          : "Compte créé. Vérifiez votre e-mail pour confirmer le compte avant de vous connecter.");
+        return;
+      }
+
+      setLocation(nextPath);
+    } catch (error) {
+      console.error("[Supabase Auth] request failed", error);
       setMessage(isArabic
-        ? "تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد الحساب قبل الدخول."
-        : "Compte créé. Vérifiez votre e-mail pour confirmer le compte avant de vous connecter.");
-      return;
+        ? "تعذر الاتصال بخدمة التسجيل. تحقق من إعدادات Supabase أو اتصال الإنترنت ثم أعد المحاولة."
+        : "Impossible de joindre le service d'authentification. Vérifiez Supabase ou votre connexion, puis réessayez.");
+    } finally {
+      setPending(false);
     }
 
-    setLocation(nextPath);
+    return;
+
   };
 
   return (
@@ -140,7 +157,7 @@ export default function Register() {
 
             {message && <p role="alert" className="text-sm font-semibold leading-6 text-red-700 sm:col-span-2">{message}</p>}
 
-            <Button type="submit" disabled={!accepted || pending} className="gap-2 bg-[#0A2540] text-white hover:bg-[#071b2e] sm:col-span-2 sm:w-fit">
+            <Button type="submit" disabled={pending} className="gap-2 bg-[#0A2540] text-white hover:bg-[#071b2e] sm:col-span-2 sm:w-fit">
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {pending ? (isArabic ? "جارٍ المعالجة..." : "Traitement...") : mode === "sign-up" ? (isArabic ? "إنشاء الحساب" : "Créer le compte") : (isArabic ? "الدخول إلى الحساب" : "Se connecter")}
             </Button>

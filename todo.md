@@ -780,10 +780,16 @@
 - [x] فحص مشروع Vercel `prj_WYqFkAKX5Qi3QWJhiADPmUsyxLMm` قراءةً فقط؛ أكدت صورة الإعدادات ربط GitHub بالمستودع `kamalbouragba/makanibooking` والنشر التلقائي، وتبقى البيئات للفحص التالي
 - [x] التحقق بصرياً من إعدادات Vercel Environments: `Production` يتتبع `main` و`Preview` يتتبع فروع Git غير المعيّنة؛ لم يتم إنشاء بيئة مخصصة أو تغيير إعدادات.
 
-- [ ] بناء مسار PostgreSQL خلف مفتاح تشغيل صريح مع اختبارات توافق، مع إبقاء مسار MySQL الافتراضي حتى نجاح القبول النهائي
+- [x] بناء مسار PostgreSQL خلف مفتاح تشغيل صريح مع اختبارات توافق، مع إبقاء مسار MySQL الافتراضي حتى نجاح القبول النهائي؛ تحقق TypeScript و172 اختباراً وبناء Vercel وفحص Supabase read-only
 
 ## تحسين أداء الحزم — جلسة 2026-08-27
 - [x] تحليل أحجام chunks الناتجة من بناء Vite وتحديد أكبر الاعتمادات
 - [x] تطبيق code splitting وlazy loading وتقسيم manualChunks دون تغيير الوظائف
 - [x] التحقق من أن كل chunk رئيسي أقل من 500KB عبر build، مع تشغيل TypeScript والاختبارات
 - [x] توثيق النتيجة في `BUNDLE_OPTIMIZATION_2026-08-27.md` وحفظ checkpoint بعد نجاح الفحوص
+
+- [x] توليد `drizzle/pg-schema.ts` متوافقاً مع DDL Supabase، مع enums كنصوص وعموديات snake_case
+- [x] إضافة محول MySQL/PostgreSQL اختياري في `server/db.ts` خلف `B2RENT_VERCEL_ADAPTERS_READY`
+- [x] إضافة اختبارات عقد للمحول ثنائي اللهجة والتحقق من عدم تبديل MySQL افتراضياً
+- [x] تشغيل TypeScript وVitest وبناء Vercel بعد المحول
+- [x] التحقق من اتصال PostgreSQL الفعلي عبر SELECT 1؛ لم يُفعّل القطع الإنتاجي بعد

@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, CheckCircle2, FileText, Loader2, ShieldCheck } from "lucide-react";
+import { Apple, ArrowLeft, CheckCircle2, FileText, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -8,6 +8,31 @@ import { legalDisclosure, persistLegalConsent } from "@/lib/legalDisclosure";
 import { supabase } from "@/lib/supabase";
 
 type AuthLanguage = "ar" | "fr" | "en";
+
+export function getOAuthErrorMessage(error: { message?: string } | null, language: AuthLanguage) {
+  const raw = (error?.message ?? "").toLowerCase();
+  const messages = {
+    ar: {
+      disabled: "تسجيل الدخول بهذا المزود غير مفعّل بعد. يرجى استخدام البريد وكلمة المرور أو تفعيل المزود من إعدادات Supabase.",
+      network: "تعذر الاتصال بخدمة تسجيل الدخول السريع. تحقق من الإنترنت وحاول مرة أخرى.",
+      generic: "تعذر بدء تسجيل الدخول السريع. حاول مرة أخرى.",
+    },
+    fr: {
+      disabled: "Ce fournisseur n'est pas encore activé. Utilisez l'e-mail et le mot de passe, ou activez-le dans Supabase.",
+      network: "Impossible de joindre le service de connexion rapide. Vérifiez votre connexion puis réessayez.",
+      generic: "Impossible de démarrer la connexion rapide. Réessayez.",
+    },
+    en: {
+      disabled: "This provider is not enabled yet. Use email and password, or enable it in Supabase.",
+      network: "We couldn't reach the quick sign-in service. Check your connection and try again.",
+      generic: "Quick sign-in could not be started. Please try again.",
+    },
+  }[language];
+
+  if (raw.includes("provider") && (raw.includes("disabled") || raw.includes("not enabled") || raw.includes("unsupported"))) return messages.disabled;
+  if (raw.includes("network") || raw.includes("fetch") || raw.includes("url")) return messages.network;
+  return messages.generic;
+}
 
 export function getAuthErrorMessage(error: { message?: string; status?: number } | null, language: AuthLanguage) {
   const raw = (error?.message ?? "").toLowerCase();
@@ -62,6 +87,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
+  const [oauthPending, setOauthPending] = useState<"google" | "apple" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const content = legalDisclosure[language];
   const isArabic = language === "ar";
@@ -70,6 +96,30 @@ export default function Register() {
     const next = new URLSearchParams(window.location.search).get("next");
     return next?.startsWith("/") && !next.startsWith("//") && next !== "/register" ? next : "/";
   }, []);
+
+  const startOAuth = async (provider: "google" | "apple") => {
+    setMessage(null);
+    if (!supabase) {
+      setMessage(isArabic
+        ? "تسجيل الدخول السريع غير مهيأ حالياً. يرجى المحاولة بالبريد وكلمة المرور أو إضافة إعدادات Supabase في Vercel."
+        : "La connexion rapide n'est pas configurée. Utilisez l'e-mail et le mot de passe ou ajoutez la configuration Supabase dans Vercel.");
+      return;
+    }
+
+    setOauthPending(provider);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/register?next=${encodeURIComponent(nextPath)}` },
+      });
+      if (error) setMessage(getOAuthErrorMessage(error, language));
+    } catch (error) {
+      console.error(`[Supabase OAuth:${provider}] request failed`, error);
+      setMessage(getOAuthErrorMessage({ message: "network" }, language));
+    } finally {
+      setOauthPending(null);
+    }
+  };
 
   const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -156,7 +206,20 @@ export default function Register() {
             </Button>
           </div>
 
-          <form onSubmit={submitAuth} className="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <Button type="button" variant="outline" disabled={pending || oauthPending !== null} onClick={() => void startOAuth("google")} className="h-12 gap-3 border-slate-300 bg-white text-slate-900 hover:bg-slate-100">
+              {oauthPending === "google" ? <Loader2 className="h-4 w-4 animate-spin" /> : <span aria-hidden="true" className="grid h-5 w-5 place-items-center rounded-full bg-white text-sm font-black text-[#4285F4]">G</span>}
+              {oauthPending === "google" ? (isArabic ? "جارٍ فتح Google..." : "Ouverture de Google...") : (isArabic ? "المتابعة باستخدام Google" : "Continuer avec Google")}
+            </Button>
+            <Button type="button" variant="outline" disabled={pending || oauthPending !== null} onClick={() => void startOAuth("apple")} className="h-12 gap-3 border-slate-300 bg-white text-slate-900 hover:bg-slate-100">
+              {oauthPending === "apple" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Apple className="h-5 w-5" aria-hidden="true" />}
+              {oauthPending === "apple" ? (isArabic ? "جارٍ فتح Apple..." : "Ouverture d'Apple...") : (isArabic ? "المتابعة باستخدام Apple" : "Continuer avec Apple")}
+            </Button>
+          </div>
+
+          <div className="my-5 flex items-center gap-3 text-xs font-semibold text-slate-400" aria-hidden="true"><span className="h-px flex-1 bg-slate-200" /><span>{isArabic ? "أو بالبريد الإلكتروني" : "ou par e-mail"}</span><span className="h-px flex-1 bg-slate-200" /></div>
+
+          <form onSubmit={submitAuth} className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
             <label className="grid gap-2 text-sm font-bold text-slate-800 sm:col-span-2">
               {isArabic ? "البريد الإلكتروني" : "Adresse e-mail"}
               <input

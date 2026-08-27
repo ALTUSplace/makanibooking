@@ -10,3 +10,6 @@
 
 ## متابعة فحص Production
 أكدت الصورة المرسلة من المستخدم أن بيئة `Production` تتتبع فرع `main`، وأن النطاق `makanibooking-morocco.vercel.app` ظاهر ضمن Domains. يظهر قسم `Environment Variables` في أسفل الصفحة، لكن لم تُعرض أسماء المتغيرات بعد؛ لم يتم الضغط على Add أو تعديل أي قيمة. يلزم فحص الأسماء فقط قبل اعتماد الجاهزية.
+
+## جرد متغيرات Production من صورة Vercel
+أظهرت الصورة أسماء خمسة متغيرات تحت Production: `SUPABASE_SERVICE_ROLE_KEY`، `SUPABASE_URL`، `VITE_SUPABASE_ANON_KEY`، `VITE_SUPABASE_URL`، و`B2RENT_AUTH_PROVIDER`. لم تُعرض القيم. لم تظهر في الجزء المصوّر `SUPABASE_DB_URL` أو `JWT_SECRET`، وهما مطلوبان قبل اعتماد اتصال PostgreSQL والجلسات الإنتاجية. لا يوجد طلب لتعديل أو حذف المتغيرات الحالية.

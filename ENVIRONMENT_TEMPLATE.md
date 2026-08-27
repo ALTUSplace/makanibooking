@@ -1,50 +1,61 @@
-# MAKANIbooking environment template
+# MAKANIbooking — Environment configuration
 
-This document lists the variable names and safe defaults required for local development and Vercel. **Do not paste secret values into this file, commit `.env` files, or share screenshots containing values.**
+This document is the safe, version-controlled template for local development and Vercel. **Never commit `.env`, `.env.local`, or real secret values.** Copy the names below into the relevant environment and obtain values only from the official provider dashboards.
 
-## Runtime
+## 1. Local setup
 
-| Variable | Example or default | Scope |
-|---|---|---|
-| `NODE_ENV` | `development` | Server |
-| `PORT` | `3000` | Server |
-| `B2RENT_RUNTIME_TARGET` | `manus` or `vercel` | Server |
+Create `.env.local` locally from this document. The file is intentionally not generated or committed by the project. For a local Vercel-like runtime, use `B2RENT_RUNTIME_TARGET=vercel` and `B2RENT_AUTH_PROVIDER=supabase`.
 
-## Current authentication implementation
+## 2. Required independent Vercel runtime variables
+
+| Variable | Required | Scope | Safe guidance |
+|---|---:|---|---|
+| `B2RENT_RUNTIME_TARGET` | Yes | Server | Set to `vercel` for the independent stack. |
+| `B2RENT_AUTH_PROVIDER` | Yes | Server | Set to `supabase`. |
+| `SUPABASE_URL` | Yes | Server | `https://<project-ref>.supabase.co`; not an OAuth URL. |
+| `SUPABASE_DB_URL` | Yes | Server | Use the Supabase transaction/session pooler URL; keep the password secret. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only | Never expose it through `VITE_*`, GitHub, logs, or the browser. |
+| `JWT_SECRET` | Yes | Server-only | Use a long random value; do not reuse a provider key. |
+| `B2RENT_VERCEL_ADAPTERS_READY` | Yes before cutover | Server | Keep `false` until the production acceptance and rollback checks are approved; then set `true`. |
+
+## 3. Supabase Auth browser variables
+
+| Variable | Required | Scope | Safe guidance |
+|---|---:|---|---|
+| `VITE_SUPABASE_URL` | Yes | Public build | Same project URL as `SUPABASE_URL`. |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Public build | Publishable anon key only; never use the service-role key here. |
+| `SUPABASE_ANON_KEY` | Optional alias | Server | Same anon key if server-side Auth helpers need it. |
+| `SUPABASE_ADMIN_USER_IDS` | Optional | Server-only | Comma-separated approved admin IDs, if admin gating is configured. |
+
+Google and Apple OAuth client secrets are configured in **Supabase Dashboard → Authentication → Providers**, not in this repository and not as `VITE_*` variables. Add the deployed callback/redirect URLs required by the app in Supabase Auth URL Configuration.
+
+## 4. Database compatibility and migration variables
+
+| Variable | Required while MySQL remains active | Scope |
+|---|---:|---|
+| `DATABASE_URL` | Yes for legacy MySQL runtime/rollback | Server-only |
+| `SUPABASE_DB_URL` | Yes for PostgreSQL acceptance and cutover | Server-only |
+
+The migration scripts are idempotent and preserve the MySQL source. Do not enable the adapter gate until the backup, schema comparison, row-count comparison, relationship checks, and smoke tests have passed.
+
+## 5. Public application settings
 
 | Variable | Required | Scope |
-|---|---|---|
-| `VITE_APP_ID` | Yes for Manus OAuth | Public build configuration |
-| `VITE_OAUTH_PORTAL_URL` | Yes for Manus OAuth | Public build configuration |
-| `OAUTH_SERVER_URL` | Yes for Manus OAuth | Server only |
-| `AUTH_REDIRECT_URI` | Yes; use the exact deployed callback URL | Server only |
-| `JWT_SECRET` | Yes | Server only |
+|---|---:|---|
+| `VITE_APP_TITLE` | Recommended | Public build; use `MAKANIbooking`. |
+| `VITE_APP_LOGO` | Optional | Public build; use the approved transparent logo URL. |
+| `VITE_APP_URL` | Recommended | Public build; use the exact environment origin. |
+| `VITE_GA4_MEASUREMENT_ID` | Optional | Public analytics identifier. |
+| `VITE_META_PIXEL_ID` | Optional | Public analytics identifier. |
 
-## Current application database
+## 6. Optional server integrations
 
-The runtime currently imports `drizzle-orm/mysql2` and the schema uses `mysqlTable`, so the existing application database remains MySQL-compatible until the PostgreSQL adapter migration is completed.
+`SUPABASE_PRIVATE_STORAGE_BUCKET` defaults to `b2rent-private-documents`. `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM_ADDRESS`, `VISION_PROVIDER_API_KEY`, `CRON_SECRET`, and `B2RENT_STORAGE_ACCEPTANCE_TEST_ENABLED` are optional and should remain unset until their official services are configured. Their absence must not be hidden as a core runtime failure.
 
-| Variable | Required | Scope |
-|---|---|---|
-| `DATABASE_URL` | Required by the current Drizzle runtime | Server only |
+## 7. Legacy Manus compatibility
 
-## Supabase migration and acceptance layer
+`VITE_APP_ID`, `VITE_OAUTH_PORTAL_URL`, `OAUTH_SERVER_URL`, `BUILT_IN_FORGE_API_URL`, `BUILT_IN_FORGE_API_KEY`, and `OWNER_OPEN_ID` belong to the legacy Manus path. Do not add or remove them from Vercel casually; remove them only after the independent Supabase stack has passed production acceptance and the rollback window has been agreed.
 
-| Variable | Required | Scope |
-|---|---|---|
-| `SUPABASE_URL` | Yes for Supabase health/storage acceptance | Server; public only when using a separate anon key |
-| `SUPABASE_DB_URL` | Required for PostgreSQL migration work | Server only |
-| `SUPABASE_SERVICE_ROLE_KEY` | Required for server-side administrative acceptance checks | Server only |
-| `SUPABASE_PRIVATE_STORAGE_BUCKET` | Optional; default `b2rent-private-documents` | Server |
+## 8. Vercel checklist
 
-## Existing service integrations
-
-`BUILT_IN_FORGE_API_URL`, `BUILT_IN_FORGE_API_KEY`, `OWNER_OPEN_ID`, `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM_ADDRESS`, `VISION_PROVIDER_API_KEY`, and `CRON_SECRET` are optional or feature-specific. They must be supplied only from their official providers and must remain server-side unless explicitly documented as public.
-
-## Public application configuration
-
-`VITE_APP_TITLE=MAKANIbooking`, `VITE_APP_LOGO`, `VITE_APP_URL`, `VITE_GA4_MEASUREMENT_ID`, and `VITE_META_PIXEL_ID` are build-time/public settings. Analytics identifiers are not secrets, but they should still be configured deliberately per environment.
-
-## Vercel checklist
-
-Every required variable must be added under the correct Vercel environment, especially **Production**, and a new deployment must be created after changing variables. Do not use the Supabase URL as an OAuth URL. The current application cannot accept production logins on Vercel until the Manus OAuth variables are supplied or the authentication implementation is migrated to an independent provider.
+Add each variable under the correct Vercel environment, especially **Production**, and create a new deployment after changing values. Verify `/api/health` after deployment. Never paste secret values into GitHub issues, screenshots, chat, or client-side code. Keep `B2RENT_VERCEL_ADAPTERS_READY=false` until the final cutover decision is explicitly recorded.

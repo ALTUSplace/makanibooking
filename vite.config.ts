@@ -167,6 +167,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -187,6 +188,7 @@ export default defineConfig({
           if (packageName === "react-dom") return "react-dom-vendor";
           if (packageName === "react" || packageName === "scheduler") return "react-vendor";
           if (packageName.startsWith("@trpc/") || packageName.startsWith("@tanstack/")) return "data-vendor";
+          if (packageName.startsWith("@supabase/")) return "supabase-vendor";
           if (packageName.startsWith("@radix-ui/")) return "ui-vendor";
           if (packageName === "recharts") return "charts-vendor";
           if (packageName === "jspdf") return "pdf-vendor";
@@ -199,7 +201,15 @@ export default defineConfig({
           if (["wouter", "sonner"].includes(packageName)) return "navigation-vendor";
           if (["use-callback-ref", "use-sidecar", "react-remove-scroll", "react-style-singleton", "react-remove-scroll-bar", "aria-hidden", "get-nonce", "detect-node-es", "is-what", "copy-anything"].includes(packageName) || packageName.startsWith("@floating-ui/")) return "ui-vendor";
           if (["@babel/runtime", "tslib", "use-sync-external-store"].includes(packageName)) return "shared-vendor";
-          return "vendor";
+
+          // Keep uncategorized browser dependencies out of one oversized vendor chunk.
+          // The package-name hash is deterministic, so all modules from a dependency
+          // stay together while the fallback is spread across small cacheable chunks.
+          const packageHash = packageName.split("").reduce(
+            (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+            0,
+          );
+          return `misc-vendor-${(packageHash % 3) + 1}`;
         },
         onlyExplicitManualChunks: true,
       },

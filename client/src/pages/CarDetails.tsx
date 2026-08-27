@@ -31,7 +31,7 @@ export default function CarDetails() {
     transmission: listing.transmission || 'غير محدد',
     fuel: listing.fuelType || 'غير محدد',
     seats: 5,
-    features: listing.amenities ? listing.amenities.split(',').map((item) => item.trim()).filter(Boolean) : [],
+    features: listing.amenities ? listing.amenities.split(',').map((item: string) => item.trim()).filter(Boolean) : [],
     agency: { name: 'المؤجر على MAKANIbooking', address: listing.city, whatsapp: '' },
   } : fallbackCar ? {
     id: fallbackCar.id,
@@ -243,7 +243,7 @@ export default function CarDetails() {
                 <div className="space-y-4">
                   <h3 className="text-base font-bold text-white">مميزات السيارة والرفاهية</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {car.features.map((feat, idx) => (
+                    {car.features.map((feat: string, idx: number) => (
                       <div key={idx} className="flex items-center gap-2.5 bg-slate-900/60 border border-slate-800/80 px-4 py-3 rounded-2xl text-xs text-slate-200">
                         <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
                         <span>{feat}</span>

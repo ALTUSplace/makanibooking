@@ -6,8 +6,9 @@ import { parse as parseCookie } from "cookie";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, ownerProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { getDb } from "./db";
+import { getDb, isPostgresAdapterActive } from "./db";
 import { listings, listingAnalyticsEvents, bookings, reviews, users, commercialLeaseContracts, notifications, platformSettings, payoutRequests, disputes, disputeAttachments, supportTickets, payments, invoices, kycSubmissions, bookingVouchers, bookingMessages, auditLogs, refundRequests } from "../drizzle/schema";
+import { listings as pgListings, users as pgUsers } from "../drizzle/pg-schema";
 import { eq, and, lte, gte, lt, gt, desc, count, isNull, inArray, ne, sql } from "drizzle-orm";
 import { safeNotifyUser, buildEmailContent } from "./notificationService";
 import { z } from "zod";
@@ -749,7 +750,9 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) throw unavailableCatalogError();
-        const allListings = await db.select({ listing: listings, ownerName: users.name }).from(listings).leftJoin(users, eq(listings.ownerId, users.id)).where(inArray(listings.status, ['Published', 'Available'])).orderBy(desc(listings.createdAt));
+        const allListings: Array<{ listing: typeof listings.$inferSelect; ownerName: string | null }> = isPostgresAdapterActive()
+          ? await (db as any).select({ listing: pgListings, ownerName: pgUsers.name }).from(pgListings).leftJoin(pgUsers, eq(pgListings.ownerId, pgUsers.id)).where(inArray(pgListings.status, ['Published', 'Available', 'published', 'active'])).orderBy(desc(pgListings.createdAt)) as Array<{ listing: typeof listings.$inferSelect; ownerName: string | null }>
+          : await db.select({ listing: listings, ownerName: users.name }).from(listings).leftJoin(users, eq(listings.ownerId, users.id)).where(inArray(listings.status, ['Published', 'Available'])).orderBy(desc(listings.createdAt));
 
         // Dynamic Pricing Engine calculation
         return allListings.map(({ listing: item, ownerName }) => {
@@ -800,7 +803,9 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const db = await getDb();
         if (!db) throw unavailableCatalogError();
-        const result = await db.select().from(listings).where(and(eq(listings.id, input.id), inArray(listings.status, ['Published', 'Available']))).limit(1);
+        const result = isPostgresAdapterActive()
+          ? await (db as any).select().from(pgListings).where(and(eq(pgListings.id, input.id), inArray(pgListings.status, ['Published', 'Available', 'published', 'active']))).limit(1)
+          : await db.select().from(listings).where(and(eq(listings.id, input.id), inArray(listings.status, ['Published', 'Available']))).limit(1);
         return result[0] || null;
       }),
 

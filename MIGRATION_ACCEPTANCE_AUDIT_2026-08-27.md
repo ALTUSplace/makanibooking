@@ -35,3 +35,17 @@
 | سجلات التدقيق | 6 |
 
 يبقى **MySQL مصدر الإنتاج**، ولم ينفذ الترحيل الكامل أو تحويل Drizzle/Vercel إلى PostgreSQL. يلزم قبل cutover مقارنة العدادات والعلاقات، اختبار حجز قبول مستقل، والتحقق من الاستعادة من Snapshot. النسخة ليست عامة ولا تُرفع إلى GitHub أو Vercel.
+
+## تدقيق قراءة فقط إضافي: العدادات والعلاقات
+
+تم تنفيذ `scripts/migration_acceptance_counts.mjs` في 2026-08-27 دون أوامر كتابة. النتائج الحالية:
+
+| الجدول | MySQL | Supabase | متطابق |
+|---|---:|---:|---|
+| users | 7 | 5 | لا |
+| listings | 6 | 5 | لا |
+| bookings | 2 | 0 | لا |
+| audit_logs | 6 | 0 | لا |
+| بقية الجداول المشتركة | متساوٍ عند 0 | متساوٍ عند 0 | نعم |
+
+عدد المفاتيح الأجنبية: MySQL = 0 وفق `information_schema.REFERENTIAL_CONSTRAINTS`، وSupabase = 3. هذه النتيجة لا تعني أن القبول مكتمل؛ ما زالت بيانات عينة موجودة فقط في users/listings، بينما bookings وaudit_logs غير مرحّلة. لذلك لم يتم تفعيل `B2RENT_VERCEL_ADAPTERS_READY` ولم يُنفذ cutover.

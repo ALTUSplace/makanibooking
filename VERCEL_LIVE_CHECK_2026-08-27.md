@@ -33,3 +33,7 @@
 - entry المنشور تغيّر إلى `assets/index-CEn0fPzk.js` مع `assets/framework-vendor-DujpLygv.js`، ما يؤكد وصول build الجديد الذي يوحد React وReact-DOM داخل framework-vendor.
 - لم يعد فحص المتصفح يظهر شاشة فارغة. تبقى أخطاء الخادم الواردة في Logs منفصلة عن تركيب الواجهة: `/api/trpc/listings.list` يعيد 500، `/api/health` يعيد 503، ومسار `/manus-storage/...` يعيد 500، كما أن `OAUTH_SERVER_URL` غير مضبوط. هذه البنود تحتاج معالجة قبل اعتبار جميع وظائف Production جاهزة.
 - المصدر: النطاق المنشور وصفحة Vercel Logs للمشروع `makanibooking-morocco`.
+
+## فحص متابعة بعد checkpoint 175e1d61
+
+تم التأكد عبر GitHub API من أن `kamalbouragba/makanibooking:main` يحتوي على commit `175e1d61f154537943fc6a147ef50d2bed893385`. بعد دفعه، بقي `GET https://makanibooking-morocco.vercel.app/api/health` يعيد HTTP 503 مع قائمة قديمة تشمل `AUTH_REDIRECT_URI` و`EMAIL_PROVIDER_API_KEY` و`VISION_PROVIDER_API_KEY`، رغم أن الكود الحالي لم يعد يعتبرها متطلبات readiness الأساسية. كما أن Vercel MCP لم يجد المشروع أو deployment ضمن فريق `team_hjPMwDz7qyfSKcaWN2t5otJK` (قائمة المشاريع فارغة، وdeployment يعيد 404). الاستنتاج: لا يجوز اعتبار Vercel متزامناً مع مستودع MAKANIbooking حتى تُصحّح هوية المشروع/الفريق أو ربط GitHub من لوحة Vercel.

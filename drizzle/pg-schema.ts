@@ -1,11 +1,14 @@
 // Generated from drizzle/schema.ts for the opt-in Supabase PostgreSQL adapter.
 // Enums remain text columns because supabase/migrations/0001_b2rent_schema.sql
 // enforces the allowed values with CHECK constraints. Do not edit manually.
-import { boolean, integer, pgSchema, text, timestamp, varchar, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, timestamp, varchar, index, uniqueIndex } from "drizzle-orm/pg-core";
 
-const b2rent = pgSchema("b2rent");
+// Supabase acceptance tables are created in the public schema. Keep this schema
+// aligned with the deployed DDL so the PostgreSQL adapter does not query a
+// non-existent b2rent namespace.
 
-export const users = b2rent.table("users", {
+
+export const users = pgTable("users", {
   id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
   openId: varchar("open_id", { length: 64 }).notNull().unique(),
   name: text("name"),
@@ -31,7 +34,7 @@ export const users = b2rent.table("users", {
   legalConsentAt: timestamp("legal_consent_at"),
 });
 
-export const listings = b2rent.table("listings", {
+export const listings = pgTable("listings", {
   id: integer("listing_id").generatedAlwaysAsIdentity().primaryKey(),
   ownerId: integer("owner_id").notNull(),
   title: text("title").notNull(),
@@ -57,7 +60,7 @@ export const listings = b2rent.table("listings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const listingAnalyticsEvents = b2rent.table("listing_analytics_events", {
+export const listingAnalyticsEvents = pgTable("listing_analytics_events", {
   id: integer("event_id").generatedAlwaysAsIdentity().primaryKey(),
   listingId: integer("listing_id").notNull(),
   eventType: text("event_type").notNull(),
@@ -68,7 +71,7 @@ export const listingAnalyticsEvents = b2rent.table("listing_analytics_events", {
   listingCreatedIdx: index("listing_analytics_listing_created_idx").on(table.listingId, table.createdAt),
 }));
 
-export const bookings = b2rent.table("bookings", {
+export const bookings = pgTable("bookings", {
   id: integer("booking_id").generatedAlwaysAsIdentity().primaryKey(),
   renterId: integer("renter_id").notNull(),
   listingId: integer("listing_id").notNull(),
@@ -87,7 +90,7 @@ export const bookings = b2rent.table("bookings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const reviews = b2rent.table("reviews", {
+export const reviews = pgTable("reviews", {
   id: integer("review_id").generatedAlwaysAsIdentity().primaryKey(),
   bookingId: integer("booking_id").notNull(),
   listingId: integer("listing_id").notNull(),
@@ -97,7 +100,7 @@ export const reviews = b2rent.table("reviews", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const kycSubmissions = b2rent.table("kyc_submissions", {
+export const kycSubmissions = pgTable("kyc_submissions", {
   id: integer("kyc_id").generatedAlwaysAsIdentity().primaryKey(),
   userId: integer("user_id").notNull(),
   applicantRole: text("applicant_role").default("renter").notNull(),
@@ -111,7 +114,7 @@ export const kycSubmissions = b2rent.table("kyc_submissions", {
   reviewedAt: timestamp("reviewed_at"),
 });
 
-export const payments = b2rent.table("payments", {
+export const payments = pgTable("payments", {
   id: integer("payment_id").generatedAlwaysAsIdentity().primaryKey(),
   bookingId: integer("booking_id").notNull(),
   payerId: integer("payer_id").notNull(),
@@ -124,7 +127,7 @@ export const payments = b2rent.table("payments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const commercialLeaseContracts = b2rent.table("commercial_lease_contracts", {
+export const commercialLeaseContracts = pgTable("commercial_lease_contracts", {
   id: integer("contract_id").generatedAlwaysAsIdentity().primaryKey(),
   bookingId: integer("booking_id").notNull().unique(),
   landlordId: integer("landlord_id").notNull(),
@@ -147,7 +150,7 @@ export const commercialLeaseContracts = b2rent.table("commercial_lease_contracts
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const notifications = b2rent.table("notifications", {
+export const notifications = pgTable("notifications", {
   id: integer("notification_id").generatedAlwaysAsIdentity().primaryKey(),
   userId: integer("user_id").notNull(),
   type: text("type").notNull(),
@@ -167,7 +170,7 @@ export const notifications = b2rent.table("notifications", {
   notificationDedupeIdx: uniqueIndex("notifications_dedupe_idx").on(table.userId, table.dedupeKey),
 }));
 
-export const bookingMessages = b2rent.table("booking_messages", {
+export const bookingMessages = pgTable("booking_messages", {
   id: integer("message_id").generatedAlwaysAsIdentity().primaryKey(),
   bookingId: integer("booking_id").notNull(),
   senderId: integer("sender_id").notNull(),
@@ -180,7 +183,7 @@ export const bookingMessages = b2rent.table("booking_messages", {
   recipientUnreadIdx: index("booking_messages_recipient_unread_idx").on(table.recipientId, table.readAt),
 }));
 
-export const auditLogs = b2rent.table("audit_logs", {
+export const auditLogs = pgTable("audit_logs", {
   id: integer("audit_log_id").generatedAlwaysAsIdentity().primaryKey(),
   actorId: integer("actor_id").notNull(),
   action: varchar("action", { length: 120 }).notNull(),
@@ -194,7 +197,7 @@ export const auditLogs = b2rent.table("audit_logs", {
   actorCreatedIdx: index("audit_logs_actor_created_idx").on(table.actorId, table.createdAt),
 }));
 
-export const refundRequests = b2rent.table("refund_requests", {
+export const refundRequests = pgTable("refund_requests", {
   id: integer("refund_request_id").generatedAlwaysAsIdentity().primaryKey(),
   bookingId: integer("booking_id").notNull(),
   requestedBy: integer("requested_by").notNull(),
@@ -210,7 +213,7 @@ export const refundRequests = b2rent.table("refund_requests", {
   requesterIdx: index("refund_requests_requester_idx").on(table.requestedBy, table.status),
 }));
 
-export const platformSettings = b2rent.table("platform_settings", {
+export const platformSettings = pgTable("platform_settings", {
   id: integer("setting_id").generatedAlwaysAsIdentity().primaryKey(),
   commissionRateBasisPoints: integer("commission_rate_basis_points").default(1000).notNull(),
   vatRateBasisPoints: integer("vat_rate_basis_points").default(2000).notNull(),
@@ -218,7 +221,7 @@ export const platformSettings = b2rent.table("platform_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const payoutRequests = b2rent.table("payout_requests", {
+export const payoutRequests = pgTable("payout_requests", {
   id: integer("payout_id").generatedAlwaysAsIdentity().primaryKey(),
   ownerId: integer("owner_id").notNull(),
   amount: integer("amount").notNull(),
@@ -231,7 +234,7 @@ export const payoutRequests = b2rent.table("payout_requests", {
   reviewedAt: timestamp("reviewed_at"),
 });
 
-export const bookingVouchers = b2rent.table("booking_vouchers", {
+export const bookingVouchers = pgTable("booking_vouchers", {
   id: integer("voucher_id").generatedAlwaysAsIdentity().primaryKey(),
   bookingId: integer("booking_id").notNull().unique(),
   renterId: integer("renter_id").notNull(),
@@ -241,7 +244,7 @@ export const bookingVouchers = b2rent.table("booking_vouchers", {
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
 });
 
-export const invoices = b2rent.table("invoices", {
+export const invoices = pgTable("invoices", {
   id: integer("invoice_id").generatedAlwaysAsIdentity().primaryKey(),
   invoiceNumber: varchar("invoice_number", { length: 80 }).notNull().unique(),
   bookingId: integer("booking_id").notNull(),
@@ -262,7 +265,7 @@ export const invoices = b2rent.table("invoices", {
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
 });
 
-export const disputes = b2rent.table("disputes", {
+export const disputes = pgTable("disputes", {
   id: integer("dispute_id").generatedAlwaysAsIdentity().primaryKey(),
   bookingId: integer("booking_id").notNull(),
   openedBy: integer("opened_by").notNull(),
@@ -275,7 +278,7 @@ export const disputes = b2rent.table("disputes", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const disputeAttachments = b2rent.table("dispute_attachments", {
+export const disputeAttachments = pgTable("dispute_attachments", {
   id: integer("attachment_id").generatedAlwaysAsIdentity().primaryKey(),
   disputeId: integer("dispute_id").notNull(),
   fileKey: varchar("file_key", { length: 512 }).notNull(),
@@ -285,7 +288,7 @@ export const disputeAttachments = b2rent.table("dispute_attachments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const supportTickets = b2rent.table("support_tickets", {
+export const supportTickets = pgTable("support_tickets", {
   id: integer("ticket_id").generatedAlwaysAsIdentity().primaryKey(),
   userId: integer("user_id").notNull(),
   subject: varchar("subject", { length: 255 }).notNull(),

@@ -803,3 +803,4 @@
 - [x] إزالة class الألوان الداكنة المثبتة من body في client/index.html والتحقق من إنتاج Vercel
 
 - [x] فصل المتطلبات الأساسية لخدمة Vercel عن الأسرار الاختيارية في /api/health وإضافة اختبار عقدي
+- [x] إصلاح مخطط PostgreSQL ليستخدم public بدل schema b2rent، ثم اختبار استعلامات listings في وضع المحول

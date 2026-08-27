@@ -22,6 +22,10 @@ export function shouldUsePostgresAdapter(env: AdapterEnvironment = process.env a
   return env.B2RENT_VERCEL_ADAPTERS_READY === "true" && Boolean(env.SUPABASE_DB_URL?.trim());
 }
 
+export function isPostgresAdapterActive() {
+  return _dbMode === "postgres";
+}
+
 function postgresAdapterEnabled() {
   return shouldUsePostgresAdapter({
     B2RENT_VERCEL_ADAPTERS_READY: ENV.vercelAdaptersReady ? "true" : "false",

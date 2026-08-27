@@ -21,7 +21,9 @@ describe("database adapter contract", () => {
     const schema = readFileSync(resolve(process.cwd(), "drizzle/pg-schema.ts"), "utf8");
     expect(schema).not.toContain("pgEnum");
     expect(schema).not.toContain("mysqlEnum");
-    expect(schema).toContain('pgSchema("b2rent")');
+    expect(schema).toContain('pgTable("users"');
+    expect(schema).toContain('pgTable("listings"');
+    expect(schema).not.toContain('pgSchema("b2rent")');
     expect(schema).toContain('varchar("open_id"');
     expect(schema).toContain('timestamp("created_at"');
   });

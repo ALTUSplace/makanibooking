@@ -27,13 +27,13 @@ export default function Register() {
   const submitAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
-    if (!accepted) {
+    if (mode === "sign-up" && !accepted) {
       setMessage(isArabic
         ? "يرجى تحديد مربع الموافقة على الشروط والأحكام قبل إنشاء الحساب."
         : "Veuillez cocher l'acceptation des conditions avant de créer le compte.");
       return;
     }
-    persistLegalConsent();
+    if (mode === "sign-up") persistLegalConsent();
 
     if (!supabase) {
       setMessage(isArabic

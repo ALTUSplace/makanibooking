@@ -36,11 +36,6 @@ const VERCEL_REQUIRED_SERVICES: RequiredService[] = [
   { key: "SUPABASE_DB_URL", isConfigured: env => Boolean(env.supabaseDbUrl) },
   { key: "SUPABASE_SERVICE_ROLE_KEY", isConfigured: env => Boolean(env.supabaseServiceRoleKey) },
   { key: "JWT_SECRET", isConfigured: env => Boolean(env.cookieSecret) },
-  { key: "AUTH_REDIRECT_URI", isConfigured: env => Boolean(env.authRedirectUri) },
-  { key: "EMAIL_PROVIDER_API_KEY", isConfigured: env => Boolean(env.emailProviderApiKey) },
-  { key: "EMAIL_FROM_ADDRESS", isConfigured: env => Boolean(env.emailFromAddress) },
-  { key: "VISION_PROVIDER_API_KEY", isConfigured: env => Boolean(env.visionProviderApiKey) },
-  { key: "CRON_SECRET", isConfigured: env => Boolean(env.cronSecret) },
   { key: "B2RENT_VERCEL_ADAPTERS_READY", isConfigured: env => env.vercelAdaptersReady },
 ];
 

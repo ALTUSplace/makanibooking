@@ -47,14 +47,22 @@ describe("runtime readiness", () => {
         "SUPABASE_URL",
         "SUPABASE_DB_URL",
         "SUPABASE_SERVICE_ROLE_KEY",
-        "AUTH_REDIRECT_URI",
-        "EMAIL_PROVIDER_API_KEY",
-        "EMAIL_FROM_ADDRESS",
-        "VISION_PROVIDER_API_KEY",
-        "CRON_SECRET",
         "B2RENT_VERCEL_ADAPTERS_READY",
       ],
     });
     expect(JSON.stringify(readiness)).not.toContain("test-secret");
+  });
+
+  it("accepts a configured independent Vercel runtime without optional feature secrets", () => {
+    expect(
+      getRuntimeReadiness({
+        ...configuredRuntime,
+        runtimeTarget: "vercel",
+        supabaseUrl: "https://project.supabase.co",
+        supabaseDbUrl: "postgres://example",
+        supabaseServiceRoleKey: "service-role-key",
+        vercelAdaptersReady: true,
+      }),
+    ).toEqual({ ready: true, target: "vercel", missing: [] });
   });
 });

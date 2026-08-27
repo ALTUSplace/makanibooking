@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { legalDisclosure, persistLegalConsent } from "@/lib/legalDisclosure";
-import { supabase } from "@/lib/supabase";
+import { prepareRememberedLogin, supabase } from "@/lib/supabase";
 
 type AuthLanguage = "ar" | "fr" | "en";
 
@@ -86,6 +86,7 @@ export default function Register() {
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [pending, setPending] = useState(false);
   const [oauthPending, setOauthPending] = useState<"google" | "apple" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -141,6 +142,7 @@ export default function Register() {
 
     setPending(true);
     try {
+      if (mode === "sign-in") prepareRememberedLogin(rememberMe);
       const result = mode === "sign-up"
         ? await supabase.auth.signUp({ email: email.trim(), password })
         : await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -245,6 +247,19 @@ export default function Register() {
                 placeholder={isArabic ? "6 أحرف على الأقل" : "6 caractères minimum"}
               />
             </label>
+
+            {mode === "sign-in" && (
+              <label className="flex items-center gap-3 text-sm font-semibold text-slate-700 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  disabled={pending}
+                  className="h-4 w-4 rounded border-slate-300 accent-[#0A2540]"
+                />
+                <span>{isArabic ? "تذكرني على هذا الجهاز" : language === "fr" ? "Se souvenir de moi sur cet appareil" : "Remember me on this device"}</span>
+              </label>
+            )}
 
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:col-span-2">
               <Checkbox

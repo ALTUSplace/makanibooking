@@ -39,11 +39,25 @@ export const startLogin = (nextPath?: string) => {
   const appId = import.meta.env.VITE_APP_ID;
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
 
+  // Never let a missing or malformed legacy OAuth setting crash the React tree.
+  // Supabase is the primary provider; this branch is only a guarded fallback.
+  let parsedPortalUrl: URL;
+  try {
+    parsedPortalUrl = new URL(oauthPortalUrl);
+    if (!appId || !["http:", "https:"].includes(parsedPortalUrl.protocol)) {
+      window.location.href = registerUrl;
+      return;
+    }
+  } catch {
+    window.location.href = registerUrl;
+    return;
+  }
+
   const nonce = crypto.randomUUID();
   document.cookie = `${OAUTH_STATE_COOKIE}=${nonce}; Path=/; Max-Age=600; SameSite=None; Secure`;
   const state = encodeOAuthState({ redirectUri, nonce });
 
-  const url = new URL(`${oauthPortalUrl}/app-auth`);
+  const url = new URL("app-auth", `${parsedPortalUrl.toString().replace(/\/+$/, "")}/`);
   url.searchParams.set("appId", appId);
   url.searchParams.set("redirectUri", redirectUri);
   url.searchParams.set("state", state);

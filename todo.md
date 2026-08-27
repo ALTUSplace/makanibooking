@@ -779,3 +779,5 @@
 
 - [x] فحص مشروع Vercel `prj_WYqFkAKX5Qi3QWJhiADPmUsyxLMm` قراءةً فقط؛ أكدت صورة الإعدادات ربط GitHub بالمستودع `kamalbouragba/makanibooking` والنشر التلقائي، وتبقى البيئات للفحص التالي
 - [x] التحقق بصرياً من إعدادات Vercel Environments: `Production` يتتبع `main` و`Preview` يتتبع فروع Git غير المعيّنة؛ لم يتم إنشاء بيئة مخصصة أو تغيير إعدادات.
+
+- [ ] بناء مسار PostgreSQL خلف مفتاح تشغيل صريح مع اختبارات توافق، مع إبقاء مسار MySQL الافتراضي حتى نجاح القبول النهائي

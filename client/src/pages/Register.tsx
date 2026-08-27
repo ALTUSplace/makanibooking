@@ -7,6 +7,53 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { legalDisclosure, persistLegalConsent } from "@/lib/legalDisclosure";
 import { supabase } from "@/lib/supabase";
 
+type AuthLanguage = "ar" | "fr" | "en";
+
+export function getAuthErrorMessage(error: { message?: string; status?: number } | null, language: AuthLanguage) {
+  const raw = (error?.message ?? "").toLowerCase();
+  const messages = {
+    ar: {
+      invalid: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+      exists: "هذا البريد مسجل مسبقاً. جرّب تسجيل الدخول بدلاً من إنشاء حساب جديد.",
+      unconfirmed: "يرجى تأكيد بريدك الإلكتروني من الرسالة المرسلة إليك قبل تسجيل الدخول.",
+      weak: "كلمة المرور ضعيفة. استخدم 6 أحرف على الأقل مع مزيج أقوى.",
+      email: "أدخل عنوان بريد إلكتروني صالحاً.",
+      rate: "تم تجاوز عدد المحاولات. انتظر قليلاً ثم أعد المحاولة.",
+      network: "تعذر الاتصال بخدمة المصادقة. تحقق من الإنترنت ثم أعد المحاولة.",
+      generic: "تعذر إتمام العملية. راجع البيانات وحاول مرة أخرى.",
+    },
+    fr: {
+      invalid: "L'adresse e-mail ou le mot de passe est incorrect.",
+      exists: "Cette adresse est déjà inscrite. Essayez de vous connecter.",
+      unconfirmed: "Confirmez votre adresse e-mail depuis le message reçu avant de vous connecter.",
+      weak: "Le mot de passe est trop faible. Utilisez au moins 6 caractères plus robustes.",
+      email: "Saisissez une adresse e-mail valide.",
+      rate: "Trop de tentatives. Patientez un instant puis réessayez.",
+      network: "Impossible de joindre le service d'authentification. Vérifiez votre connexion.",
+      generic: "L'opération n'a pas pu être terminée. Vérifiez les données puis réessayez.",
+    },
+    en: {
+      invalid: "The email address or password is incorrect.",
+      exists: "This email is already registered. Try signing in instead.",
+      unconfirmed: "Please confirm your email from the message we sent before signing in.",
+      weak: "Your password is too weak. Use at least 6 characters with a stronger combination.",
+      email: "Enter a valid email address.",
+      rate: "Too many attempts. Wait a moment and try again.",
+      network: "We couldn't reach the authentication service. Check your connection and try again.",
+      generic: "The operation could not be completed. Check your details and try again.",
+    },
+  }[language];
+
+  if (raw.includes("invalid login") || raw.includes("invalid credentials") || raw.includes("invalid password")) return messages.invalid;
+  if (raw.includes("already registered") || raw.includes("user already exists") || raw.includes("already been registered")) return messages.exists;
+  if (raw.includes("email not confirmed") || raw.includes("not confirmed")) return messages.unconfirmed;
+  if (raw.includes("password") && (raw.includes("weak") || raw.includes("at least") || raw.includes("short"))) return messages.weak;
+  if (raw.includes("email") && (raw.includes("invalid") || raw.includes("valid"))) return messages.email;
+  if (error?.status === 429 || raw.includes("rate limit") || raw.includes("too many")) return messages.rate;
+  if (raw.includes("network") || raw.includes("fetch") || raw.includes("failed to fetch")) return messages.network;
+  return messages.generic;
+}
+
 export default function Register() {
   const [, setLocation] = useLocation();
   const { language, direction } = useLanguage();
@@ -49,7 +96,7 @@ export default function Register() {
         : await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
       if (result.error) {
-        setMessage(result.error.message);
+        setMessage(getAuthErrorMessage(result.error, language));
         return;
       }
 
@@ -63,9 +110,7 @@ export default function Register() {
       setLocation(nextPath);
     } catch (error) {
       console.error("[Supabase Auth] request failed", error);
-      setMessage(isArabic
-        ? "تعذر الاتصال بخدمة التسجيل. تحقق من إعدادات Supabase أو اتصال الإنترنت ثم أعد المحاولة."
-        : "Impossible de joindre le service d'authentification. Vérifiez Supabase ou votre connexion, puis réessayez.");
+      setMessage(getAuthErrorMessage({ message: "network" }, language));
     } finally {
       setPending(false);
     }
@@ -155,9 +200,9 @@ export default function Register() {
               </button>
             </div>
 
-            {message && <p role="alert" className="text-sm font-semibold leading-6 text-red-700 sm:col-span-2">{message}</p>}
+            {message && <p role="alert" aria-live="assertive" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold leading-6 text-red-700 sm:col-span-2">{message}</p>}
 
-            <Button type="submit" disabled={pending} className="gap-2 bg-[#0A2540] text-white hover:bg-[#071b2e] sm:col-span-2 sm:w-fit">
+            <Button type="submit" disabled={pending} aria-busy={pending} className="gap-2 bg-[#0A2540] text-white hover:bg-[#071b2e] sm:col-span-2 sm:w-fit">
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {pending ? (isArabic ? "جارٍ المعالجة..." : "Traitement...") : mode === "sign-up" ? (isArabic ? "إنشاء الحساب" : "Créer le compte") : (isArabic ? "الدخول إلى الحساب" : "Se connecter")}
             </Button>

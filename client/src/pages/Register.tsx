@@ -164,8 +164,10 @@ export default function Register() {
           </form>
 
           {!supabase && (
-            <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-              {isArabic ? "سيتم استخدام مسار الدخول القديم مؤقتاً حتى تكتمل إعدادات Supabase Auth." : "Le parcours de connexion actuel reste actif jusqu'à la finalisation de Supabase Auth."}
+            <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+              {isArabic
+                ? "خدمة إنشاء الحساب غير متاحة في هذه النسخة لأن إعدادات Supabase Auth لم تُحقن في بناء Vercel بعد. بعد إضافة المتغيرات وإعادة النشر سيعمل هذا الزر مباشرة."
+                : "La création de compte est indisponible dans cette version : la configuration Supabase Auth n'a pas encore été injectée dans le build Vercel. Après ajout des variables et un nouveau déploiement, ce bouton fonctionnera directement."}
             </p>
           )}
         </div>

@@ -109,3 +109,71 @@ Thu Aug 27 18:31:30 UTC 2026
 [2026-08-27T18:22:19.764Z] [Auth] Missing session cookie
 [2026-08-27T18:23:00.426Z] [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
 [2026-08-27T18:30:34.386Z] [Auth] Missing session cookie
+
+## إعادة فحص Production بعد checkpoint 8bdd7820
+Thu Aug 27 18:32:30 UTC 2026
+### الرؤوس
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 355
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline
+content-type: text/html; charset=utf-8
+date: Thu, 27 Aug 2026 18:32:30 GMT
+etag: "31dc579d1855685a00ac0494ff5cbe7b"
+last-modified: Thu, 27 Aug 2026 18:26:35 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+x-vercel-cache: HIT
+x-vercel-id: iad1::gx8l5-1787855550583-566415d4fc43
+content-length: 370746
+
+### HTML المؤشرات
+<script type="module" crossorigin src="/assets/index-5LTKFbLV.js"
+<body class="bg-slate-950 text-slate-100 antialiased">
+<div id="root">
+### فحص console
+
+## نتيجة إعادة التحميل المراقبة
+Thu Aug 27 18:33:36 UTC 2026
+- Production أعاد status 200 والعنوان صحيحاً.
+- #root موجود لكنه فارغ (children=0, innerHTML length=0).
+- لا توجد عناصر تفاعلية ولا مخرجات console ظاهرة.
+- HTML ما زال يحمل body class="bg-slate-950 text-slate-100 antialiased".
+- entry asset يعاد بـ application/javascript وstatus 200، لكن اسم entry المنشور لا يطابق dist المحلي الحالي.
+
+## إعادة إنتاج محلية بوضع production
+Thu Aug 27 18:36:43 UTC 2026
+- معاينة Vite production المحلية بقيت فارغة مثل Vercel.
+- الاستيراد الصريح للـ entry فشل قبل التركيب: TypeError: Cannot set properties of undefined (setting Activity).
+- stack: react-vendor -> shared-vendor.
+- النتيجة: إزالة class من body ليست الإصلاح الجذري؛ يلزم إصلاح ترتيب/تقسيم React vendor ثم إعادة البناء والاختبار.
+
+## نتيجة framework-vendor fix
+Thu Aug 27 18:39:27 UTC 2026
+- المعاينة المحلية production ظهرت بعناصر MAKANIbooking كاملة و#root غير فارغ.
+- لم يعد خطأ Activity يمنع bootstrap بعد توحيد React وReact-DOM وscheduler.
+- بقي تحذير حجم: index-B3nF6sfv.js بحجم 538,495 bytes، لذلك لا يكفي الحل الحالي لمتطلب أقل من 500KB.
+
+## نتيجة التقسيم الآمن النهائي
+Thu Aug 27 18:41:24 UTC 2026
+- المعاينة المحلية production تعرض الصفحة الرئيسية و#root يحتوي واجهة MAKANIbooking كاملة.
+- Console بلا مخرجات أخطاء بعد إعادة التحميل.
+- أكبر JavaScript: HostDashboard-CzdYDb_4.js = 419,538 bytes، ثم pdf-vendor = 391,309 bytes؛ جميعها أقل من 500,000 bytes.
+- framework-vendor-DujpLygv.js = 194,398 bytes ويضم React وReact-DOM وscheduler معاً.
+
+## تحقق build الكامل بعد حماية client bundle
+Thu Aug 27 18:43:53 UTC 2026
+- pnpm check نجح.
+- Vitest: 65 ملفاً، 174 اختباراً ناجحاً.
+- pnpm build نجح، بما يشمل verify:client-bundle وverify:vercel-api.
+- أكبر chunk: HostDashboard = 460,022 bytes، framework-vendor = 397,288 bytes، pdf-vendor = 391,309 bytes؛ جميعها أقل من 500,000 bytes.
+- المعاينة المحلية تعرض الصفحة الرئيسية وConsole بلا أخطاء.
+
+## فحص Production قبل نشر التقسيم الجديد
+Thu Aug 27 18:44:18 UTC 2026
+- نطاق Vercel: https://makanibooking-morocco.vercel.app/
+- الصفحة ما زالت داكنة وفارغة، ولا توجد عناصر interactive مكتشفة.
+- فحص DOM بعد الانتظار: #root بقي فارغاً وفق نتيجة console، بينما المعاينة المحلية للـ build الجديد تعمل.
+- الاستنتاج: الإصلاح المحلي يحتاج checkpoint جديداً ليصل إلى Vercel؛ لم يبدأ cutover إلى Supabase.

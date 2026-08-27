@@ -185,12 +185,15 @@ export default defineConfig({
             ? packagePath.split("/").slice(0, 2).join("/")
             : packagePath.split("/")[0];
 
-          if (packageName === "react-dom") return "react-dom-vendor";
-          if (packageName === "react" || packageName === "scheduler") return "react-vendor";
+          // Keep React, React-DOM, and scheduler in one stable framework chunk.
+          // Splitting React from its CJS interop helpers can create an ESM cycle
+          // (react-vendor -> shared/misc vendor -> react-vendor) that fails before
+          // createRoot() runs in production with "setting Activity".
+          if (packageName === "react" || packageName === "react-dom" || packageName === "scheduler") {
+            return "framework-vendor";
+          }
           if (packageName.startsWith("@trpc/") || packageName.startsWith("@tanstack/")) return "data-vendor";
           if (packageName.startsWith("@supabase/")) return "supabase-vendor";
-          if (packageName.startsWith("@radix-ui/")) return "ui-vendor";
-          if (packageName === "recharts") return "charts-vendor";
           if (packageName === "jspdf") return "pdf-vendor";
           if (packageName === "framer-motion") return "motion-vendor";
           if (packageName === "streamdown") return "content-vendor";
@@ -200,16 +203,11 @@ export default defineConfig({
           if (["cmdk", "embla-carousel-react", "input-otp", "react-resizable-panels", "vaul"].includes(packageName)) return "interactive-vendor";
           if (["wouter", "sonner"].includes(packageName)) return "navigation-vendor";
           if (["use-callback-ref", "use-sidecar", "react-remove-scroll", "react-style-singleton", "react-remove-scroll-bar", "aria-hidden", "get-nonce", "detect-node-es", "is-what", "copy-anything"].includes(packageName) || packageName.startsWith("@floating-ui/")) return "ui-vendor";
-          if (["@babel/runtime", "tslib", "use-sync-external-store"].includes(packageName)) return "shared-vendor";
+          // Do not force @babel/runtime, tslib, or use-sync-external-store into
+          // a shared chunk: some of these helpers import React and can recreate
+          // the production initialization cycle.
+          return;
 
-          // Keep uncategorized browser dependencies out of one oversized vendor chunk.
-          // The package-name hash is deterministic, so all modules from a dependency
-          // stay together while the fallback is spread across small cacheable chunks.
-          const packageHash = packageName.split("").reduce(
-            (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
-            0,
-          );
-          return `misc-vendor-${(packageHash % 3) + 1}`;
         },
         // Let Rollup place shared dependencies with their consumers. Forcing
         // explicit-only manual chunks can create cross-chunk temporal-dead-zone

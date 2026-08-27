@@ -49,3 +49,17 @@
 | بقية الجداول المشتركة | متساوٍ عند 0 | متساوٍ عند 0 | نعم |
 
 عدد المفاتيح الأجنبية: MySQL = 0 وفق `information_schema.REFERENTIAL_CONSTRAINTS`، وSupabase = 3. هذه النتيجة لا تعني أن القبول مكتمل؛ ما زالت بيانات عينة موجودة فقط في users/listings، بينما bookings وaudit_logs غير مرحّلة. لذلك لم يتم تفعيل `B2RENT_VERCEL_ADAPTERS_READY` ولم يُنفذ cutover.
+
+## محاولة الترحيل الكامل بعد مواءمة public schema
+
+تم تشغيل `scripts/migrate_supabase_full.mjs` أولاً في dry-run ثم بوضع `MIGRATION_APPLY=true`. بقي مصدر MySQL دون تغيير، واستخدمت الكتابة المستهدفة معاملة واحدة وعمليات `ON CONFLICT`.
+
+تم ترحيل `users` بعدد 7، و`listings` بعدد 6، و`audit_logs` بعدد 6 بنجاح. تم تخطي `bookings` عمداً لأن `public.bookings` في Supabase يحمل مخططاً قديماً (`id`, `car_id`, `customer_name` وغيرها) ولا يحتوي الأعمدة المعتمدة (`booking_id`, `renter_id`, `listing_id`, `start_date`, `end_date` وغيرها). لم يُنفذ أي تغيير تخريبي في المخطط.
+
+أكد فحص العدادات القراءة فقط بعد الترحيل: users = 7/7، listings = 6/6، audit_logs = 6/6، بينما bookings = 2 في المصدر و0 في الهدف. لذلك يبقى التحويل الإنتاجي إلى PostgreSQL محجوباً إلى أن تتم مواءمة مخطط الحجوزات بمigration غير تخريبي ومراجع.
+
+## تحديث نهائي: مواءمة bookings وقبول العدادات
+
+تمت مواءمة `public.bookings` بشكل غير تخريبي بإضافة أعمدة التطبيق المطلوبة مع الإبقاء على أعمدة legacy (`id`, `car_id`, `customer_name`, `customer_phone`, `pickup_city`, `pickup_date`, `return_date`). نجح dry-run ثم الترحيل عبر UPSERT داخل معاملة، وكانت النتيجة: users=7، listings=6، bookings=2، audit_logs=6، مع بقاء مصدر MySQL دون تغيير.
+
+أعاد تدقيق العدادات والعلاقات القراءة فقط نتيجة `mismatches: []` لجميع الجداول المشتركة، بما فيها bookings. عدد المفاتيح الخارجية في Supabase هو 3 مقابل 0 في MySQL لأن مخطط Supabase يحتوي قيود قبول إضافية؛ لم تُحذف أو تُعدّل أي بيانات مصدرية.

@@ -211,7 +211,9 @@ export default defineConfig({
           );
           return `misc-vendor-${(packageHash % 3) + 1}`;
         },
-        onlyExplicitManualChunks: true,
+        // Let Rollup place shared dependencies with their consumers. Forcing
+        // explicit-only manual chunks can create cross-chunk temporal-dead-zone
+        // failures in the browser when React/UI packages share initialization code.
       },
     },
   },

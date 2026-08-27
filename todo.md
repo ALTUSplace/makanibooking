@@ -773,7 +773,7 @@
 
 ## سجل جلسة المتابعة — تنفيذ ما يلزم بأمان
 - [x] تثبيت هوية مشروع Vercel المستهدف قبل أي ربط أو إنشاء، ومنع إنشاء مشروع مكرر؛ تم تأكيد المشروع `makanibooking-morocco` والمعرّف من لوحة Vercel وربطه بـ `kamalbouragba/makanibooking`
-- [ ] تدقيق متغيرات Production المستقلة في Vercel دون كشف قيم الأسرار
+- [x] تدقيق متغيرات Production المستقلة في Vercel دون كشف قيم الأسرار؛ تأكد بصرياً من وجود `SUPABASE_DB_URL` و`JWT_SECRET` و`SUPABASE_SERVICE_ROLE_KEY` في Production
 - [ ] استكمال قبول Supabase بمقارنة المخطط والعدادات والعلاقات قبل الترحيل الكامل
 - [x] تنفيذ التحويل الإنتاجي فقط إذا اكتملت شروط القبول والرجوع، وإلا توثيق الحجب الآمن؛ تم حجب التحويل وتوثيق السبب: متغيرات Production الناقصة وقبول الخدمات المستقلة غير المكتمل
 
@@ -787,9 +787,12 @@
 - [x] تطبيق code splitting وlazy loading وتقسيم manualChunks دون تغيير الوظائف
 - [x] التحقق من أن كل chunk رئيسي أقل من 500KB عبر build، مع تشغيل TypeScript والاختبارات
 - [x] توثيق النتيجة في `BUNDLE_OPTIMIZATION_2026-08-27.md` وحفظ checkpoint بعد نجاح الفحوص
+- [x] إصلاح شاشة Production الفارغة الناتجة عن دورة manualChunks، والتحقق من البناء وTypeScript و172 اختباراً، مع توثيق التشخيص في `PRODUCTION_BLANK_SCREEN_AUDIT_2026-08-27.md`
 
 - [x] توليد `drizzle/pg-schema.ts` متوافقاً مع DDL Supabase، مع enums كنصوص وعموديات snake_case
 - [x] إضافة محول MySQL/PostgreSQL اختياري في `server/db.ts` خلف `B2RENT_VERCEL_ADAPTERS_READY`
 - [x] إضافة اختبارات عقد للمحول ثنائي اللهجة والتحقق من عدم تبديل MySQL افتراضياً
 - [x] تشغيل TypeScript وVitest وبناء Vercel بعد المحول
 - [x] التحقق من اتصال PostgreSQL الفعلي عبر SELECT 1؛ لم يُفعّل القطع الإنتاجي بعد
+
+- [x] إصلاح شاشة Production الفارغة بعد إضافة إعدادات Vercel عبر تعديل manualChunks، والتحقق من البناء وTypeScript و172 اختباراً

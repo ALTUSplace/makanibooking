@@ -38,3 +38,30 @@
 صفحة Logs أظهرت فشل `GET /api/trpc/listings.list` بحالة 500، و`GET /api/health` بحالة 503، وفشل تحميل شعار Manus Storage بحالة 500، مع رسائل مرتبطة بغياب `OAUTH_SERVER_URL`. لذلك لم يتم تفعيل محول PostgreSQL في Production، ولم تتم إضافة أي متغير عبر النموذج، لأن اختيار Preview وحدها لم يكن مستقراً في واجهة Vercel. يجب معالجة هذه الأخطاء وإعادة نشر Preview ناجحة قبل التفعيل النهائي.
 
 مصدر الفحص: https://vercel.com/b2-rent/makanibooking-morocco/settings/environment-variables و https://vercel.com/b2-rent/makanibooking-morocco/logs (27 Aug 2026).
+
+## 2026-08-28 — حالة إعداد Preview بعد التأكيد
+- مشروع Vercel ظاهر على `https://vercel.com/b2-rent/makanibooking-morocco` داخل فريق `b2-rent`.
+- `B2RENT_AUTH_PROVIDER` موجود في Preview.
+- `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `SUPABASE_DB_URL`, `SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, و`VITE_SUPABASE_URL` ظهرت في Production فقط أثناء الفحص الأخير.
+- فُتح تحرير `SUPABASE_SERVICE_ROLE_KEY`، لكن لم يُحفظ أي تغيير؛ القيمة بقيت مخفية، ولا يوجد دليل على تغيير Production.
+- محاولة قراءة Runtime Errors عبر Vercel MCP أعادت `403 Forbidden`.
+- رابط Preview المرتبط بفرع `preview/supabase-readiness`: `https://makanibooking-morocco-git-preview-supabase-readiness-b2-rent.vercel.app`.
+
+## 2026-08-28 — نتيجة محاولة نسخ سر Preview
+- فُتح نموذج إضافة `SUPABASE_SERVICE_ROLE_KEY`، لكن قيمة الحافظة لم تُقرأ داخل المتصفح؛ أُزيل الإدخال الناقص وأُغلِق النموذج عبر `Discard Changes`.
+- لا يوجد دليل على حفظ أي قيمة جديدة، ولا تغيير في Production.
+- ما زالت بيئة Preview تفتقد أسرار Supabase الخادمية و`JWT_SECRET`، لذلك لم يبدأ اختبار PostgreSQL الإنتاجي.
+
+## 2026-08-28 — إعادة نشر Preview قيد التنفيذ
+- أنشأ Vercel deployment جديداً بالمعرّف `B1fcq6moZEFFdiDg6c4qvSyptCbt` بعد تحديث متغيرات Preview.
+- البيئة: Preview، والمصدر الظاهر: مستودع `kamalbouragba/makanibooking`، الفرع `main`، commit `175e1d6`.
+- البناء تقدم إلى `Installing dependencies...` ثم ظهر `Already up to date` و`2728 modules transformed`، وما زال يعرض `Building` في آخر فحص؛ لم يظهر خطأ بناء حتى الآن.
+- لم يتم تفعيل أي متغير جديد في Production أثناء هذه العملية.
+- المصدر: https://vercel.com/b2-rent/makanibooking-morocco/B1fcq6moZEFFdiDg6c4qvSyptCbt
+
+## 2026-08-28 — تحقق health بعد إعادة النشر
+- رابط Preview المختبَر: `https://makanibooking-morocco-mz32v1inu-b2-rent.vercel.app`.
+- الصفحة الرئيسية تفتح بنجاح.
+- `/api/health` أعاد: `{"ok":false,"service":"b2-rent-api","missing":["SUPABASE_DB_URL","JWT_SECRET"]}`.
+- صفحة Vercel تعرض `B2RENT_VERCEL_ADAPTERS_READY` و`SUPABASE_SERVICE_ROLE_KEY` و`SUPABASE_URL` و`VITE_SUPABASE_URL` في Preview، بينما `SUPABASE_DB_URL` و`JWT_SECRET` مرتبطان ببيئة Preview وفرع `preview/supabase-readiness` فقط.
+- الاستنتاج: deployment المختبَر مبني من `main`، لذلك لا يلتقط القيم المرتبطة بالفرع المخصص. لم يُفعّل PostgreSQL في Production.

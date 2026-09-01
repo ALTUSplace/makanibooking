@@ -41,6 +41,9 @@ async function startServer() {
   // tRPC API
   app.post("/api/scheduled/lease-end-reminder", leaseEndReminderHandler);
   app.post("/api/scheduled/ical-sync", icalSyncHandler);
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
   app.get("/api/ical/export/:token", icalExportHandler);
   app.use(
     "/api/trpc",

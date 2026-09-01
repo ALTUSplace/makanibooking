@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://b2rentmorocc-muehrc85.manus.space/sitemap.xml

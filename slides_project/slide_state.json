@@ -1,0 +1,122 @@
+{
+  "project_info": {
+    "title": "مراجعة الأعمال الاستراتيجية — B2-Rent",
+    "created": 1787522330.491,
+    "last_updated": 1787524460.404,
+    "total_slides": 10
+  },
+  "slides": [
+    {
+      "id": "cover_slide",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "executive_summary",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "kpi_dashboard",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "key_achievements",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "revenue_profitability",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "growth_drivers",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "customer_growth_retention",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "strategic_initiatives",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "risks_decisions",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "next_quarter_goals",
+      "state": "edited",
+      "pageNum": 10
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover_slide",
+      "title": "مراجعة الأعمال الاستراتيجية — B2-Rent",
+      "summary": "شريحة الغلاف مع عنوان العرض والبيانات التعريفية.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "executive_summary",
+      "title": "الملخص التنفيذي",
+      "summary": "نظرة عامة على النمو والربحية والعملاء والقرارات المطلوبة.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "kpi_dashboard",
+      "title": "لوحة مؤشرات الأداء السنوي",
+      "summary": "مقارنة الأداء بين 2024 و2025 عبر المقاييس الرئيسية.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "key_achievements",
+      "title": "الإنجازات الرئيسية لعام 2025",
+      "summary": "أهم المحطات التشغيلية والتقنية المحققة خلال العام.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "revenue_profitability",
+      "title": "تحليل الإيرادات والربحية",
+      "summary": "تطور الإيرادات وهامش المساهمة ربع سنوياً مع تصور بياني.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "growth_drivers",
+      "title": "محركات النمو ومزيج القنوات والمدن",
+      "summary": "تحليل مصادر الزيارات وتوزيع الحجوزات جغرافياً.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "customer_growth_retention",
+      "title": "نمو العملاء والاحتفاظ بهم",
+      "summary": "مقاييس الاستحواذ والتكرار وقمع التحويل.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "strategic_initiatives",
+      "title": "تقدم المبادرات الاستراتيجية",
+      "summary": "حالة المبادرات الكبرى وأثرها المتوقع على الأعمال.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "risks_decisions",
+      "title": "المخاطر والقرارات الإدارية المطلوبة",
+      "summary": "تحديد التحديات والقرارات الحاسمة للمرحلة القادمة.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "next_quarter_goals",
+      "title": "أهداف الربع القادم والختام",
+      "summary": "المستهدفات الرقمية والتشغيلية ورسالة الختام.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

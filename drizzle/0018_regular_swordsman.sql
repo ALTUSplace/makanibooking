@@ -1,0 +1,1 @@
+ALTER TABLE `listings` MODIFY COLUMN `status` enum('Pending','Approved','Available','Rented','Rejected','Published') NOT NULL DEFAULT 'Published';

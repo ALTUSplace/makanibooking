@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "title": "B2-Rent: Brand Identity & Logo Strategy",
+    "created": 1787395826.188,
+    "last_updated": 1787395880.402,
+    "total_slides": 8
+  },
+  "slides": [
+    {
+      "id": "title",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "executive_summary",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "core_values",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "logo_concept",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "color_typography",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "digital_integration",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "marketing_strategy",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "conclusion",
+      "state": "edited",
+      "pageNum": 8
+    }
+  ],
+  "outline": [
+    {
+      "id": "title",
+      "title": "B2-Rent: Brand Identity & Logo Strategy",
+      "summary": "A luxury Moroccan marketplace for car rentals and real estate.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "executive_summary",
+      "title": "Executive Summary & Vision",
+      "summary": "Positioning B2-Rent as North Africa's premier trusted digital broker.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "core_values",
+      "title": "Brand Core Values",
+      "summary": "Uncompromised trust, exclusivity, and seamless efficiency.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "logo_concept",
+      "title": "The New Logo: Minimalist Luxury",
+      "summary": "Clean geometric lines embodying both automotive motion and real estate stability.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "color_typography",
+      "title": "Color Palette & Typography",
+      "summary": "Deep Navy Blue and Warm Amber Gold harmonizing trust and Moroccan prestige.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "digital_integration",
+      "title": "Digital Integration Strategy",
+      "summary": "Seamless deployment across navigation headers, responsive viewports, and contracts.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "marketing_strategy",
+      "title": "Marketing & Omnichannel Presence",
+      "summary": "Consistent visual identity across social media, partner portals, and SEO.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "conclusion",
+      "title": "Conclusion & Future Roadmap",
+      "summary": "Shaping the future of Moroccan luxury rentals and shaping long-term growth.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}
